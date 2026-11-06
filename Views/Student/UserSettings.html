@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>User Settings - ABEC Student</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="../../wwwroot/css/abec-ui.css?v=20261029train2" rel="stylesheet"/>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: { sans: ['Inter', 'Plus Jakarta Sans', 'sans-serif'] },
+        colors: {
+          'abec-navy': '#0B1F3A',
+          'abec-blue': '#2563EB',
+          'surface': '#F5F9FF',
+        }
+      }
+    }
+  }
+</script>
+<style>
+  body { font-family: 'Plus Jakarta Sans', Inter, sans-serif; }
+  body.student-module.settings-page,
+  body.student-module.settings-page .student-frame { min-height: 100dvh; }
+  body.student-module.settings-page .abec-main {
+    flex: 1; min-height: 0; display: flex; flex-direction: column;
+    padding-top: 0.35rem; padding-bottom: 0.4rem;
+  }
+  body.settings-page .settings-grid {
+    min-height: 0; align-items: start;
+    display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(16rem, 0.85fr);
+    gap: 0.5rem;
+  }
+  body.settings-page .set-label { display: block; font-size: 0.68rem; font-weight: 700; color: #475569; margin-bottom: 0.15rem; }
+  body.settings-page .set-input, body.settings-page .set-readonly {
+    width: 100%; border: 1px solid #e2e8f0; border-radius: 0.5rem; background: #fff;
+    padding: 0.32rem 0.55rem; font-size: 0.78rem; color: #0f172a;
+  }
+  body.settings-page .set-readonly { background: #f8fafc; color: #334155; }
+  body.settings-page .set-input:disabled { background: #f8fafc; color: #475569; }
+  body.settings-page .settings-action { border-radius: 0.5rem; padding: 0.4rem 0.75rem; font-size: 0.75rem; font-weight: 700; border: 1px solid #cbd5e1; }
+  body.settings-page.settings-dialog-open { overflow: hidden; }
+  @media (max-width: 1100px) {
+    body.student-module.settings-page,
+    body.student-module.settings-page .student-frame,
+    body.student-module.settings-page .abec-main { height: auto; max-height: none; overflow: visible; }
+    body.settings-page .settings-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body class="abec-app student-module student-desk settings-page bg-surface font-sans text-slate-800" data-abec-shell="secondary" data-abec-back="StudentDashboard.html" data-abec-back-label="Back to Dashboard">
+<div class="student-frame">
+
+<main class="abec-main student-content">
+  <header class="mb-2 flex items-center justify-between gap-3">
+    <h2 class="text-lg font-bold text-abec-navy tracking-tight">User Settings</h2>
+    <p id="set-account" class="text-xs font-semibold text-slate-500"></p>
+  </header>
+
+  <div class="settings-grid">
+    <div class="space-y-3">
+    <section class="abec-card abec-card-static p-3">
+      <div class="flex items-center justify-between gap-2 mb-2">
+        <h3 class="text-sm font-bold text-abec-navy">Profile</h3>
+        <div class="flex gap-2">
+          <button type="button" id="btn-edit-student" disabled class="settings-action">Edit</button>
+          <button type="button" id="btn-cancel-student" class="settings-action hidden">Cancel</button>
+          <button type="button" id="btn-save-student" class="hidden text-xs font-bold text-white bg-abec-navy px-3 py-1.5 rounded-lg">Save Changes</button>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-2">
+        <div><label class="set-label" for="set-first">First name</label><input id="set-first" required maxlength="50" class="set-input" disabled type="text" autocomplete="given-name"></div>
+        <div><label class="set-label" for="set-middle">Middle name</label><input id="set-middle" maxlength="50" class="set-input" disabled type="text" autocomplete="additional-name"></div>
+        <div><label class="set-label" for="set-last">Last name</label><input id="set-last" required maxlength="50" class="set-input" disabled type="text" autocomplete="family-name"></div>
+        <div><label class="set-label" for="set-suffix">Suffix</label><input id="set-suffix" maxlength="20" class="set-input" disabled type="text"></div>
+        <div><label class="set-label" for="set-email">Email</label><input id="set-email" maxlength="100" class="set-input" disabled type="email" autocomplete="email"></div>
+        <div><label class="set-label" for="set-contact">Contact number</label><input id="set-contact" maxlength="20" class="set-input" disabled type="tel" autocomplete="tel"></div>
+        <div class="col-span-2"><label class="set-label" for="set-address">Address</label><input id="set-address" class="set-input" disabled type="text" autocomplete="street-address"></div>
+        <div>
+          <label class="set-label" for="set-gender">Gender</label>
+          <select id="set-gender" class="set-input" disabled>
+            <option value="">Not recorded</option>
+            <option>Male</option>
+            <option>Female</option>
+          </select>
+        </div>
+        <div><label class="set-label" for="set-birthdate">Birthdate</label><input id="set-birthdate" class="set-input" disabled type="date"></div>
+      </div>
+      <p id="set-msg" class="text-xs mt-2 hidden"></p>
+    </section>
+
+    <section class="abec-card abec-card-static p-3">
+      <div class="flex items-center justify-between gap-2">
+        <h3 class="text-sm font-bold text-abec-navy">Login &amp; Password</h3>
+        <button type="button" id="btn-student-password" disabled class="settings-action">Add Password</button>
+      </div>
+      <p id="set-login-mode" class="text-xs text-slate-500 mt-2">Loading login settings...</p>
+    </section>
+    </div>
+    <section class="abec-card abec-card-static p-3 flex flex-col">
+      <h3 class="text-sm font-bold text-abec-navy mb-2">Enrollment</h3>
+      <div class="grid grid-cols-1 gap-1.5 mb-2">
+        <div><p class="set-label">Enrolled course</p><p id="set-course" class="set-readonly">Not recorded</p></div>
+        <div><p class="set-label">Course program</p><p id="set-program" class="set-readonly">Not recorded</p></div>
+        <div><p class="set-label">Batch</p><p id="set-batch" class="set-readonly">Not recorded</p></div>
+        <div><p class="set-label">Civil status</p><p id="set-civil" class="set-readonly">Not recorded</p></div>
+        <div><p class="set-label">School or company</p><p id="set-school" class="set-readonly">Not recorded</p></div>
+        <div><p class="set-label">Training address</p><p id="set-school-address" class="set-readonly">Not recorded</p></div>
+      </div>
+      <div class="border-t border-slate-200 pt-2 mb-3">
+        <h3 class="text-sm font-bold text-abec-navy">Registration Information</h3>
+        <p class="text-xs text-slate-500 my-2">View the remaining details submitted during registration.</p>
+        <button type="button" id="btn-registration" disabled class="settings-action">View Registration Information</button>
+      </div>
+      <div class="mt-auto">
+        <div class="flex items-center justify-between gap-2 mb-1">
+          <p class="text-xs font-bold text-abec-navy">Recent Login Activity</p>
+          <button type="button" id="btn-view-activity" class="text-[11px] font-bold text-abec-blue">View All Login Activity</button>
+        </div>
+        <div id="set-activity" class="text-xs text-slate-500">No recent login activity.</div>
+      </div>
+    </section>
+  </div>
+</main>
+
+</div>
+
+<div id="activity-modal" role="dialog" aria-modal="true" aria-label="Login Activity" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4">
+  <div class="absolute inset-0 bg-black/50" data-close-activity></div>
+  <div class="relative bg-white border border-slate-200 rounded-xl shadow-lg w-full max-w-lg max-h-[85vh] overflow-y-auto p-5">
+    <div class="flex items-center justify-between gap-3 mb-3">
+      <h3 class="text-base font-bold text-abec-navy">Login Activity</h3>
+      <button type="button" class="text-xs font-bold text-slate-600 border border-slate-300 px-3 py-1.5 rounded-lg" data-close-activity>Close</button>
+    </div>
+    <div id="set-activity-all" class="text-sm text-slate-600">No login activity recorded.</div>
+  </div>
+</div>
+
+
+<div id="registration-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="registration-title">
+  <div class="absolute inset-0 bg-black/50" data-close-settings-modal></div>
+  <div class="relative bg-white rounded-xl shadow-lg w-full max-w-3xl max-h-[90dvh] overflow-y-auto p-5">
+    <div class="flex items-center justify-between gap-3 mb-4"><h3 id="registration-title" tabindex="-1" class="font-bold text-abec-navy">Registration Information</h3><button type="button" class="settings-action" data-close-settings-modal>Close</button></div>
+    <dl id="set-registration" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></dl>
+  </div>
+</div>
+<div id="student-password-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="student-password-title">
+  <div class="absolute inset-0 bg-black/50" data-close-settings-modal></div>
+  <div class="relative bg-white rounded-xl shadow-lg w-full max-w-lg max-h-[90dvh] overflow-y-auto p-5">
+    <div class="flex items-center justify-between gap-3 mb-4"><h3 id="student-password-title" tabindex="-1" class="font-bold text-abec-navy">Add Password</h3><button type="button" class="settings-action" data-close-settings-modal>Close</button></div>
+    <form id="student-password-form" class="space-y-3">
+      <div id="student-current-password-wrap" class="hidden"><label for="student-current-password" class="set-label">Current password</label><input id="student-current-password" class="set-input" type="password" autocomplete="current-password"></div>
+      <div><label for="student-new-password" class="set-label">Password</label><input id="student-new-password" class="set-input" type="password" minlength="8" maxlength="72" autocomplete="new-password"><p id="student-password-help" class="text-xs text-slate-500 mt-1">Use at least 8 characters.</p></div>
+      <div><label for="student-confirm-password" class="set-label">Confirm password</label><input id="student-confirm-password" class="set-input" type="password" autocomplete="new-password"></div>
+      <div><label for="student-login-username" class="set-label">Username</label><input id="student-login-username" class="set-input" required minlength="3" maxlength="20" pattern="[A-Za-z0-9._-]+" autocomplete="username"></div>
+      <label class="flex items-center gap-3 text-sm font-semibold"><input id="student-password-enabled" type="checkbox" role="switch" class="rounded text-abec-blue">Use username and password for login</label>
+      <p class="text-xs text-slate-600">When enabled, use this username and password the next time you log in. When disabled, use your security PIN.</p>
+      <p id="student-credential-msg" role="status" class="text-xs text-red-700"></p>
+      <button type="submit" id="student-credential-save" class="settings-action bg-abec-navy text-white w-full">Save Changes</button>
+    </form>
+  </div>
+</div>
+
+<script src="../../wwwroot/js/abec-api.js?v=20261106studentauth1"></script>
+<script src="../../wwwroot/js/abec-student-shell.js?v=20261029docs1"></script>
+<script src="../../wwwroot/js/abec-student.js?v=20261029train2"></script>
+<script src="../../wwwroot/js/abec-student-settings.js?v=20261106studentaccount1"></script>
+</body>
+</html>

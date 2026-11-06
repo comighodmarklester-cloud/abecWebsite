@@ -1,0 +1,27 @@
+{
+  "ConnectionStrings": {
+    "DefaultConnection": ""
+  },
+  "App": {
+    "PublicBaseUrl": "http://localhost:5188"
+  },
+  "Email": {
+    "Enabled": false,
+    "Host": "smtp.gmail.com",
+    "Port": 587,
+    "UseSsl": true,
+    "Username": "",
+    "Password": "",
+    "FromAddress": "",
+    "FromName": "ABEC System",
+    "PickupDirectory": "App_Data/email-outbox"
+  },
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning",
+      "Microsoft.EntityFrameworkCore": "Warning"
+    }
+  },
+  "AllowedHosts": "localhost"
+}

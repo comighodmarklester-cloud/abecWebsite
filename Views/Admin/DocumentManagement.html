@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Document Management - ABEC Admin</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="../../wwwroot/css/abec-ui.css?v=20261105icons1" rel="stylesheet"/>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: { sans: ['Inter', 'Plus Jakarta Sans', 'sans-serif'] },
+        colors: {
+          'abec-navy': '#0B1F3A',
+          'abec-sidebar-active': 'rgba(255,255,255,0.08)',
+          'abec-blue': '#2563EB',
+          'surface': '#F5F9FF',
+        }
+      }
+    }
+  }
+</script>
+<style>
+  .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+  .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+  .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.18); border-radius: 10px; }
+  body.documents-page,
+  body.documents-page .flex.min-h-screen { height: 100dvh; min-height: 0; overflow: hidden; }
+  body.documents-page .abec-main {
+    height: 100%; min-height: 0; overflow: hidden; display: flex; flex-direction: column;
+    padding-top: 0.85rem; padding-bottom: 0.85rem;
+  }
+  body.documents-page #abec-profile-menu { display: none !important; }
+  .doc-page-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex: 0 0 auto; }
+  .doc-page-header h2 { margin: 0; }
+  .doc-page-header .abec-header-actions { margin-left: auto; }
+  .doc-board { display: flex; flex-direction: column; gap: 0.7rem; flex: 1 1 auto; min-height: 0; }
+  .doc-tabs { display: flex; flex-wrap: wrap; gap: 0.45rem; align-items: center; }
+  .doc-tabs button {
+    border: 1px solid #d7e3f4; background: #fff; color: #0B2747; border-radius: 999px;
+    padding: 0.45rem 0.9rem; font-size: 0.82rem; font-weight: 700; cursor: pointer;
+  }
+  .doc-tabs button.is-active { background: linear-gradient(135deg, #0B2747, #2563EB); color: #fff; border-color: transparent; }
+  .doc-queue-btn { margin-left: auto; background: #eff6ff !important; color: #1e3a8a !important; border-color: #93c5fd !important; }
+  #doc-request-modal.hidden { display: none !important; }
+  .doc-view { display: flex; flex-direction: column; gap: 0.7rem; flex: 1 1 auto; min-height: 0; }
+  .doc-view[hidden] { display: none !important; }
+  .doc-title-block { display: flex; align-items: center; gap: 0.75rem; min-width: 0; }
+  .doc-back { border: 1px solid #d7e3f4; background: #fff; color: #0B2747; border-radius: 999px; padding: 0.4rem 0.8rem; font-size: 0.78rem; font-weight: 750; cursor: pointer; white-space: nowrap; }
+  .doc-back:hover { background: #0B2747; color: #fff; }
+  .doc-queue-badge { display: inline-flex; align-items: center; border-radius: 999px; background: #eff6ff; color: #1e3a8a; border: 1px solid #93c5fd; padding: 0.2rem 0.55rem; font-size: 0.72rem; font-weight: 750; white-space: nowrap; }
+  #doc-queue-back[hidden], #doc-queue-total[hidden], #doc-queue-screen-count[hidden] { display: none !important; }
+  .doc-title-block .doc-muted { margin: 0.15rem 0 0; }
+  .doc-request-card { width: min(680px, calc(100vw - 1.25rem)); max-height: calc(100dvh - 1.25rem); }
+  #doc-request-modal .doc-modal-body { overflow: auto; max-height: calc(100dvh - 7.5rem); padding: 1rem 1.1rem 1.1rem; }
+  .req-sheet { display: flex; flex-direction: column; gap: 0.9rem; }
+  .req-kicker { margin: 0; font-size: 0.66rem; font-weight: 750; letter-spacing: 0.05em; text-transform: uppercase; color: #64748b; }
+  .req-name { margin: 0.2rem 0 0; color: #0B2747; font-size: 1.35rem; line-height: 1.2; font-weight: 750; overflow-wrap: anywhere; }
+  .req-facts, .req-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem 1.1rem; margin-top: 0.75rem; }
+  .req-facts div, .req-meta div { min-width: 0; }
+  .req-facts span, .req-meta span, .req-hold span { display: block; font-size: 0.66rem; font-weight: 750; letter-spacing: 0.04em; text-transform: uppercase; color: #64748b; }
+  .req-facts strong, .req-meta strong { display: block; margin-top: 0.16rem; color: #0f2744; font-size: 0.9rem; line-height: 1.3; overflow-wrap: anywhere; }
+  .req-doc { border: 1px solid #d7e4f4; border-radius: 0.9rem; background: #f8fbff; box-shadow: 0 8px 18px rgba(11, 39, 71, 0.05); padding: 0.85rem 0.95rem 0.95rem; }
+  .req-doc-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.75rem; }
+  .req-doc-head h4 { margin: 0.15rem 0 0; color: #0B2747; font-size: 1.05rem; line-height: 1.25; overflow-wrap: anywhere; }
+  .req-file { margin: 0.7rem 0 0; color: #64748b; font-size: 0.78rem; }
+  .req-actions { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.7rem; }
+  .req-status { margin-top: 0.85rem; padding-top: 0.75rem; border-top: 1px solid #e2e8f0; }
+  .req-picks { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.4rem; margin-top: 0.55rem; }
+  .req-picks button { width: 100%; min-height: 2.35rem; padding: 0.35rem 0.25rem; text-align: center; line-height: 1.15; white-space: normal; }
+  .req-picks button:disabled {
+    background: #f8fafc; color: #94a3b8; border-color: #e2e8f0; cursor: not-allowed;
+    pointer-events: none; box-shadow: none; opacity: 1;
+  }
+  .req-drop {
+    margin-top: 0.75rem; border: 1.5px dashed #93c5fd; border-radius: 0.85rem; background: #fff;
+    padding: 0.9rem 0.75rem; text-align: center; cursor: pointer; color: #1e3a8a;
+  }
+  .req-drop:focus { outline: 2px solid #2563eb; outline-offset: 2px; }
+  .req-drop.is-over { background: #eff6ff; border-color: #2563eb; }
+  .req-drop.is-busy { cursor: progress; pointer-events: none; opacity: 0.72; }
+  .req-drop svg { width: 1.7rem; height: 1.7rem; margin: 0 auto 0.35rem; display: block; }
+  .req-drop strong { display: block; font-size: 0.84rem; }
+  .req-drop span { display: block; margin-top: 0.18rem; color: #64748b; font-size: 0.74rem; line-height: 1.35; }
+  .req-file-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.45rem; margin-top: 0.7rem; }
+  .req-file-row p { margin: 0; color: #334155; font-size: 0.78rem; overflow-wrap: anywhere; }
+  .req-file-links { display: flex; gap: 0.4rem; }
+  .req-upload-msg { margin: 0.4rem 0 0; font-size: 0.75rem; min-height: 1rem; }
+  .req-upload-msg.is-ok { color: #047857; }
+  .req-upload-msg.is-error { color: #be123c; }
+  .req-progress { height: 0.28rem; margin-top: 0.45rem; border-radius: 999px; background: #e2e8f0; overflow: hidden; }
+  .req-progress i { display: block; height: 100%; width: 35%; border-radius: inherit; background: #2563eb; animation: req-slide 0.9s ease-in-out infinite; }
+  @keyframes req-slide { 0% { transform: translateX(-120%); } 100% { transform: translateX(320%); } }
+  .req-note { margin: 0.55rem 0 0; color: #475569; font-size: 0.75rem; line-height: 1.35; }
+  #doc-confirm.hidden { display: none !important; }
+  .doc-confirm-card {
+    width: min(440px, calc(100vw - 1.5rem)); background: #fff; border-radius: 1rem;
+    box-shadow: 0 18px 50px rgba(11, 39, 71, 0.22); padding: 1.15rem 1.15rem 1rem; color: #0f2744;
+  }
+  .doc-confirm-icon {
+    width: 2.5rem; height: 2.5rem; border-radius: 0.75rem; display: flex; align-items: center; justify-content: center;
+    background: #eff6ff; color: #1d4ed8; margin-bottom: 0.7rem;
+  }
+  .doc-confirm-icon svg { width: 1.25rem; height: 1.25rem; }
+  .doc-confirm-card h3 { margin: 0; font-size: 1.05rem; color: #0B2747; }
+  .doc-confirm-card > p { margin: 0.45rem 0 0; font-size: 0.84rem; line-height: 1.45; color: #334155; }
+  .doc-confirm-facts { margin: 0.8rem 0 0; display: grid; gap: 0.45rem; }
+  .doc-confirm-facts div { display: flex; justify-content: space-between; gap: 0.75rem; font-size: 0.8rem; }
+  .doc-confirm-facts dt { color: #64748b; font-weight: 650; }
+  .doc-confirm-facts dd { margin: 0; text-align: right; font-weight: 700; color: #0B2747; overflow-wrap: anywhere; }
+  .doc-confirm-hold { display: flex; flex-direction: column; gap: 0.28rem; margin-top: 0.75rem; }
+  .doc-confirm-hold[hidden] { display: none !important; }
+  .doc-confirm-hold span { font-size: 0.66rem; font-weight: 750; letter-spacing: 0.04em; text-transform: uppercase; color: #64748b; }
+  .doc-confirm-hold input { border: 1px solid #d7e3f4; border-radius: 0.55rem; padding: 0.45rem 0.55rem; font-size: 0.82rem; }
+  .doc-confirm-actions { display: flex; justify-content: flex-end; gap: 0.45rem; margin-top: 0.95rem; }
+  .doc-confirm-actions button { min-height: 2.3rem; }
+  #doc-confirm-ok {
+    border: 0; border-radius: 0.6rem; padding: 0.45rem 0.85rem; font-size: 0.78rem; font-weight: 750; cursor: pointer;
+    background: linear-gradient(135deg, #0B2747, #2563EB); color: #fff;
+  }
+  #doc-confirm-ok:disabled, #doc-confirm-cancel:disabled { opacity: 0.6; cursor: not-allowed; }
+  .doc-toast[hidden] { display: none !important; }
+  .doc-toast {
+    position: fixed; top: 0.85rem; left: 50%; transform: translateX(-50%); z-index: 200; display: flex; align-items: center; gap: 0.55rem;
+    max-width: min(32rem, calc(100vw - 1.5rem)); margin: 0; padding: 0.65rem 0.9rem; border-radius: 0.75rem;
+    font-size: 0.84rem; font-weight: 650; box-shadow: 0 12px 30px rgba(11, 39, 71, 0.18); pointer-events: none;
+  }
+  .doc-toast svg { width: 1.1rem; height: 1.1rem; flex: 0 0 auto; }
+  .doc-toast.is-in { animation: doc-toast-in 0.22s ease; }
+  .doc-toast.is-out { animation: doc-toast-out 0.2s ease forwards; }
+  @keyframes doc-toast-in { from { opacity: 0; transform: translateX(-50%) translateY(-8px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+  @keyframes doc-toast-out { from { opacity: 1; transform: translateX(-50%) translateY(0); } to { opacity: 0; transform: translateX(-50%) translateY(-8px); } }
+  .doc-toast.is-ok { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+  .doc-toast.is-error { background: #fff1f2; color: #be123c; border: 1px solid #fecdd3; }
+  .doc-toast.is-warn { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+  .doc-toast.is-info { background: #eff6ff; color: #1e3a8a; border: 1px solid #bfdbfe; }
+  .doc-request-card.is-pending { border-color: #fde047; }
+  .doc-request-card.is-processing { border-color: #fdba74; }
+  .doc-request-card.is-hold { border-color: #fca5a5; }
+  .doc-request-card.is-ready { border-color: #86efac; }
+  .doc-request-card.is-released { border-color: #93c5fd; }
+  .doc-request-card.is-rejected { border-color: #d8b4fe; }
+  .doc-request-card.is-pending .doc-modal-head { background: #fffbeb; border-bottom-color: #fde68a; box-shadow: inset 0 4px 0 #eab308; }
+  .doc-request-card.is-processing .doc-modal-head { background: #fff7ed; border-bottom-color: #fdba74; box-shadow: inset 0 4px 0 #f97316; }
+  .doc-request-card.is-hold .doc-modal-head { background: #fef2f2; border-bottom-color: #fca5a5; box-shadow: inset 0 4px 0 #dc2626; }
+  .doc-request-card.is-ready .doc-modal-head { background: #f0fdf4; border-bottom-color: #86efac; box-shadow: inset 0 4px 0 #16a34a; }
+  .doc-request-card.is-released .doc-modal-head { background: #eff6ff; border-bottom-color: #93c5fd; box-shadow: inset 0 4px 0 #2563eb; }
+  .doc-request-card.is-rejected .doc-modal-head { background: #faf5ff; border-bottom-color: #d8b4fe; box-shadow: inset 0 4px 0 #7c3aed; }
+  .doc-request-card.is-pending .req-doc { border-color: #fde047; background: #fffef6; }
+  .doc-request-card.is-processing .req-doc { border-color: #fdba74; background: #fffaf5; }
+  .doc-request-card.is-hold .req-doc { border-color: #fca5a5; background: #fffafa; }
+  .doc-request-card.is-ready .req-doc { border-color: #86efac; background: #f7fef9; }
+  .doc-request-card.is-released .req-doc { border-color: #93c5fd; background: #f8fbff; }
+  .doc-request-card.is-rejected .req-doc { border-color: #d8b4fe; background: #fdfaff; }
+  .doc-confirm-card.is-pending .doc-confirm-icon { background: #fef3c7; color: #a16207; }
+  .doc-confirm-card.is-processing .doc-confirm-icon { background: #ffedd5; color: #c2410c; }
+  .doc-confirm-card.is-hold .doc-confirm-icon { background: #fee2e2; color: #b91c1c; }
+  .doc-confirm-card.is-ready .doc-confirm-icon { background: #dcfce7; color: #166534; }
+  .doc-confirm-card.is-released .doc-confirm-icon { background: #dbeafe; color: #1d4ed8; }
+  .doc-confirm-card.is-rejected .doc-confirm-icon { background: #f3e8ff; color: #7e22ce; }
+  @media (max-width: 720px) {
+    .req-facts, .req-meta, .req-picks { grid-template-columns: 1fr 1fr; }
+    .req-name { font-size: 1.15rem; }
+  }
+  .doc-toolbar { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+  .abec-search-field { position: relative; flex: 1 1 16rem; min-width: min(100%, 14rem); }
+  .abec-search-field svg { position: absolute; left: 0.7rem; top: 50%; width: 0.95rem; height: 0.95rem; transform: translateY(-50%); color: #94a3b8; pointer-events: none; }
+  .abec-search-field input { width: 100%; padding-left: 2.15rem !important; }
+  .doc-toolbar input, .doc-toolbar select {
+    border: 1px solid #d7e3f4; border-radius: 0.65rem; background: #fff; color: #0f2744;
+    font-size: 0.82rem; padding: 0 0.7rem; min-width: 0; height: 2.35rem; box-sizing: border-box;
+  }
+  .doc-toolbar input { flex: 1 1 16rem; min-width: min(100%, 14rem); }
+  .doc-toolbar > span { flex: 1 1 11.5rem; min-width: min(100%, 11.5rem); max-width: 16rem; }
+  .doc-toolbar > span[hidden] { display: none !important; }
+  .doc-toolbar select { width: 100%; }
+  .doc-toolbar .doc-clear { flex: 0 0 auto; height: 2.35rem; white-space: nowrap; }
+  .doc-clear, .doc-action, .doc-link {
+    border: 1px solid #0B2747; background: #fff; color: #0B2747; border-radius: 0.6rem;
+    padding: 0.4rem 0.7rem; font-size: 0.75rem; font-weight: 700; cursor: pointer; text-decoration: none;
+  }
+  .doc-action:hover, .doc-link:hover, .doc-clear:hover { background: #0B2747; color: #fff; }
+  .doc-count { margin-left: auto; font-size: 0.78rem; font-weight: 650; color: #475569; }
+  .doc-notice { margin: 0; padding: 0.55rem 0.75rem; border-radius: 0.65rem; font-size: 0.82rem; font-weight: 650; }
+  .doc-notice.is-ok { background: #ecfdf5; color: #047857; }
+  .doc-notice.is-error { background: #fff1f2; color: #be123c; }
+  .doc-notice.is-info { background: #eff6ff; color: #1d4ed8; }
+  .doc-table-card { background: #fff; border: 1px solid #d7e4f4; border-radius: 1rem; box-shadow: 0 10px 24px rgba(11, 39, 71, 0.06); overflow: hidden; flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+  .doc-table-scroll { overflow: auto; flex: 1 1 auto; min-height: 0; -webkit-overflow-scrolling: touch; }
+  .doc-table { width: 100%; border-collapse: separate; border-spacing: 0; min-width: 720px; }
+  .doc-table th { position: sticky; top: 0; z-index: 2; text-align: left; font-size: 0.68rem; letter-spacing: 0.04em; text-transform: uppercase; color: #64748b; background: #f8fbff; padding: 0.75rem 0.8rem; border-bottom: 1px solid #e2e8f0; white-space: nowrap; }
+  .doc-table td { padding: 0.72rem 0.8rem; border-bottom: 1px solid #f1f5f9; font-size: 0.82rem; color: #0f2744; vertical-align: middle; }
+  .doc-table tbody tr:hover { background: #f8fbff; }
+  .doc-name { font-weight: 700; color: #0B2747; }
+  .doc-empty { text-align: center; color: #64748b; padding: 2rem 1rem !important; }
+  .doc-empty-error { color: #be123c; }
+  .doc-badge { display: inline-flex; align-items: center; border-radius: 999px; padding: 0.2rem 0.55rem; font-size: 0.68rem; font-weight: 750; letter-spacing: 0.02em; white-space: nowrap; border: 1px solid transparent; }
+  .doc-badge-ok { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
+  .doc-badge-bad { background: #fff1f2; color: #be123c; border-color: #fecdd3; }
+  .doc-badge-wait { background: #fff7ed; color: #c2410c; border-color: #fed7aa; }
+  .doc-badge-info { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+  .doc-badge-muted { background: #f1f5f9; color: #475569; border-color: #e2e8f0; }
+  .doc-badge-pending { background: #fef3c7; color: #92400e; border-color: #fcd34d; }
+  .doc-badge-processing { background: #ffedd5; color: #c2410c; border-color: #fdba74; }
+  .doc-badge-hold { background: #fee2e2; color: #b91c1c; border-color: #fca5a5; }
+  .doc-badge-ready { background: #dcfce7; color: #166534; border-color: #86efac; }
+  .doc-badge-released { background: #dbeafe; color: #1e40af; border-color: #93c5fd; }
+  .doc-badge-rejected { background: #f3e8ff; color: #6b21a8; border-color: #d8b4fe; }
+  #doc-modal.hidden { display: none !important; }
+  .doc-modal-card { width: min(1080px, calc(100vw - 1.25rem)); max-height: calc(100dvh - 1.25rem); display: flex; flex-direction: column; background: #fff; border-radius: 1rem; border: 1px solid #d7e4f4; box-shadow: 0 24px 50px rgba(11, 39, 71, 0.22); overflow: hidden; }
+  .doc-modal-head { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.65rem 0.9rem; border-bottom: 1px solid #e8eef6; flex: 0 0 auto; }
+  .doc-modal-head h3 { margin: 0; color: #0B2747; font-size: 1rem; font-weight: 750; }
+  .doc-modal-identity { min-width: 0; }
+  .doc-modal-course { margin: 0.12rem 0 0; color: #334155; font-size: 0.82rem; font-weight: 650; line-height: 1.3; }
+  .doc-modal-body { overflow: hidden; padding: 0.55rem 0.8rem 0.65rem; }
+  .doc-review { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 0.4rem 0.7rem; align-items: start; }
+  .doc-review h4 { margin: 0 0 0.28rem; color: #0B2747; font-size: 0.68rem; letter-spacing: 0.04em; text-transform: uppercase; }
+  .doc-creds, .doc-requests { grid-column: 1 / -1; }
+  .doc-cred-grid, .doc-request-grid, .doc-info-grid { display: grid; gap: 0.35rem; }
+  .doc-cred-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .doc-request-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .doc-info-grid { grid-template-columns: 1fr 1fr; }
+  .doc-card, .doc-info-grid div { border: 1px solid #e8eef6; border-radius: 0.65rem; padding: 0.4rem 0.5rem; background: #fff; min-width: 0; }
+  .doc-card strong, .doc-info-grid strong { display: block; color: #0B2747; font-size: 0.78rem; line-height: 1.25; }
+  .doc-info-grid span, .doc-card .doc-kicker { display: block; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; color: #64748b; }
+  .doc-info-grid strong { margin-top: 0.08rem; font-size: 0.78rem; }
+  .doc-card p { margin: 0.15rem 0 0; color: #475569; font-size: 0.7rem; line-height: 1.3; }
+  .doc-file-actions { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.35rem; }
+  .doc-muted { color: #64748b; font-size: 0.72rem; }
+  .doc-hold { border: 1px solid #d7e3f4; border-radius: 0.45rem; padding: 0.25rem 0.4rem; font-size: 0.72rem; width: 8rem; }
+  @media (max-width: 900px) {
+    .doc-count { margin-left: 0; width: 100%; }
+    .doc-modal-card { width: calc(100vw - 0.6rem); }
+    .doc-modal-head { padding: 0.4rem 0.6rem; }
+    .doc-modal-body { padding: 0.35rem 0.45rem 0.4rem; }
+    .doc-review { grid-template-columns: 1fr 1fr; gap: 0.28rem 0.4rem; }
+    .doc-cred-grid { grid-template-columns: 1fr 1fr; }
+    .doc-creds, .doc-requests { grid-column: 1 / -1; }
+    .doc-card, .doc-info-grid div { padding: 0.22rem 0.32rem; }
+    .doc-card strong, .doc-info-grid strong { font-size: 0.68rem; }
+    .doc-file-actions { margin-top: 0.15rem; }
+  }
+  .doc-batch-menu { position: relative; }
+  .doc-batch-menu summary { cursor: pointer; }
+  .doc-batch-options { position: absolute; right: 0; z-index: 40; min-width: 18rem; max-height: 20rem; overflow: auto; background: white; border: 1px solid #d7e4f4; border-radius: .75rem; box-shadow: 0 12px 28px #0b274726; padding: .4rem; }
+  .doc-batch-options button { display: block; width: 100%; text-align: left; padding: .65rem; border-radius: .4rem; }
+  .doc-batch-options button:hover, .doc-batch-options button[aria-current="true"] { background: #eff6ff; }
+  .doc-batch-unread { color: white; background: #dc2626; border-radius: 999px; padding: .1rem .45rem; font-weight: 700; }
+  #doc-batch-notifications { position: relative; }
+  #doc-batch-notification-list { position: absolute; right: 0; top: 100%; z-index: 40; width: min(30rem, calc(100vw - 2rem)); max-height: 15rem; overflow: auto; font-size: .8rem; background: white; border: 1px solid #d7e4f4; border-radius: .75rem; box-shadow: 0 12px 28px #0b274726; }
+  #doc-batch-notification-list article { padding: .65rem; border-bottom: 1px solid #e2e8f0; }
+  #doc-course-release[hidden] { display: none !important; }
+  #doc-course-wrap { display: none !important; }
+  .doc-enrolled-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.45rem; margin-bottom: 0.55rem; }
+  .doc-course-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; }
+  .doc-enrolled-controls { display: flex; flex-wrap: nowrap; align-items: center; gap: 0.35rem; margin-left: auto; }
+  .doc-enrolled-controls > span { flex: 0 1 10.5rem; min-width: 8.4rem; }
+  .doc-enrolled-controls > span[hidden] { display: none !important; }
+  .doc-enrolled-controls select, .doc-course-btn {
+    height: 2.15rem; box-sizing: border-box;
+  }
+  .doc-enrolled-controls select {
+    width: 100%; border: 1px solid #d7e3f4; border-radius: 0.65rem; background: #fff; color: #0f2744;
+    font-size: 0.82rem; padding: 0 0.7rem;
+  }
+  .doc-enrolled-controls .doc-clear {
+    height: 2.35rem; padding: 0.4rem 0.7rem; white-space: nowrap;
+    display: inline-flex; align-items: center; box-sizing: border-box; flex: 0 0 auto;
+  }
+  @media (max-width: 1180px) {
+    .doc-enrolled-controls { margin-left: 0; }
+  }
+  .doc-course-btn {
+    border: 1px solid #d7e3f4; background: #fff; color: #0B2747; border-radius: 999px;
+    padding: 0 0.55rem; font-size: 0.7rem; font-weight: 750; cursor: pointer; white-space: nowrap;
+  }
+  .doc-course-btn.is-active { background: #2563EB; color: #fff; border-color: #2563EB; }
+  #doc-modal .doc-modal-body { overflow: auto; max-height: calc(100dvh - 5.5rem); }
+  .doc-course-docs { grid-column: 1 / -1; }
+  .doc-course-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.28rem; }
+  .course-release-card { border: 1px solid #d7e4f4; border-radius: 0.5rem; background: #fff; padding: 0.28rem 0.4rem; }
+  .course-release-card strong { font-size: 0.76rem; line-height: 1.2; }
+  .course-release-card p { margin: 0.05rem 0 0; font-size: 0.68rem; line-height: 1.25; }
+  .course-release-card .doc-badge { padding: 0.05rem 0.38rem; font-size: 0.62rem; }
+  .course-release-card .doc-file-actions { margin-top: 0.15rem; gap: 0.25rem; }
+  .course-release-card .doc-link { padding: 0.15rem 0.4rem; font-size: 0.68rem; }
+  .course-release-card.is-overdue { border-color: #fda4af; background: #fff7f8; }
+  .course-release-card .req-drop { display: block; margin-top: 0.12rem; padding: 0.12rem 0.35rem; border-radius: 0.35rem; text-align: left; }
+  .course-release-card .req-drop svg { display: none; }
+  .course-release-card .req-drop strong { display: inline; font-size: 0.68rem; }
+  .course-release-card .req-drop span { display: inline; margin: 0 0 0 0.3rem; font-size: 0.62rem; line-height: 1.2; }
+  .course-release-card .req-drop input { display: none; }
+  @media (max-width: 800px) { .doc-course-grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body class="abec-app documents-page bg-surface font-sans text-slate-800">
+<div class="flex min-h-screen">
+
+<!-- ========== SIDEBAR (BEGIN) ========== -->
+<aside class="abec-sidebar" data-purpose="main-sidebar">
+<div class="p-6 flex items-center gap-3">
+<div class="abec-brand-lockup abec-sidebar-brand">
+<div class="abec-brand-mark">
+<div class="abec-brand-logo-spin">
+<svg class="abec-brand-logo" viewBox="0 0 128 128" fill="none" role="img" aria-label="ABEC logo">
+<defs>
+<linearGradient id="sideabecCapLeft" x1="16" y1="22" x2="64" y2="74" gradientUnits="userSpaceOnUse">
+<stop stop-color="#1A3F6B"/><stop offset="1" stop-color="#0A2342"/>
+</linearGradient>
+<linearGradient id="sideabecCapRight" x1="64" y1="18" x2="112" y2="70" gradientUnits="userSpaceOnUse">
+<stop stop-color="#24507F"/><stop offset="1" stop-color="#16375F"/>
+</linearGradient>
+<linearGradient id="sideabecRibbonLeft" x1="28" y1="58" x2="64" y2="112" gradientUnits="userSpaceOnUse">
+<stop stop-color="#A32040"/><stop offset="1" stop-color="#6E1830"/>
+</linearGradient>
+<linearGradient id="sideabecRibbonRight" x1="64" y1="58" x2="100" y2="112" gradientUnits="userSpaceOnUse">
+<stop stop-color="#D4526A"/><stop offset="1" stop-color="#9B2744"/>
+</linearGradient>
+<linearGradient id="sideabecShine" x1="0" y1="0" x2="1" y2="0">
+<stop offset="0" stop-color="#FFFFFF" stop-opacity="0"/>
+<stop offset="0.45" stop-color="#E8F4FF" stop-opacity="0.15"/>
+<stop offset="0.5" stop-color="#FFFFFF" stop-opacity="0.72"/>
+<stop offset="0.55" stop-color="#D6E8F7" stop-opacity="0.15"/>
+<stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+</linearGradient>
+<clipPath id="sideabecIconClip">
+<path d="M64 20 L108 46 L64 70 L20 46 Z"/>
+<circle cx="116" cy="70" r="8"/>
+<path d="M108 44 L118 66 L114 66 L106 48 Z"/>
+<path d="M30 62 L64 108 L64 88 L40 58 Z"/>
+<path d="M98 62 L64 108 L64 88 L88 58 Z"/>
+</clipPath>
+</defs>
+<g>
+<path d="M64 20 L64 70 L20 46 Z" fill="url(#sideabecCapLeft)"/>
+<path d="M64 20 L108 46 L64 70 Z" fill="url(#sideabecCapRight)"/>
+<path d="M64 20 L96 38 L64 34 Z" fill="#2E5A88" opacity="0.35"/>
+<path d="M108 46 C110 52 114 58 116 62" stroke="#8E2340" stroke-width="3.2" stroke-linecap="round"/>
+<circle cx="116" cy="70" r="7" fill="#B02A45"/>
+<circle cx="114" cy="68" r="2.2" fill="#F4C9D2" opacity="0.7"/>
+<path d="M30 62 L64 108 L64 88 L40 58 Z" fill="url(#sideabecRibbonLeft)"/>
+<path d="M98 62 L64 108 L64 88 L88 58 Z" fill="url(#sideabecRibbonRight)"/>
+</g>
+<g clip-path="url(#sideabecIconClip)">
+<rect class="abec-icon-shine" x="-48" y="8" width="36" height="112" fill="url(#sideabecShine)"/>
+</g>
+</svg>
+</div>
+</div>
+<h1 class="abec-brand-name">ABEC</h1>
+</div>
+</div>
+<nav class="flex-1 px-3 mt-4 space-y-1 overflow-y-auto custom-scrollbar">
+<a class="abec-nav-link" href="AdminDashboard.html">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+  Dashboard
+</a>
+<a class="abec-nav-link" href="StudentsApplicants.html">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+  Students &amp; Applicants
+</a>
+<a class="abec-nav-link" href="AccountActivation.html">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+  Account Activation
+</a>
+<a class="abec-nav-link" href="CourseManagement.html">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+  Course Management
+</a>
+<a class="abec-nav-link abec-nav-link-active" href="DocumentManagement.html">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+  Document Management
+</a>
+<a class="abec-nav-link" href="Reports.html">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M8 17V10M12 17V7M16 17v-4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+  Report
+</a>
+</nav>
+<div class="abec-sidebar-footer">
+<div class="abec-profile-chip">
+<div class="w-10 h-10 rounded-full bg-white/15 text-white flex items-center justify-center text-xs font-bold shrink-0" aria-hidden="true">AD</div>
+<div class="overflow-hidden">
+<p class="text-xs font-semibold truncate">Admin</p>
+<p class="text-[10px] text-white/45">Administrator</p>
+</div>
+</div>
+<div class="space-y-1">
+<a class="abec-footer-link" href="UserSettings.html">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+  User Settings
+</a>
+<a class="abec-footer-link" href="../Home/SignOutPage.html">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+  Sign Out
+</a>
+</div>
+</div>
+</aside>
+<!-- ========== SIDEBAR (END) ========== -->
+
+<main class="abec-main min-h-screen">
+  <div class="doc-board">
+    <header class="doc-page-header" data-purpose="page-header">
+      <div class="doc-title-block">
+        <button type="button" class="doc-back" id="doc-queue-back" hidden>Back</button>
+        <div>
+          <h2 class="text-2xl md:text-3xl font-bold text-abec-blue" id="doc-page-title">Document Management</h2>
+          <p class="doc-muted" id="doc-queue-total" hidden>0 request records</p>
+        </div>
+        <span class="doc-queue-badge" id="doc-queue-screen-count" hidden>0 outstanding</span>
+      </div>
+      <div class="abec-header-actions flex items-center shrink-0 relative z-40"></div>
+    </header>
+    <div class="doc-view" id="doc-main-view">
+    <div class="doc-tabs" id="doc-tabs" role="tablist">
+      <button type="button" data-doc-tab="applicants" class="is-active" role="tab" aria-selected="true">Applicants</button>
+      <button type="button" data-doc-tab="enrolled" role="tab" aria-selected="false">Enrolled Students</button>
+      <button type="button" data-doc-tab="archived" role="tab" aria-selected="false">Archived Students</button>
+      <button type="button" class="doc-queue-btn" id="doc-open-queue">Requested Documents <span id="doc-queue-count">(0)</span></button>
+    </div>
+    <div id="doc-course-release" hidden>
+      <div class="doc-enrolled-bar">
+        <div class="doc-course-filters" id="doc-course-filters"></div>
+        <div class="doc-enrolled-controls" id="doc-enrolled-controls"></div>
+      </div>
+    </div>
+    <div class="doc-toolbar">
+      <label class="abec-search-field">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path stroke-linecap="round" d="M20 20l-3.5-3.5"/></svg>
+        <input id="doc-search" type="search" placeholder="Search" aria-label="Search records">
+      </label>
+      <span id="doc-course-wrap" hidden><select id="doc-course" aria-label="Filter by course"><option value="">All courses</option></select></span>
+      <span id="doc-status-wrap"><select id="doc-status" aria-label="Filter by status"><option value="">All statuses</option></select></span>
+      <span id="doc-requests-wrap" hidden><select id="doc-requests" aria-label="Request status"><option value="">Request status</option><option>Not Requested</option><option>Pending</option><option>Processing</option><option>On Hold</option><option>Released</option><option>Rejected</option></select></span>
+      <span id="doc-archive-wrap" hidden><select id="doc-archive" aria-label="Filter by archive reason"><option value="">All archive reasons</option></select></span>
+      <button type="button" class="doc-clear" id="doc-clear">Clear Filters</button>
+      <p class="doc-count" id="doc-count"></p>
+    </div>
+    <p id="doc-notice" class="doc-notice" hidden></p>
+    <section class="doc-table-card">
+      <div class="doc-table-scroll" id="doc-table-wrap">
+        <table class="doc-table">
+          <thead id="doc-head"></thead>
+          <tbody id="doc-body"><tr><td class="doc-empty">Loading records...</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+    </div>
+    <div class="doc-view" id="doc-queue-view" hidden>
+      <div class="doc-toolbar">
+        <label class="abec-search-field">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path stroke-linecap="round" d="M20 20l-3.5-3.5"/></svg>
+          <input id="doc-queue-search" type="search" placeholder="Search" aria-label="Search document requests">
+        </label>
+        <span><select id="doc-queue-type" aria-label="Filter by requested document"><option value="">All requestable documents</option><option>National Certificate (TESDA)</option><option>Payment Receipt</option><option>Certificate of Completion</option></select></span>
+        <span><select id="doc-queue-status" aria-label="Filter by request status"><option value="">All request statuses</option><option>Pending</option><option>Processing</option><option>On Hold</option><option>Released</option><option>Rejected</option></select></span>
+        <button type="button" class="doc-clear" id="doc-queue-clear">Clear filters</button>
+        <p class="doc-count" id="doc-queue-result"></p>
+      </div>
+      <p id="doc-queue-notice" class="doc-notice" hidden></p>
+      <section class="doc-table-card">
+        <div class="doc-table-scroll" id="doc-queue-wrap">
+          <table class="doc-table">
+            <thead><tr><th>Queue No.</th><th>Student Name</th><th>Course</th><th>Requested Document</th><th>Request Date</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody id="doc-queue-body"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </div>
+</main>
+
+<div id="doc-toast" class="doc-toast" hidden role="status"></div>
+<div id="doc-confirm" class="hidden fixed inset-0 z-[160] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="doc-confirm-title" aria-hidden="true">
+  <div class="absolute inset-0 bg-slate-900/50" data-confirm-cancel></div>
+  <div class="doc-confirm-card relative">
+    <div class="doc-confirm-icon" id="doc-confirm-icon" aria-hidden="true"></div>
+    <h3 id="doc-confirm-title">Confirm status change</h3>
+    <p id="doc-confirm-message"></p>
+    <dl class="doc-confirm-facts">
+      <div><dt>Document</dt><dd id="doc-confirm-doc"></dd></div>
+      <div><dt>Student</dt><dd id="doc-confirm-student"></dd></div>
+      <div><dt>Status change</dt><dd id="doc-confirm-flow"></dd></div>
+    </dl>
+    <label class="doc-confirm-hold" id="doc-confirm-hold-wrap" hidden>
+      <span>Hold reason</span>
+      <input id="doc-confirm-hold" type="text" maxlength="500" placeholder="Optional. Blank uses Awaiting resolution.">
+    </label>
+    <div class="doc-confirm-actions">
+      <button type="button" class="doc-link" id="doc-confirm-cancel">Cancel</button>
+      <button type="button" id="doc-confirm-ok">Confirm</button>
+    </div>
+  </div>
+</div>
+<div id="doc-request-modal" class="hidden fixed inset-0 z-[140] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="doc-request-title">
+  <div class="absolute inset-0 bg-slate-900/45" data-request-close></div>
+  <div class="doc-modal-card doc-request-card relative">
+    <div class="doc-modal-head">
+      <h3 id="doc-request-title">Request review</h3>
+      <button type="button" class="doc-link" data-request-close>Close</button>
+    </div>
+    <div class="doc-modal-body" id="doc-request-body"></div>
+  </div>
+</div>
+
+<div id="doc-modal" class="hidden fixed inset-0 z-[120] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="doc-modal-title">
+  <div class="absolute inset-0 bg-slate-900/40" data-doc-close></div>
+  <div class="doc-modal-card relative">
+    <div class="doc-modal-head">
+      <div class="doc-modal-identity">
+        <h3 id="doc-modal-title">Student record</h3>
+        <p id="doc-modal-course" class="doc-modal-course" hidden></p>
+      </div>
+      <button type="button" class="doc-link" data-doc-close>Close</button>
+    </div>
+    <div class="doc-modal-body" id="doc-modal-body"></div>
+  </div>
+</div>
+
+<script src="../../wwwroot/js/sidebar-auto-hide.js"></script>
+<script src="../../wwwroot/js/abec-api.js?v=20261031ux1"></script>
+<script src="../../wwwroot/js/abec-other-reason.js"></script>
+<script src="../../wwwroot/js/abec-admin.js?v=20261105icons1"></script>
+<script src="../../wwwroot/js/abec-documents.js?v=20261106courses1"></script>
+</body>
+</html>

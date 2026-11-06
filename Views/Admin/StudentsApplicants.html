@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Students &amp; Applicants - ABEC Admin</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="../../wwwroot/css/abec-ui.css?v=20261105icons1" rel="stylesheet"/>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: { sans: ['Inter', 'Plus Jakarta Sans', 'sans-serif'] },
+        colors: {
+          'abec-navy': '#0B1F3A',
+          'abec-blue': '#2563EB',
+          'surface': '#F5F9FF'
+        }
+      }
+    }
+  }
+</script>
+<style>
+  .records-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 0.65rem; }
+  .records-search { position: relative; width: min(18rem, 100%); }
+  .records-search svg { position: absolute; left: 0.75rem; top: 50%; width: 1rem; height: 1rem; transform: translateY(-50%); color: #94a3b8; }
+  .records-search input, .records-select, .records-btn {
+    height: 2.4rem; border-radius: 999px; border: 1px solid #dbe4ef; background: #fff; color: #17324f; font-size: 0.8rem;
+  }
+  .records-search input { width: 100%; padding: 0 0.9rem 0 2.2rem; }
+  .records-search input:focus, .records-select:focus, .records-btn:focus-visible {
+    outline: none; border-color: #93c5fd; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+  }
+  .records-select { padding: 0 0.8rem; }
+  .records-btn {
+    display: inline-flex; align-items: center; justify-content: center; padding: 0 0.95rem; font-weight: 700; cursor: pointer; text-decoration: none;
+  }
+  .records-btn { background: #2563eb; color: #fff; border-color: #2563eb; }
+  .records-btn-muted { background: #fff; color: #334155; border-color: #dbe4ef; }
+  .records-btn-muted:hover { background: #f8fbff; }
+  .records-page #abec-profile-menu { display: none !important; }
+  .records-toolbar .abec-header-actions { margin: 0; gap: 0; }
+  body.records-page .abec-main > header {
+    position: relative;
+    z-index: 30;
+    overflow: visible;
+    transform: none;
+  }
+  body.records-page .records-toolbar,
+  body.records-page .abec-header-actions,
+  body.records-page #abec-admin-bell {
+    position: relative;
+    overflow: visible;
+  }
+  body.records-page .abec-notif-panel {
+    max-height: calc(100dvh - 120px);
+  }
+  body.records-page .abec-notif-list {
+    min-height: 0;
+    flex: 1 1 auto;
+    max-height: none;
+    overflow-y: auto;
+  }
+  .page-overview { display: flex; flex-direction: column; gap: 0.55rem; margin-bottom: 0.7rem; }
+  .overview-label { margin: 0; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #64748b; }
+  .slot-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.5rem; }
+  #slot-overview-grid .slot-card { padding: 0.7rem 0.8rem !important; }
+  #slot-overview-grid .slot-card .text-2xl { font-size: 1.2rem; line-height: 1.15; }
+  .summary-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 0.5rem; margin: 0; }
+  .board-head { padding: 0.7rem 1rem 0.35rem; }
+  .board-tools { padding: 0.35rem 1rem 0.15rem; }
+  .board-tool-row { display: flex; align-items: center; gap: 0.65rem; }
+  .board-tool-row .records-search { flex: 1 1 14rem; width: auto; min-width: 0; max-width: none; }
+  .filter-by { display: flex; align-items: center; gap: 0.45rem; flex: 0 1 auto; min-width: 0; }
+  .filter-by-label { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #64748b; white-space: nowrap; }
+  .filter-field { display: flex; align-items: center; gap: 0.35rem; height: 2.4rem; padding: 0 0.15rem 0 0.7rem; border: 1px solid #dbe4ef; border-radius: 999px; background: #fff; }
+  .filter-field span { font-size: 0.68rem; font-weight: 700; color: #64748b; white-space: nowrap; }
+  .filter-field select { height: 2.05rem; border: 0; background: transparent; color: #17324f; font-size: 0.8rem; font-weight: 600; max-width: 16rem; padding: 0 1.35rem 0 0; }
+  .filter-field select:focus { outline: none; }
+  .summary-card { min-height: 3.45rem; padding: 0.5rem 0.7rem; border-radius: 0.8rem; background: #fff; border: 1px solid #e6eef7; box-shadow: 0 6px 14px rgba(15, 39, 71, 0.04); }
+  .summary-card p { margin: 0; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #64748b; }
+  .summary-card strong { display: block; margin-top: 0.18rem; font-size: 1.15rem; line-height: 1; color: #0b2747; }
+  .records-tab-row { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap; }
+  .records-tabs { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; }
+  .add-applicant-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem;
+    margin-left: auto; height: 2.15rem; padding: 0 0.9rem; border: 0; border-radius: 0.65rem;
+    background: #2563EB; color: #fff; font-size: 0.78rem; font-weight: 700; line-height: 1;
+    cursor: pointer; white-space: nowrap; box-shadow: 0 8px 16px rgba(37, 99, 235, 0.18);
+  }
+  .add-applicant-btn svg { width: 0.95rem; height: 0.95rem; }
+  .add-applicant-btn:hover { background: #1d4ed8; }
+  .add-applicant-btn:focus-visible { outline: 2px solid #93c5fd; outline-offset: 2px; }
+  .add-applicant-btn:disabled { opacity: 0.7; cursor: wait; }
+  .add-applicant-btn.is-hidden { display: none !important; }
+  body.records-page #enroll-modal { z-index: 140; }
+  body.records-page #enroll-close-confirm { z-index: 160; }
+  body.records-page #enroll-modal .modal-card {
+    width: min(920px, calc(100vw - 2rem));
+    max-width: 920px;
+    max-height: 88dvh;
+  }
+  #admin-registration-host .admin-enroll-close {
+    position: absolute; top: 0.7rem; right: 0.7rem; z-index: 5;
+    width: 2rem; height: 2rem; border: 1px solid #d7e4f4; border-radius: 999px;
+    background: #fff; color: #0B2747; font-size: 1.25rem; line-height: 1; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center; padding: 0;
+  }
+  #admin-registration-host .admin-enroll-close:hover { background: #0B2747; color: #fff; border-color: #0B2747; }
+  .records-tabs button { border: 0; background: transparent; border-radius: 999px; padding: 0.45rem 0.8rem; font-size: 0.78rem; font-weight: 700; color: #475569; cursor: pointer; }
+  .records-tabs button.is-active { background: #e8f1ff; color: #1d4ed8; }
+  .records-tabs button:focus-visible { outline: 2px solid #93c5fd; outline-offset: 2px; }
+  .records-table-wrap { overflow-x: auto; }
+  .records-table { width: 100%; min-width: 760px; border-collapse: collapse; }
+  .records-table th { text-align: left; font-size: 0.68rem; letter-spacing: 0.05em; text-transform: uppercase; color: #64748b; padding: 0.75rem 1rem; border-bottom: 1px solid #e8eef6; }
+  .records-table td { border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+  .records-row:hover { background: #f8fbff; }
+  .records-contact { display: flex; flex-direction: column; gap: 0.22rem; max-width: 16rem; min-width: 9.5rem; }
+  .records-contact span { display: flex; align-items: flex-start; gap: 0.35rem; min-width: 0; line-height: 1.35; }
+  .records-contact svg { flex: 0 0 auto; width: 0.85rem; height: 0.85rem; margin-top: 0.12rem; color: #64748b; }
+  .records-contact em { font-style: normal; overflow-wrap: anywhere; word-break: break-word; }
+  .records-pager { display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; font-size: 0.75rem; color: #64748b; }
+  .records-pager-actions { display: flex; gap: 0.4rem; }
+  .records-pager button { border: 1px solid #dbe4ef; background: #fff; border-radius: 999px; padding: 0.35rem 0.7rem; font-size: 0.75rem; font-weight: 700; cursor: pointer; }
+  .records-pager button:disabled { opacity: 0.45; cursor: not-allowed; }
+  .records-message { margin-bottom: 0.8rem; padding: 0.7rem 0.85rem; border-radius: 0.8rem; font-size: 0.8rem; }
+  .records-message.ok { background: #ecfdf5; color: #047857; }
+  .records-message.error { background: #fff1f2; color: #be123c; }
+  .records-message.info { background: #eff6ff; color: #1d4ed8; }
+  .record-modal { position: fixed; inset: 0; z-index: 60; background: rgba(11, 31, 58, 0.45); display: flex; align-items: center; justify-content: center; padding: 1rem; }
+  .record-modal.hidden { display: none; }
+  .record-panel { width: min(32rem, calc(100vw - 2rem)); max-height: min(85vh, 40rem); overflow: auto; background: #fff; border-radius: 1rem; padding: 1.15rem 1.2rem 1.25rem; box-shadow: 0 20px 40px rgba(15, 39, 71, 0.18); }
+  .records-row { cursor: pointer; }
+  .records-row:hover { background: #f3f7ff; }
+  body.records-page .profile-modal {
+    position: relative;
+    width: min(1000px, calc(100vw - 2rem)) !important;
+    max-width: 1000px;
+    max-height: 88dvh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 0;
+    background: #f4f8fd !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 1px solid #c9dbf2 !important;
+    border-radius: 1rem !important;
+    box-shadow: 0 24px 50px rgba(11, 39, 71, 0.22) !important;
+  }
+  .profile-close {
+    position: absolute; top: 0.72rem; right: 0.72rem; z-index: 4;
+    width: 1.75rem; height: 1.75rem; border: 0; border-radius: 999px;
+    background: rgba(255, 255, 255, 0.16); color: #fff; font-size: 1.15rem; line-height: 1; cursor: pointer;
+  }
+  .profile-close:hover { background: rgba(255, 255, 255, 0.28); }
+  .profile-modal-body { overflow: hidden; display: flex; flex-direction: column; min-height: 0; flex: 1 1 auto; background: #f4f8fd; }
+  .profile-sheet { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
+  .profile-modal-actions, .profile-actions, .profile-edit-actions {
+    display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 0.45rem;
+    padding: 0.65rem 1rem; background: #fff; border-top: 1px solid #d7e4f5;
+  }
+  .profile-modal-actions.is-suppressed, .profile-actions.is-suppressed { display: none !important; }
+  .profile-actions, .profile-edit-actions { flex: 0 0 auto; }
+  .profile-edit-actions { position: sticky; bottom: 0; z-index: 2; margin: 0.4rem -0.8rem -0.4rem; }
+  .profile-head {
+    position: sticky; top: 0; z-index: 3;
+    display: flex; align-items: center; flex-wrap: wrap; gap: 0.75rem;
+    padding: 0.85rem 2.8rem 0.85rem 1rem;
+    background: linear-gradient(115deg, #0B2747 0%, #1e4f9c 58%, #2563EB 100%);
+    color: #fff;
+  }
+  .profile-avatar { width: 2.5rem; height: 2.5rem; border-radius: 999px; display: flex; align-items: center; justify-content: center; font-size: 0.78rem; font-weight: 700; flex: 0 0 auto; background: rgba(255,255,255,0.16); color: #fff; border: 1px solid rgba(255,255,255,0.35); }
+  .profile-head-copy { min-width: 0; flex: 1 1 auto; }
+  .profile-head-copy h3 { margin: 0; font-size: 1.05rem; line-height: 1.25; font-weight: 700; color: #fff; overflow-wrap: anywhere; }
+  .profile-head-copy p { margin: 0.12rem 0 0; font-size: 0.75rem; line-height: 1.3; color: rgba(255,255,255,0.82); overflow-wrap: anywhere; }
+  .profile-statuses { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.38rem; }
+  .profile-standing, .profile-application { display: inline-flex; align-items: center; padding: 0.12rem 0.5rem; border-radius: 999px; font-size: 0.68rem; font-weight: 700; line-height: 1.3; }
+  .profile-standing.is-applicant, .profile-application.is-pending { background: #fef3c7; color: #b45309; }
+  .profile-standing.is-enrolled, .profile-application.is-approved, .profile-application.is-confirmed { background: #d1fae5; color: #047857; }
+  .profile-standing.is-archived { background: #e2e8f0; color: #475569; }
+  .profile-application.is-rejected, .profile-application.is-declined { background: #fee2e2; color: #b91c1c; }
+  .profile-application.is-waitlisted { background: #e2e8f0; color: #475569; }
+  .profile-application.is-expired { background: #ffe4e6; color: #be123c; }
+  .profile-edit-btn {
+    margin-left: auto; height: 1.9rem; padding: 0 0.75rem; border: 0; border-radius: 0.55rem;
+    background: #fff; color: #0B2747; font-size: 0.75rem; font-weight: 700; cursor: pointer; white-space: nowrap;
+  }
+  .profile-edit-btn:hover { background: #e8f1ff; }
+  .profile-body { overflow: auto; flex: 1 1 auto; min-height: 0; padding: 0.75rem 0.9rem 0.85rem; display: flex; flex-direction: column; gap: 0.65rem; }
+  .profile-edit { display: flex; flex-direction: column; gap: 0.65rem; }
+  .profile-section { margin: 0; padding: 0.72rem 0.8rem 0.78rem; border-radius: 0.8rem; border: 1px solid transparent; box-shadow: 0 8px 18px rgba(15, 39, 71, 0.05); }
+  .profile-section.is-person { background: #eef4ff; border-color: #d5e4fb; }
+  .profile-section.is-contact { background: #f3f7ff; border-color: #d9e6f8; }
+  .profile-section.is-address { background: #f1fbf6; border-color: #d3f0e2; }
+  .profile-section.is-education { background: #f6f3ff; border-color: #e4def8; }
+  .profile-section.is-training { background: #fff8ef; border-color: #f8e6cc; }
+  .profile-section.is-documents { background: #f7fbff; border-color: #d9e7f7; }
+  .profile-section h4, .profile-subhead, .profile-release h5 { display: flex; align-items: center; gap: 0.4rem; margin: 0 0 0.6rem; font-size: 0.84rem; font-weight: 700; color: #0B2747; }
+  .profile-section-icon { width: 1rem; height: 1rem; color: #2563EB; flex: 0 0 auto; }
+  .profile-section.is-address .profile-section-icon { color: #059669; }
+  .profile-section.is-education .profile-section-icon { color: #7c3aed; }
+  .profile-section.is-training .profile-section-icon { color: #d97706; }
+  .profile-subhead { margin-top: 0.75rem; font-size: 0.75rem; color: #1e3a5f; }
+  .profile-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.55rem 1rem; margin: 0; }
+  .profile-field { min-width: 0; }
+  .profile-field dt, .profile-edit label { margin: 0; font-size: 0.68rem; font-weight: 650; color: #5b6f88; }
+  .profile-field dd { margin: 0.1rem 0 0; font-size: 0.86rem; line-height: 1.35; font-weight: 650; color: #0f2744; overflow-wrap: anywhere; }
+  .profile-edit label { display: flex; flex-direction: column; gap: 0.22rem; min-width: 0; }
+  .profile-edit input, .profile-edit select { width: 100%; height: 2.15rem; border: 1px solid #d3e2f3; border-radius: 0.55rem; background: #fff; color: #0f2744; font-size: 0.82rem; padding: 0 0.6rem; }
+  .profile-edit input:focus, .profile-edit select:focus { outline: none; border-color: #60a5fa; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15); }
+  .profile-edit-note { margin: 0.55rem 0 0; font-size: 0.72rem; color: #64748b; }
+  .profile-edit-message { display: none; margin: 0; padding: 0.5rem 0.65rem; border-radius: 0.55rem; font-size: 0.78rem; }
+  .profile-edit-message.is-error { display: block; background: #fff1f2; color: #be123c; }
+  .profile-edit-message.is-info { display: block; background: #eff6ff; color: #1d4ed8; }
+  .profile-doc { display: grid; grid-template-columns: 1.35rem minmax(0, 1fr) auto auto; align-items: center; gap: 0.5rem; margin: 0 0 0.4rem; padding: 0.45rem 0.55rem; border-radius: 0.65rem; border: 1px solid #d9e7f7; background: #fff; }
+  .profile-doc.is-submitted { background: #f0fdf4; border-color: #bbf7d0; }
+  .profile-doc.is-missing { background: #fffbeb; border-color: #fde68a; }
+  .profile-doc-icon { width: 1.2rem; height: 1.2rem; color: #2563EB; }
+  .profile-doc.is-submitted .profile-doc-icon { color: #059669; }
+  .profile-doc.is-missing .profile-doc-icon { color: #d97706; }
+  .profile-doc-name { margin: 0; font-size: 0.8rem; font-weight: 700; color: #0f2744; overflow-wrap: anywhere; }
+  .profile-doc-meta { margin: 0.05rem 0 0; font-size: 0.7rem; line-height: 1.3; color: #64748b; overflow-wrap: anywhere; }
+  .profile-doc-badge { display: inline-flex; align-items: center; padding: 0.1rem 0.42rem; border-radius: 999px; font-size: 0.64rem; font-weight: 700; white-space: nowrap; }
+  .profile-doc-badge.is-submitted { background: #d1fae5; color: #047857; }
+  .profile-doc-badge.is-missing { background: #fef3c7; color: #b45309; }
+  .profile-doc-link, .profile-modal .modal-action-btn, .profile-actions .records-btn, .profile-edit-actions .records-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem;
+    width: auto; height: 1.9rem; padding: 0 0.75rem; border-radius: 0.55rem;
+    font-size: 0.75rem; font-weight: 700; line-height: 1; text-decoration: none; cursor: pointer; white-space: nowrap;
+  }
+  .profile-doc-link { border: 1px solid #bfdbfe; background: #fff; color: #1d4ed8; }
+  .profile-doc-link:hover { background: #eff6ff; }
+  .profile-modal .modal-action-btn.hidden, .profile-modal-actions.hidden { display: none !important; }
+  .profile-modal .modal-action-btn, .profile-actions .records-btn, .profile-edit-actions .records-btn { border: 1px solid #2563EB; background: #2563EB; color: #fff; }
+  .profile-modal .modal-action-btn svg { width: 0.95rem; height: 0.95rem; }
+  .profile-modal .modal-action-btn[data-action="waitlist"],
+  .profile-modal .modal-action-btn[data-action="add-slot"],
+  .profile-actions .records-btn-muted,
+  .profile-edit-actions .records-btn-muted { background: #fff; color: #1e3a5f; border-color: #d7e4f4; }
+  .profile-modal .modal-action-btn[data-action="reject"] { background: #fff; color: #b91c1c; border-color: #fecaca; }
+  .profile-release { margin-top: 0.65rem; }
+  .profile-release ul { list-style: none; margin: 0; padding: 0; }
+  .profile-release li { display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; padding: 0.35rem 0; font-size: 0.8rem; color: #0f2744; }
+  .profile-loading { margin: 1rem; font-size: 0.84rem; color: #64748b; }
+  .records-name { color: #0B2747; font-weight: 700; }
+  @media (max-width: 720px) {
+    .profile-grid, .profile-doc { grid-template-columns: 1fr; }
+    .profile-doc { align-items: start; }
+    .profile-head { align-items: flex-start; }
+    .profile-edit-btn { margin-left: 0; }
+    .profile-modal-actions .modal-action-btn, .profile-actions .records-btn, .profile-edit-actions .records-btn {
+      flex: 0 1 auto;
+      max-width: 100%;
+      white-space: normal;
+      height: auto;
+      min-height: 1.9rem;
+      text-align: center;
+    }
+  }
+  @media (max-width: 1100px) { .summary-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  @media (max-width: 720px) { .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .records-toolbar { justify-content: stretch; } .records-search, .records-select { width: 100%; } }
+  .status-pill {
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+  .status-pill.active {
+    background-color: #0B2747;
+    color: #ffffff;
+  }
+  .applicant-card {
+    cursor: pointer;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+  }
+  .applicant-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px -8px rgba(0, 26, 51, 0.18);
+  }
+  @keyframes modal-pop {
+    from { opacity: 0; transform: scale(0.96) translateY(10px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+  .applicant-modal-card {
+    animation: modal-pop 0.3s ease;
+  }
+  .slot-card {
+    transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.2s ease;
+    cursor: pointer;
+    border: 1px solid #e2e8f0;
+  }
+  .slot-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 22px -10px rgba(0, 26, 51, 0.18);
+  }
+  .slot-card.is-active {
+    border-color: #2563EB;
+    box-shadow: 0 0 0 2px rgba(26, 75, 122, 0.18);
+  }
+  body.records-page #slot-overview-grid .slot-card.is-active,
+  body.records-page #slot-overview-grid .slot-card.is-active:hover,
+  body.records-page #slot-overview-grid .slot-card.is-active:focus,
+  body.records-page #slot-overview-grid .slot-card.is-active:focus-visible,
+  body.records-page #slot-overview-grid .slot-card.is-active:active {
+    background-color: #0B2747 !important;
+    background-image: linear-gradient(135deg, #0B2747, #2563EB) !important;
+    color: #fff !important;
+    border-color: rgba(255, 255, 255, 0.22) !important;
+    box-shadow: 0 12px 32px rgba(11, 39, 71, 0.18) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  #slot-overview-grid .slot-card.is-active .slot-available,
+  #slot-overview-grid .slot-card.is-active p {
+    color: #ffffff !important;
+  }
+  #slot-overview-grid .slot-card.is-active .slot-progress {
+    background: rgba(255, 255, 255, 0.28);
+  }
+  #slot-overview-grid .slot-card.is-active .slot-progress > span,
+  #slot-overview-grid .slot-card.is-full.is-active .slot-progress > span {
+    background: #93c5fd;
+  }
+  .slot-card.is-full .slot-available {
+    color: #b45309;
+  }
+  .slot-progress {
+    height: 4px;
+    border-radius: 999px;
+    background: #e8eef5;
+    overflow: hidden;
+  }
+  .slot-progress > span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #2563EB, #2f6ea3);
+    transition: width 0.35s ease;
+  }
+  .slot-card.is-full .slot-progress > span {
+    background: linear-gradient(90deg, #b45309, #d97706);
+  }
+  .course-filter-shell {
+    display: inline-flex;
+    align-items: stretch;
+    border: 1px solid #dbe3ee;
+    border-radius: 14px;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(11, 31, 58, 0.04);
+    overflow: hidden;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  .course-filter-shell:hover,
+  .course-filter-shell:focus-within {
+    border-color: rgba(26, 75, 122, 0.45);
+    box-shadow: 0 0 0 3px rgba(26, 75, 122, 0.08);
+  }
+  .course-filter-shell .filter-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.75rem;
+    background: #f4f7fb;
+    color: #2563EB;
+    border-right: 1px solid #e8eef5;
+  }
+  .course-filter-shell .filter-body {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 0.45rem 0.85rem 0.45rem 0.75rem;
+    min-width: 0;
+  }
+  .course-filter-shell select {
+    appearance: none;
+    -webkit-appearance: none;
+    border: 0;
+    background-color: transparent;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2164748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0 center;
+    background-size: 1rem;
+    padding: 0.15rem 1.35rem 0 0;
+    margin: 0;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #0B1F3A;
+    line-height: 1.25;
+    min-width: 12rem;
+    max-width: 18rem;
+    cursor: pointer;
+  }
+  .course-filter-shell select:focus {
+    outline: none;
+    box-shadow: none;
+  }
+  .applicant-card.selected {
+    border-color: #2563EB;
+    box-shadow: 0 0 0 2px rgba(0, 51, 102, 0.2);
+  }
+  .applicant-card.page-off {
+    display: none;
+  }
+  .select-checkbox {
+    display: none;
+  }
+  body.selection-mode .applicant-card:not(.hidden) .select-checkbox {
+    display: flex;
+  }
+  #review-panel { padding: 0.45rem 1.1rem 1.1rem; }
+  .records-toolbar .records-search.hidden,
+  #applicant-tools.hidden,
+  #records-tools.hidden,
+  #review-panel.hidden,
+  #records-panel.hidden { display: none; }
+  @media (max-width: 1100px) { .slot-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .course-state { display: none !important; }
+  @media (max-width: 860px) {
+    .board-tool-row { flex-wrap: wrap; align-items: center; }
+    .board-tool-row .records-search { flex-basis: 100%; width: 100%; }
+    .filter-by { flex: 0 1 auto; width: auto; }
+  }
+
+</style>
+</head>
+<body class="abec-app records-page bg-surface font-sans text-slate-800">
+<div class="flex min-h-screen">
+<aside class="abec-sidebar" data-purpose="main-sidebar">
+<div class="p-6 flex items-center gap-3">
+<div class="abec-brand-lockup abec-sidebar-brand">
+<div class="abec-brand-mark">
+<div class="abec-brand-logo-spin">
+<svg class="abec-brand-logo" viewBox="0 0 128 128" fill="none" role="img" aria-label="ABEC logo">
+<defs>
+<linearGradient id="sideabecCapLeft" x1="16" y1="22" x2="64" y2="74" gradientUnits="userSpaceOnUse">
+<stop stop-color="#1A3F6B"/><stop offset="1" stop-color="#0A2342"/>
+</linearGradient>
+<linearGradient id="sideabecCapRight" x1="64" y1="18" x2="112" y2="70" gradientUnits="userSpaceOnUse">
+<stop stop-color="#24507F"/><stop offset="1" stop-color="#16375F"/>
+</linearGradient>
+<linearGradient id="sideabecRibbonLeft" x1="28" y1="58" x2="64" y2="112" gradientUnits="userSpaceOnUse">
+<stop stop-color="#A32040"/><stop offset="1" stop-color="#6E1830"/>
+</linearGradient>
+<linearGradient id="sideabecRibbonRight" x1="64" y1="58" x2="100" y2="112" gradientUnits="userSpaceOnUse">
+<stop stop-color="#D4526A"/><stop offset="1" stop-color="#9B2744"/>
+</linearGradient>
+<linearGradient id="sideabecShine" x1="0" y1="0" x2="1" y2="0">
+<stop offset="0" stop-color="#FFFFFF" stop-opacity="0"/>
+<stop offset="0.45" stop-color="#E8F4FF" stop-opacity="0.15"/>
+<stop offset="0.5" stop-color="#FFFFFF" stop-opacity="0.72"/>
+<stop offset="0.55" stop-color="#D6E8F7" stop-opacity="0.15"/>
+<stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+</linearGradient>
+<clipPath id="sideabecIconClip">
+<path d="M64 20 L108 46 L64 70 L20 46 Z"/>
+<circle cx="116" cy="70" r="8"/>
+<path d="M108 44 L118 66 L114 66 L106 48 Z"/>
+<path d="M30 62 L64 108 L64 88 L40 58 Z"/>
+<path d="M98 62 L64 108 L64 88 L88 58 Z"/>
+</clipPath>
+</defs>
+<g>
+<path d="M64 20 L64 70 L20 46 Z" fill="url(#sideabecCapLeft)"/>
+<path d="M64 20 L108 46 L64 70 Z" fill="url(#sideabecCapRight)"/>
+<path d="M64 20 L96 38 L64 34 Z" fill="#2E5A88" opacity="0.35"/>
+<path d="M108 46 C110 52 114 58 116 62" stroke="#8E2340" stroke-width="3.2" stroke-linecap="round"/>
+<circle cx="116" cy="70" r="7" fill="#B02A45"/>
+<circle cx="114" cy="68" r="2.2" fill="#F4C9D2" opacity="0.7"/>
+<path d="M30 62 L64 108 L64 88 L40 58 Z" fill="url(#sideabecRibbonLeft)"/>
+<path d="M98 62 L64 108 L64 88 L88 58 Z" fill="url(#sideabecRibbonRight)"/>
+</g>
+<g clip-path="url(#sideabecIconClip)">
+<rect class="abec-icon-shine" x="-48" y="8" width="36" height="112" fill="url(#sideabecShine)"/>
+</g>
+</svg>
+</div>
+</div>
+<h1 class="abec-brand-name">ABEC</h1>
+</div>
+</div>
+<nav class="flex-1 px-3 mt-4 space-y-1 overflow-y-auto custom-scrollbar">
+<a class="abec-nav-link" href="AdminDashboard.html">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+  Dashboard
+</a>
+<a class="abec-nav-link abec-nav-link-active" href="StudentsApplicants.html">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+  Students &amp; Applicants
+</a>
+<a class="abec-nav-link" href="AccountActivation.html">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+  Account Activation
+</a>
+<a class="abec-nav-link" href="CourseManagement.html">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+  Course Management
+</a>
+<a class="abec-nav-link" href="DocumentManagement.html">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+  Document Management
+</a>
+<a class="abec-nav-link" href="Reports.html">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M8 17V10M12 17V7M16 17v-4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+  Report
+</a>
+</nav>
+<div class="abec-sidebar-footer">
+<div class="abec-profile-chip">
+<div class="w-10 h-10 rounded-full bg-white/15 text-white flex items-center justify-center text-xs font-bold shrink-0" aria-hidden="true">AD</div>
+<div class="overflow-hidden">
+<p class="text-xs font-semibold truncate">Admin</p>
+<p class="text-[10px] text-white/45">Administrator</p>
+</div>
+</div>
+<div class="space-y-1">
+<a class="abec-footer-link" href="UserSettings.html">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+  User Settings
+</a>
+<a class="abec-footer-link" href="../Home/SignOutPage.html">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+  Sign Out
+</a>
+</div>
+</div>
+</aside>
+<main class="abec-main">
+<header class="mb-3 flex flex-wrap items-center justify-between gap-3" data-purpose="page-header">
+  <div class="min-w-0">
+    <h2 class="text-xl font-bold text-abec-navy">Students &amp; Applicants</h2>
+    <p class="text-xs text-slate-500 mt-0.5 max-w-2xl">Manage applicant registrations, enrollment records, and student information in one place.</p>
+  </div>
+  <div class="records-toolbar">
+    <div class="abec-header-actions flex items-center shrink-0 relative z-40"></div>
+  </div>
+</header>
+<p id="records-message" class="records-message hidden" role="status"></p>
+<section class="page-overview">
+  <div data-purpose="quick-overview">
+    <p class="overview-label">Quick Overview</p>
+    <div id="slot-overview-grid" class="slot-grid">
+      <div class="slot-card abec-card abec-card-static p-5 text-slate-400 text-sm">Loading course slots…</div>
+    </div>
+  </div>
+  <section class="summary-grid" aria-label="Record summary">
+    <article class="summary-card"><p>Total Records</p><strong data-summary="total">0</strong></article>
+    <article class="summary-card"><p>Total Applicants</p><strong data-summary="applicants">0</strong></article>
+    <article class="summary-card"><p>Pending Applications</p><strong data-summary="pending">0</strong></article>
+    <article class="summary-card"><p>Approved Applications</p><strong data-summary="approved">0</strong></article>
+    <article class="summary-card"><p>Enrolled Students</p><strong data-summary="enrolled">0</strong></article>
+    <article class="summary-card"><p>Rejected Applications</p><strong data-summary="rejected">0</strong></article>
+  </section>
+</section>
+<section class="abec-card abec-card-static" id="records-board">
+  <div class="board-head">
+    <div class="records-tab-row">
+      <div id="records-tabs" class="records-tabs" role="tablist" aria-label="Record categories">
+        <button type="button" data-tab="applicants" class="is-active" role="tab" aria-selected="true">Applicants</button>
+        <button type="button" data-tab="enrolled" role="tab" aria-selected="false">Enrolled Students</button>
+        <button type="button" data-tab="archived" role="tab" aria-selected="false">Archived Records</button>
+      </div>
+      <button type="button" id="add-applicant-btn" class="add-applicant-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-width="2.2" d="M12 5v14M5 12h14"/></svg>
+        Add New Applicant
+      </button>
+    </div>
+  </div>
+  <div class="board-tools">
+    <select id="course-filter" class="course-state" hidden aria-hidden="true" tabindex="-1"><option value="all">All Courses</option></select>
+    <select id="records-course" class="course-state" hidden aria-hidden="true" tabindex="-1"><option value="all">All courses</option></select>
+    <div id="applicant-tools" class="board-tool-row">
+      <form class="records-search" role="search" onsubmit="return false;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path stroke-linecap="round" d="M20 20l-3.5-3.5"/></svg>
+        <input id="applicant-search" type="search" placeholder="Search" aria-label="Search applicants" oninput="applicantPage = 1; filterApplicants()">
+      </form>
+      <div class="filter-by" aria-label="Filter by">
+        <span class="filter-by-label">Filter By</span>
+        <label class="filter-field">
+          <span>Sort</span>
+          <select id="applicant-sort" aria-label="Sort applicants" onchange="applicantPage = 1; filterApplicants()">
+            <option value="newest">Newest</option>
+            <option value="oldest">Oldest</option>
+            <option value="name">Name</option>
+            <option value="course">Course</option>
+            <option value="status">Status</option>
+          </select>
+        </label>
+      </div>
+    </div>
+    <div id="records-tools" class="board-tool-row hidden">
+      <form class="records-search" role="search" onsubmit="return false;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path stroke-linecap="round" d="M20 20l-3.5-3.5"/></svg>
+        <input id="records-search" type="search" placeholder="Search" aria-label="Search records">
+      </form>
+      <div class="filter-by" aria-label="Filter student records">
+        <span class="filter-by-label">Filter By</span>
+        <label class="filter-field">
+          <span>Sort</span>
+          <select id="records-sort" aria-label="Sort records">
+            <option value="date-desc">Newest</option>
+            <option value="date-asc">Oldest</option>
+            <option value="name">Name</option>
+            <option value="course">Course</option>
+            <option value="status">Status</option>
+          </select>
+        </label>
+      </div>
+    </div>
+  </div>
+  <div id="review-panel">
+<section class="mb-4 space-y-3" data-purpose="applicant-filters">
+<div class="flex flex-wrap gap-2" id="status-filters">
+<button type="button" class="status-pill active text-xs font-semibold px-4 py-1.5 rounded-full bg-slate-100 text-slate-600" data-status="all" onclick="setStatusFilter(this)">All</button>
+<button type="button" class="status-pill text-xs font-semibold px-4 py-1.5 rounded-full bg-slate-100 text-slate-600" data-status="pending" onclick="setStatusFilter(this)">Pending</button>
+<button type="button" class="status-pill text-xs font-semibold px-4 py-1.5 rounded-full bg-slate-100 text-slate-600" data-status="waitlisted" onclick="setStatusFilter(this)">Waitlisted</button>
+<button type="button" class="status-pill text-xs font-semibold px-4 py-1.5 rounded-full bg-slate-100 text-slate-600" data-status="approved" onclick="setStatusFilter(this)">Approved</button>
+<button type="button" class="status-pill text-xs font-semibold px-4 py-1.5 rounded-full bg-slate-100 text-slate-600" data-status="rejected" onclick="setStatusFilter(this)">Rejected</button>
+</div>
+
+<!-- Multi-select toolbar (hidden on All tab) -->
+<div id="select-toolbar" class="hidden flex flex-wrap items-center justify-between gap-3 pt-1">
+  <div class="flex items-center gap-2">
+    <button id="btn-select-mode" type="button" onclick="toggleSelectionMode()" class="text-xs font-bold text-abec-blue border border-abec-blue px-4 py-2 rounded-md hover:bg-abec-blue hover:text-white transition-colors">
+      Select
+    </button>
+    <button id="btn-cancel-select" type="button" onclick="exitSelectionMode()" class="hidden text-xs font-bold text-slate-500 border border-slate-300 px-4 py-2 rounded-md hover:bg-slate-100 transition-colors">
+      Cancel
+    </button>
+    <span id="selected-count" class="hidden text-xs text-slate-500 font-medium">0 selected</span>
+  </div>
+  <div id="bulk-actions" class="hidden flex flex-wrap items-center gap-2">
+    <button type="button" data-bulk="approve" onclick="bulkUpdateStatus('approved')" class="bulk-action-btn hidden text-xs font-bold bg-abec-navy hover:bg-[#2563EB] text-white px-4 py-2 rounded-md transition-colors">Approve Selected</button>
+    <button type="button" data-bulk="waitlist" onclick="bulkUpdateStatus('waitlisted')" class="bulk-action-btn hidden text-xs font-bold bg-abec-navy hover:bg-[#2563EB] text-white px-4 py-2 rounded-md transition-colors">Add to Waitlisted</button>
+    <button type="button" data-bulk="add-slot" onclick="bulkAddToSlot()" class="bulk-action-btn hidden text-xs font-bold bg-abec-navy hover:bg-[#2563EB] text-white px-4 py-2 rounded-md transition-colors">Add to Slot</button>
+    <button type="button" data-bulk="reject" onclick="bulkUpdateStatus('rejected')" class="bulk-action-btn hidden text-xs font-bold bg-red-700 hover:bg-red-800 text-white px-4 py-2 rounded-md transition-colors">Reject Selected</button>
+    <button type="button" data-bulk="restore" onclick="bulkUpdateStatus('pending')" class="bulk-action-btn hidden text-xs font-bold bg-abec-navy hover:bg-[#2563EB] text-white px-4 py-2 rounded-md transition-colors">Restore to Pending</button>
+  </div>
+</div>
+</section>
+
+<!-- Applicant List -->
+<section class="space-y-3" id="applicant-list" data-purpose="applicant-list">
+<p id="applicants-empty" class="text-center text-sm text-slate-400 py-10">No applicants yet.</p>
+</section>
+
+<p id="no-results" class="hidden text-center text-sm text-slate-400 py-10">No applicants match your filters.</p>
+<div id="applicant-pager" class="hidden flex items-center justify-between gap-3 mt-4 text-[12px] text-slate-500">
+  <button type="button" class="abec-btn abec-btn-ghost abec-btn-sm" onclick="changeApplicantPage(-1)">Previous</button>
+  <span id="applicant-page-label">Page 1</span>
+  <button type="button" class="abec-btn abec-btn-ghost abec-btn-sm" onclick="changeApplicantPage(1)">Next</button>
+</div>
+  </div>
+  <div id="records-panel" class="hidden">
+  <div class="records-table-wrap">
+    <table class="records-table">
+      <thead><tr><th>Full Name</th><th>Course</th><th>Contact</th><th>Date</th><th>Status</th></tr></thead>
+      <tbody id="records-body"></tbody>
+    </table>
+    <p id="records-empty" class="hidden px-5 py-10 text-center text-sm text-slate-500">No records match this view.</p>
+  </div>
+  <div id="records-pager" class="records-pager"></div>
+  </div>
+</section>
+</main>
+</div>
+<div id="record-modal" class="record-modal hidden" aria-hidden="true">
+  <div class="record-panel profile-modal" role="dialog" aria-labelledby="record-modal-title">
+    <button type="button" id="record-modal-close" class="profile-close" aria-label="Close">&times;</button>
+    <div id="record-modal-body" class="profile-modal-body"></div>
+  </div>
+</div>
+<div id="edit-modal" class="record-modal hidden" aria-hidden="true">
+  <form id="edit-form" class="record-panel" role="dialog" aria-label="Edit information">
+    <h3 class="text-lg font-bold text-slate-800 mb-3">Edit Information</h3>
+    <input id="edit-student-id" type="hidden">
+    <input id="edit-applicant-id" type="hidden">
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <label class="text-xs font-semibold text-slate-600">First name<input id="edit-first" required class="mt-1 w-full rounded-lg border border-slate-200 text-sm"></label>
+      <label class="text-xs font-semibold text-slate-600">Middle name<input id="edit-middle" class="mt-1 w-full rounded-lg border border-slate-200 text-sm"></label>
+      <label class="text-xs font-semibold text-slate-600">Last name<input id="edit-last" required class="mt-1 w-full rounded-lg border border-slate-200 text-sm"></label>
+      <label class="text-xs font-semibold text-slate-600">Suffix<input id="edit-suffix" class="mt-1 w-full rounded-lg border border-slate-200 text-sm"></label>
+      <label class="text-xs font-semibold text-slate-600">Email<input id="edit-email" type="email" class="mt-1 w-full rounded-lg border border-slate-200 text-sm"></label>
+      <label class="text-xs font-semibold text-slate-600">Contact<input id="edit-phone" class="mt-1 w-full rounded-lg border border-slate-200 text-sm"></label>
+      <label class="text-xs font-semibold text-slate-600 sm:col-span-2">Address<input id="edit-address" class="mt-1 w-full rounded-lg border border-slate-200 text-sm"></label>
+    </div>
+    <div class="mt-4 flex justify-end gap-2">
+      <button type="button" id="edit-cancel" class="records-btn records-btn-muted">Cancel</button>
+      <button type="submit" class="records-btn">Save</button>
+    </div>
+  </form>
+</div>
+<div id="archive-modal" class="record-modal hidden" aria-hidden="true">
+  <form id="archive-form" class="record-panel" role="dialog" aria-label="Archive record">
+    <h3 class="text-lg font-bold text-slate-800 mb-1">Archive record</h3>
+    <p class="text-sm text-slate-500 mb-3">This uses the existing archive workflow. The student account is deactivated and kept in Archive. It is not deleted.</p>
+    <input id="archive-student-id" type="hidden">
+    <input id="archive-applicant-id" type="hidden">
+    <label class="text-xs font-semibold text-slate-600">Reason
+      <select id="archive-reason" required class="mt-1 w-full rounded-lg border border-slate-200 text-sm">
+        <option value="">Select a reason</option>
+        <option>Graduated</option>
+        <option>Deactivated</option>
+        <option>Academic Dismissal</option>
+        <option>Withdrawal</option>
+        <option>Inactive Lead</option>
+        <option>Other</option>
+      </select>
+    </label>
+    <label class="text-xs font-semibold text-slate-600 block mt-3">Specific reason
+      <input id="archive-specific" class="mt-1 w-full rounded-lg border border-slate-200 text-sm" placeholder="Required when the reason is Other">
+    </label>
+    <div class="mt-4 flex justify-end gap-2">
+      <button type="button" id="archive-cancel" class="records-btn records-btn-muted">Cancel</button>
+      <button type="submit" class="records-btn">Archive</button>
+    </div>
+  </form>
+</div>
+<!-- Applicant Details Modal -->
+<div id="applicant-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4" role="dialog" aria-modal="true">
+  <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="closeApplicantModal()"></div>
+  <div class="applicant-modal-card profile-modal" aria-label="Registration profile">
+    <button type="button" class="profile-close" aria-label="Close" onclick="closeApplicantModal()">&times;</button>
+    <div id="modal-profile-body" class="profile-modal-body"></div>
+    <div id="modal-actions" class="profile-modal-actions">
+        <button type="button" data-action="approve" class="modal-action-btn hidden">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+          Approve Applicant
+        </button>
+        <button type="button" data-action="waitlist" class="modal-action-btn hidden">Add to Waitlisted</button>
+        <button type="button" data-action="add-slot" class="modal-action-btn hidden">Add to Slot</button>
+        <button type="button" data-action="reject" class="modal-action-btn hidden">Reject Applicant</button>
+        <button type="button" data-action="restore" onclick="restoreToPending()" class="modal-action-btn hidden">Restore to Pending</button>
+      </div>
+    </div>
+  </div>
+<script>
+  var activeStatus = 'all';
+  var selectionMode = false;
+  var activeModalCard = null;
+  var applicantPage = 1;
+  var applicantPageSize = 8;
+
+  var statusStyles = {
+    pending: 'bg-amber-100 text-amber-700',
+    approved: 'bg-green-100 text-green-700',
+    rejected: 'bg-red-100 text-red-700',
+    waitlisted: 'bg-slate-200 text-slate-600'
+  };
+
+  var avatarStyles = {
+    amber: 'bg-amber-100 text-amber-700',
+    green: 'bg-green-100 text-green-700',
+    red: 'bg-red-100 text-red-700',
+    slate: 'bg-slate-200 text-slate-600'
+  };
+
+  // Select is available on Pending / Approved / Waitlisted / Rejected (not All)
+  var selectableStatuses = ['pending', 'approved', 'waitlisted', 'rejected'];
+
+  // Bulk buttons mirror the Applicant Details modal actions per status
+  var bulkActionsByStatus = {
+    pending: ['approve', 'waitlist', 'reject'],
+    waitlisted: ['approve', 'reject'],
+    approved: ['reject', 'add-slot'],
+    rejected: ['restore']
+  };
+
+  function setStatusFilter(btn) {
+    document.querySelectorAll('.status-pill').forEach(function (el) {
+      el.classList.remove('active');
+    });
+    btn.classList.add('active');
+    activeStatus = btn.getAttribute('data-status');
+    applicantPage = 1;
+    if (selectionMode && selectableStatuses.indexOf(activeStatus) === -1) {
+      exitSelectionMode();
+    } else if (selectionMode) {
+      clearSelections();
+      updateBulkActionButtons();
+    }
+    filterApplicants();
+    updateSelectToolbarVisibility();
+  }
+
+  function sortApplicantCards() {
+    var list = document.getElementById('applicant-list');
+    var sort = document.getElementById('applicant-sort');
+    if (!list || !sort) return;
+    var mode = sort.value;
+    var cards = Array.prototype.slice.call(list.querySelectorAll('.applicant-card'));
+    var statusRank = { pending: 1, waitlisted: 2, approved: 3, rejected: 4 };
+    cards.sort(function (a, b) {
+      if (mode === 'name') return (a.getAttribute('data-name') || '').localeCompare(b.getAttribute('data-name') || '');
+      if (mode === 'course') return (a.getAttribute('data-course') || '').localeCompare(b.getAttribute('data-course') || '');
+      if (mode === 'status') {
+        var rank = (statusRank[a.getAttribute('data-status')] || 9) - (statusRank[b.getAttribute('data-status')] || 9);
+        if (rank) return rank;
+        return (a.getAttribute('data-name') || '').localeCompare(b.getAttribute('data-name') || '');
+      }
+      var left = a.getAttribute('data-iso') || '';
+      var right = b.getAttribute('data-iso') || '';
+      return mode === 'oldest' ? left.localeCompare(right) : right.localeCompare(left);
+    });
+    cards.forEach(function (card) { list.appendChild(card); });
+  }
+
+  function changeApplicantPage(delta) {
+    applicantPage += delta;
+    filterApplicants();
+  }
+
+  function filterApplicants() {
+    sortApplicantCards();
+    var search = document.getElementById('applicant-search');
+    var courseSelect = document.getElementById('course-filter');
+    if (!search || !courseSelect) return;
+    var query = search.value.trim().toLowerCase();
+    var course = courseSelect.value;
+    var cards = document.querySelectorAll('#applicant-list .applicant-card');
+    var emptyEl = document.getElementById('applicants-empty');
+    var noResults = document.getElementById('no-results');
+    var matched = [];
+
+    cards.forEach(function (card) {
+      var name = (card.getAttribute('data-name') || card.getAttribute('data-display-name') || '').toLowerCase();
+      var cardCourse = card.getAttribute('data-course') || '';
+      var reference = (card.getAttribute('data-reference') || '').toLowerCase();
+      var applicantId = (card.getAttribute('data-id') || '').toLowerCase();
+      var status = card.getAttribute('data-status') || '';
+      var matchName = !query || name.indexOf(query) !== -1 || cardCourse.toLowerCase().indexOf(query) !== -1 || reference.indexOf(query) !== -1 || applicantId === query;
+      var matchCourse = !course || course === 'all' || cardCourse === course;
+      var matchStatus = activeStatus === 'all' || status === activeStatus;
+      var show = matchName && matchCourse && matchStatus;
+      card.classList.toggle('hidden', !show);
+      card.classList.remove('page-off');
+      if (show) matched.push(card);
+    });
+
+    var pages = Math.max(1, Math.ceil(matched.length / applicantPageSize));
+    if (applicantPage > pages) applicantPage = pages;
+    if (applicantPage < 1) applicantPage = 1;
+    matched.forEach(function (card, index) {
+      var onPage = index >= (applicantPage - 1) * applicantPageSize && index < applicantPage * applicantPageSize;
+      card.classList.toggle('page-off', !onPage);
+    });
+    var pager = document.getElementById('applicant-pager');
+    var label = document.getElementById('applicant-page-label');
+    if (pager) pager.classList.toggle('hidden', matched.length <= applicantPageSize);
+    if (label) label.textContent = 'Page ' + applicantPage + ' of ' + pages;
+
+    if (emptyEl) emptyEl.classList.toggle('hidden', cards.length > 0);
+    if (noResults) noResults.classList.toggle('hidden', cards.length === 0 || matched.length > 0);
+    updateSelectedCount();
+  }
+
+  function updateSelectToolbarVisibility() {
+    var showSelect = selectableStatuses.indexOf(activeStatus) !== -1;
+    document.getElementById('select-toolbar').classList.toggle('hidden', !showSelect && !selectionMode);
+    if (showSelect && selectionMode) updateBulkActionButtons();
+  }
+
+  function updateBulkActionButtons() {
+    var visible = bulkActionsByStatus[activeStatus] || [];
+    document.querySelectorAll('.bulk-action-btn').forEach(function (btn) {
+      var action = btn.getAttribute('data-bulk');
+      btn.classList.toggle('hidden', visible.indexOf(action) === -1);
+    });
+    var rejectBtn = document.querySelector('.bulk-action-btn[data-bulk="reject"]');
+    if (rejectBtn) {
+      rejectBtn.textContent = activeStatus === 'pending' ? 'Reject Selected' : 'Reject Selected';
+    }
+  }
+
+  function toggleSelectionMode() {
+    if (selectionMode) {
+      exitSelectionMode();
+      return;
+    }
+    if (selectableStatuses.indexOf(activeStatus) === -1) return;
+
+    selectionMode = true;
+    document.body.classList.add('selection-mode');
+    document.getElementById('btn-select-mode').classList.add('hidden');
+    document.getElementById('btn-cancel-select').classList.remove('hidden');
+    document.getElementById('selected-count').classList.remove('hidden');
+    document.getElementById('bulk-actions').classList.remove('hidden');
+    updateBulkActionButtons();
+    updateSelectedCount();
+  }
+
+  function clearSelections() {
+    document.querySelectorAll('.applicant-card').forEach(function (card) {
+      card.classList.remove('selected');
+      var check = card.querySelector('.applicant-check');
+      if (check) check.checked = false;
+    });
+  }
+
+  function exitSelectionMode() {
+    selectionMode = false;
+    document.body.classList.remove('selection-mode');
+    document.getElementById('btn-select-mode').classList.remove('hidden');
+    document.getElementById('btn-cancel-select').classList.add('hidden');
+    document.getElementById('selected-count').classList.add('hidden');
+    document.getElementById('bulk-actions').classList.add('hidden');
+    clearSelections();
+    filterApplicants();
+    updateSelectToolbarVisibility();
+  }
+
+  function handleCardClick(card, event) {
+    if (selectionMode) {
+      if (card.classList.contains('hidden')) return;
+      if (card.getAttribute('data-status') !== activeStatus) return;
+      var check = card.querySelector('.applicant-check');
+      if (!check) return;
+      check.checked = !check.checked;
+      toggleCardSelection(check);
+      return;
+    }
+    openApplicantModal(card);
+  }
+
+  function toggleCardSelection(checkbox) {
+    var card = checkbox.closest('.applicant-card');
+    if (!card) return;
+    card.classList.toggle('selected', checkbox.checked);
+    updateSelectedCount();
+  }
+
+  function updateSelectedCount() {
+    var count = document.querySelectorAll('.applicant-card.selected:not(.hidden)').length;
+    document.getElementById('selected-count').textContent = count + ' selected';
+  }
+
+  function getSelectedCards() {
+    return Array.prototype.slice.call(
+      document.querySelectorAll('.applicant-card.selected:not(.hidden)')
+    );
+  }
+
+  function bulkUpdateStatus(newStatus) {
+    var selected = getSelectedCards();
+    if (!selected.length) {
+      alert('Please select at least one applicant.');
+      return;
+    }
+    selected.forEach(function (card) {
+      applyStatusToCard(card, newStatus);
+    });
+    exitSelectionMode();
+  }
+
+  function bulkAddToSlot() {
+    var selected = getSelectedCards();
+    if (!selected.length) {
+      alert('Please select at least one applicant.');
+      return;
+    }
+    // Slot assignment keeps Approved status; selection clears after action
+    exitSelectionMode();
+  }
+
+  function applyStatusToCard(card, newStatus) {
+    card.setAttribute('data-status', newStatus);
+    var badge = card.querySelector('span.uppercase');
+    if (badge) {
+      badge.textContent = newStatus;
+      badge.className = 'inline-block px-2.5 py-0.5 rounded text-[10px] font-bold uppercase ' + (statusStyles[newStatus] || statusStyles.pending);
+    }
+    // Keep avatar color roughly aligned for pending/rejected feedback
+    if (newStatus === 'pending') card.setAttribute('data-avatar', 'amber');
+    if (newStatus === 'approved') card.setAttribute('data-avatar', 'green');
+    if (newStatus === 'rejected') card.setAttribute('data-avatar', 'red');
+    if (newStatus === 'waitlisted') card.setAttribute('data-avatar', 'slate');
+  }
+
+  function openApplicantModal(card) {
+    activeModalCard = card;
+    updateModalActions(card.getAttribute('data-status'));
+    document.getElementById('applicant-modal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+    var host = document.getElementById('modal-profile-body');
+    var record = window.AbecRecords && AbecRecords.getRecord ? AbecRecords.getRecord(card.getAttribute('data-id')) : null;
+    if (window.AbecProfile) AbecProfile.loadInto(host, card.getAttribute('data-id'), record, { actions: false });
+  }
+
+  function updateModalActions(status) {
+    var card = typeof activeModalCard !== 'undefined' ? activeModalCard : null;
+    var raw = card ? (card.getAttribute('data-raw-status') || status) : status;
+    var actions = {
+      pending: ['approve', 'waitlist', 'reject'],
+      waitlisted: ['approve', 'reject'],
+      approved: ['reject', 'add-slot'],
+      rejected: ['restore'],
+      expired: ['approve', 'waitlist', 'reject'],
+      declined: ['approve', 'waitlist', 'reject']
+    };
+    var visible = actions[raw] || actions[status] || [];
+    var rejectBtn = document.querySelector('.modal-action-btn[data-action="reject"]');
+
+    document.querySelectorAll('.modal-action-btn').forEach(function (btn) {
+      var action = btn.getAttribute('data-action');
+      btn.classList.toggle('hidden', visible.indexOf(action) === -1);
+    });
+
+    if (rejectBtn) {
+      rejectBtn.textContent = (raw === 'pending' || status === 'pending') ? 'Reject Applicant' : 'Reject';
+    }
+
+    document.getElementById('modal-actions').classList.toggle('hidden', visible.length === 0);
+  }
+
+  function restoreToPending() {
+    if (!activeModalCard) return;
+    applyStatusToCard(activeModalCard, 'pending');
+    closeApplicantModal();
+    filterApplicants();
+    updateSelectToolbarVisibility();
+  }
+
+  function closeApplicantModal() {
+    document.getElementById('applicant-modal').classList.add('hidden');
+    document.body.style.overflow = '';
+    activeModalCard = null;
+  }
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      if (!document.getElementById('applicant-modal').classList.contains('hidden')) {
+        closeApplicantModal();
+      } else if (selectionMode) {
+        exitSelectionMode();
+      }
+    }
+  });
+
+  updateSelectToolbarVisibility();
+  var presetQuery = new URLSearchParams(window.location.search).get('q');
+  if (presetQuery) {
+    var searchBox = document.getElementById('applicant-search');
+    if (searchBox) searchBox.value = presetQuery;
+  }
+  filterApplicants();
+</script>
+<script src="../../wwwroot/js/sidebar-auto-hide.js"></script>
+<script src="../../wwwroot/js/abec-api.js?v=20261031ux1"></script>
+<script src="../../wwwroot/js/abec-admin.js?v=20261105icons1"></script>
+<script src="../../wwwroot/js/abec-profile-details.js?v=20261031ux1"></script>
+<script src="../../wwwroot/js/abec-applicants.js?v=20261031ux1"></script>
+<script src="../../wwwroot/js/abec-students-applicants.js?v=20261031ux1"></script>
+<script src="../../wwwroot/js/abec-add-applicant.js?v=20261031ux1"></script>
+</body>
+</html>

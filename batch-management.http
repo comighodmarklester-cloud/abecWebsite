@@ -1,0 +1,14 @@
+@baseUrl = http://localhost:5188
+@batchId = 1
+
+### Batch list includes exact unread document counts
+GET {{baseUrl}}/api/batches
+
+### Batch-scoped historical or active document snapshot
+GET {{baseUrl}}/api/batches/{{batchId}}/documents
+
+### Invalid batch
+GET {{baseUrl}}/api/batches/2147483647/documents
+
+### Historical document activity; use an actual batch ID
+GET {{baseUrl}}/api/notifications/admin?batchId={{batchId}}

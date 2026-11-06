@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Applicants - ABEC Admin</title>
+<script>
+  var params = new URLSearchParams(window.location.search);
+  var tab = params.get('tab');
+  if (!tab || tab === 'applicant' || tab === 'all') params.set('tab', 'applicants');
+  window.location.replace('StudentsApplicants.html?' + params.toString());
+</script>
+</head>
+<body>
+<p>Opening application review on the Students &amp; Applicants page. <a id="continue-link" href="StudentsApplicants.html?tab=applicants">Continue</a></p>
+<script>
+  document.getElementById('continue-link').search = '?' + params.toString();
+</script>
+</body>
+</html>

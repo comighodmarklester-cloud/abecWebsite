@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Account Activation - ABEC Admin</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="../../wwwroot/css/abec-ui.css?v=20261105icons1" rel="stylesheet"/>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: { sans: ['Inter', 'Plus Jakarta Sans', 'sans-serif'] },
+        colors: {
+          'abec-navy': '#0B1F3A',
+          'abec-sidebar-active': 'rgba(255,255,255,0.08)',
+          'abec-blue': '#2563EB',
+          'surface': '#F5F9FF',
+        }
+      }
+    }
+  }
+</script>
+<style>
+  .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+  .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+  .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.18); border-radius: 10px; }
+  .activation-header-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+  .activation-header-row h2 { margin: 0; min-width: 0; }
+  .activation-header .abec-header-actions { margin-left: auto; }
+  .activation-search { position: relative; margin-top: 0.85rem; max-width: 40rem; }
+  .activation-search svg { position: absolute; left: 0.95rem; top: 50%; z-index: 1; width: 1rem; height: 1rem; transform: translateY(-50%); color: #1E3A8A; stroke: #1E3A8A; pointer-events: none; }
+  .activation-search:focus-within svg { color: #1E3A8A; stroke: #1E3A8A; }
+  .activation-search input { width: 100%; padding: 0.75rem 1rem 0.75rem 2.6rem; }
+  body.activation-page #abec-profile-menu { display: none !important; }
+  body.activation-page .abec-main > header {
+    position: relative;
+    z-index: 30;
+    overflow: visible;
+    transform: none;
+    animation: none;
+  }
+  body.activation-page .abec-header-actions,
+  body.activation-page #abec-admin-bell { position: relative; overflow: visible; }
+  .activation-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.75rem; margin: 0 0 1.25rem; }
+  .stat-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    border: 1px solid #e2e8f0;
+  }
+  .stat-card:hover { transform: translateY(-2px); }
+  body.activation-page [data-purpose="activation-summary"] .stat-card.is-active,
+  body.activation-page [data-purpose="activation-summary"] .stat-card.is-active:hover,
+  body.activation-page [data-purpose="activation-summary"] .stat-card.is-active:focus,
+  body.activation-page [data-purpose="activation-summary"] .stat-card.is-active:focus-visible {
+    background-color: #0B2747 !important;
+    background-image: linear-gradient(135deg, #0B2747, #2563EB) !important;
+    color: #fff !important;
+    border-color: rgba(255, 255, 255, 0.22) !important;
+    box-shadow: 0 12px 32px rgba(11, 39, 71, 0.18) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  body.activation-page [data-purpose="activation-summary"] .stat-card:not(.is-active) .text-xs { color: #64748b; }
+  body.activation-page [data-purpose="activation-summary"] .stat-card:not(.is-active) .text-3xl { color: #0f2744; }
+  body.activation-page [data-purpose="activation-summary"] .stat-card.is-active p,
+  body.activation-page [data-purpose="activation-summary"] .stat-card.is-active svg {
+    color: #fff !important;
+  }
+  @media (max-width: 900px) {
+    .activation-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 560px) {
+    .activation-summary { grid-template-columns: 1fr; }
+    .activation-search { max-width: none; }
+  }
+  .activation-row.selected {
+    background-color: rgba(0, 51, 102, 0.06);
+  }
+  .select-checkbox {
+    display: none;
+  }
+  body.selection-mode .activation-row:not(.hidden) .select-checkbox {
+    display: flex;
+  }
+  body.selection-mode .activation-row:not(.hidden) {
+    cursor: pointer;
+  }
+  .activation-row {
+    cursor: pointer;
+  }
+  @keyframes modal-pop {
+    from { opacity: 0; transform: translateY(12px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .activation-board-tools { display: flex; align-items: center; justify-content: flex-end; gap: 0.75rem; flex-wrap: nowrap; padding-bottom: 0.85rem; }
+  .activation-board-tools:has(#select-toolbar:not(.hidden)) { justify-content: flex-start; }
+  .activation-filter { display: flex; align-items: center; gap: 0.5rem; min-width: 0; flex: 1 1 auto; }
+  .activation-filter span { flex: 0 0 auto; }
+  .activation-filter select { min-width: 0; width: min(18rem, 100%); max-width: 100%; }
+  #select-toolbar { display: flex; align-items: center; justify-content: flex-start; gap: 0.65rem; flex: 0 1 auto; flex-wrap: wrap; margin: 0; padding: 0; }
+  #select-toolbar.hidden { display: none !important; }
+  #details-modal { align-items: center; }
+  .details-modal-card {
+    animation: modal-pop 0.28s ease;
+    width: min(1320px, calc(100vw - 2rem));
+    max-width: none;
+    max-height: 90dvh;
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+  }
+  .details-modal-body {
+    overflow: auto;
+    min-height: 0;
+    padding: 0.25rem 1.15rem 1.15rem;
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(15rem, 0.95fr) minmax(16rem, 0.9fr);
+    gap: 0.8rem;
+    align-items: start;
+  }
+  .details-identity { display: flex; align-items: center; gap: 0.85rem; text-align: left; margin-bottom: 0.85rem; }
+  .details-identity img { width: 3.6rem; height: 3.6rem; margin: 0; }
+  .details-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem 1rem; }
+  .details-status, .details-actions { display: flex; flex-direction: column; gap: 0.75rem; min-width: 0; }
+  .details-span { grid-column: 1 / -1; }
+  .details-operations { display: flex; flex-direction: column; gap: 0.45rem; }
+  .details-operations > button { min-height: 2.35rem; padding-top: 0.5rem; padding-bottom: 0.5rem; }
+  .activation-profile-back { display: flex; justify-content: flex-end; gap: 0.5rem; padding: 0.65rem 0.9rem; background: #fff; border-top: 1px solid #d7e4f5; }
+  .activation-profile-back button { height: 2.1rem; padding: 0 0.9rem; border: 1px solid #0B2747; border-radius: 0.55rem; background: #0B2747; color: #fff; font-size: 0.78rem; font-weight: 700; cursor: pointer; }
+  #btn-view-full-info {
+    margin-top: 0.85rem; width: 100%; height: 2.4rem; border: 1px solid #2563EB; border-radius: 0.65rem;
+    background: #eff6ff; color: #1d4ed8; font-size: 0.82rem; font-weight: 700; cursor: pointer;
+  }
+  #btn-view-full-info:hover { background: #dbeafe; }
+  #activation-profile-modal .profile-modal {
+    position: relative; width: min(1000px, calc(100vw - 2rem)); max-height: 88dvh;
+    display: flex; flex-direction: column; overflow: hidden; padding: 0; background: #f4f8fd;
+    border: 1px solid #c9dbf2; border-radius: 1rem; box-shadow: 0 24px 50px rgba(11, 39, 71, 0.22);
+  }
+  #activation-profile-modal .profile-close { position: absolute; top: 0.72rem; right: 0.72rem; z-index: 4; width: 1.75rem; height: 1.75rem; border: 0; border-radius: 999px; background: rgba(255,255,255,0.16); color: #fff; font-size: 1.15rem; line-height: 1; cursor: pointer; }
+  #activation-profile-modal .profile-modal-body { overflow: hidden; display: flex; flex-direction: column; min-height: 0; flex: 1 1 auto; background: #f4f8fd; }
+  #activation-profile-modal .profile-sheet { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
+  #activation-profile-modal .profile-head { display: flex; align-items: center; flex-wrap: wrap; gap: 0.75rem; padding: 0.85rem 2.8rem 0.85rem 1rem; background: linear-gradient(115deg, #0B2747 0%, #1e4f9c 58%, #2563EB 100%); color: #fff; }
+  #activation-profile-modal .profile-avatar { width: 2.5rem; height: 2.5rem; border-radius: 999px; display: flex; align-items: center; justify-content: center; font-size: 0.78rem; font-weight: 700; background: rgba(255,255,255,0.16); color: #fff; border: 1px solid rgba(255,255,255,0.35); }
+  #activation-profile-modal .profile-head-copy { min-width: 0; flex: 1 1 auto; }
+  #activation-profile-modal .profile-head-copy h3 { margin: 0; font-size: 1.05rem; line-height: 1.25; font-weight: 700; color: #fff; overflow-wrap: anywhere; }
+  #activation-profile-modal .profile-head-copy p { margin: 0.12rem 0 0; font-size: 0.75rem; color: rgba(255,255,255,0.82); overflow-wrap: anywhere; }
+  #activation-profile-modal .profile-statuses { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.38rem; }
+  #activation-profile-modal .profile-standing, #activation-profile-modal .profile-application { display: inline-flex; align-items: center; padding: 0.12rem 0.5rem; border-radius: 999px; font-size: 0.68rem; font-weight: 700; }
+  #activation-profile-modal .profile-standing.is-applicant, #activation-profile-modal .profile-application.is-pending { background: #fef3c7; color: #b45309; }
+  #activation-profile-modal .profile-standing.is-enrolled, #activation-profile-modal .profile-application.is-approved, #activation-profile-modal .profile-application.is-confirmed { background: #d1fae5; color: #047857; }
+  #activation-profile-modal .profile-standing.is-archived { background: #e2e8f0; color: #475569; }
+  #activation-profile-modal .profile-application.is-rejected, #activation-profile-modal .profile-application.is-declined { background: #fee2e2; color: #b91c1c; }
+  #activation-profile-modal .profile-application.is-waitlisted { background: #e2e8f0; color: #475569; }
+  #activation-profile-modal .profile-application.is-expired { background: #ffe4e6; color: #be123c; }
+  #activation-profile-modal .profile-edit-btn { margin-left: auto; height: 1.9rem; padding: 0 0.75rem; border: 0; border-radius: 0.55rem; background: #fff; color: #0B2747; font-size: 0.75rem; font-weight: 700; cursor: pointer; }
+  #activation-profile-modal .profile-body { overflow: auto; flex: 1 1 auto; min-height: 0; padding: 0.75rem 0.9rem 0.85rem; display: flex; flex-direction: column; gap: 0.65rem; }
+  #activation-profile-modal .profile-edit { display: flex; flex-direction: column; gap: 0.65rem; }
+  #activation-profile-modal .profile-section { margin: 0; padding: 0.72rem 0.8rem 0.78rem; border-radius: 0.8rem; border: 1px solid transparent; }
+  #activation-profile-modal .profile-section.is-person { background: #eef4ff; border-color: #d5e4fb; }
+  #activation-profile-modal .profile-section.is-contact { background: #f3f7ff; border-color: #d9e6f8; }
+  #activation-profile-modal .profile-section.is-address { background: #f1fbf6; border-color: #d3f0e2; }
+  #activation-profile-modal .profile-section.is-education { background: #f6f3ff; border-color: #e4def8; }
+  #activation-profile-modal .profile-section.is-training { background: #fff8ef; border-color: #f8e6cc; }
+  #activation-profile-modal .profile-section.is-documents { background: #f7fbff; border-color: #d9e7f7; }
+  #activation-profile-modal .profile-section h4, #activation-profile-modal .profile-subhead, #activation-profile-modal .profile-release h5 { display: flex; align-items: center; gap: 0.4rem; margin: 0 0 0.6rem; font-size: 0.84rem; font-weight: 700; color: #0B2747; }
+  #activation-profile-modal .profile-section-icon { width: 1rem; height: 1rem; color: #2563EB; }
+  #activation-profile-modal .profile-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.55rem 1rem; margin: 0; }
+  #activation-profile-modal .profile-field dt, #activation-profile-modal .profile-edit label { margin: 0; font-size: 0.68rem; font-weight: 650; color: #5b6f88; }
+  #activation-profile-modal .profile-field dd { margin: 0.1rem 0 0; font-size: 0.86rem; font-weight: 650; color: #0f2744; overflow-wrap: anywhere; }
+  #activation-profile-modal .profile-edit label { display: flex; flex-direction: column; gap: 0.22rem; }
+  #activation-profile-modal .profile-edit input, #activation-profile-modal .profile-edit select { width: 100%; height: 2.15rem; border: 1px solid #d3e2f3; border-radius: 0.55rem; background: #fff; padding: 0 0.6rem; }
+  #activation-profile-modal .profile-edit-actions, #activation-profile-modal .profile-actions { display: flex; justify-content: flex-end; gap: 0.45rem; flex-wrap: wrap; }
+  #activation-profile-modal .profile-doc { display: grid; grid-template-columns: 1.35rem minmax(0,1fr) auto auto; align-items: center; gap: 0.5rem; margin: 0 0 0.4rem; padding: 0.45rem 0.55rem; border-radius: 0.65rem; background: #fff; border: 1px solid #d9e7f7; }
+  #activation-profile-modal .profile-doc.is-submitted { background: #f0fdf4; border-color: #bbf7d0; }
+  #activation-profile-modal .profile-doc.is-missing { background: #fffbeb; border-color: #fde68a; }
+  #activation-profile-modal .profile-doc-icon { width: 1.2rem; height: 1.2rem; }
+  #activation-profile-modal .profile-doc-name { margin: 0; font-size: 0.8rem; font-weight: 700; overflow-wrap: anywhere; }
+  #activation-profile-modal .profile-doc-meta { margin: 0.05rem 0 0; font-size: 0.7rem; color: #64748b; overflow-wrap: anywhere; }
+  #activation-profile-modal .profile-doc-badge { display: inline-flex; padding: 0.1rem 0.42rem; border-radius: 999px; font-size: 0.64rem; font-weight: 700; }
+  #activation-profile-modal .profile-doc-badge.is-submitted { background: #d1fae5; color: #047857; }
+  #activation-profile-modal .profile-doc-badge.is-missing { background: #fef3c7; color: #b45309; }
+  #activation-profile-modal .profile-doc-link, #activation-profile-modal .records-btn { display: inline-flex; align-items: center; justify-content: center; height: 1.9rem; padding: 0 0.75rem; border-radius: 0.55rem; font-size: 0.75rem; font-weight: 700; text-decoration: none; }
+  #activation-profile-modal .profile-doc-link { border: 1px solid #bfdbfe; background: #fff; color: #1d4ed8; }
+  #activation-profile-modal .records-btn { border: 1px solid #2563EB; background: #2563EB; color: #fff; cursor: pointer; }
+  #activation-profile-modal .records-btn-muted { background: #fff; color: #1e3a5f; border-color: #d7e4f4; }
+  #activation-profile-modal .profile-edit-message { display: none; margin: 0; padding: 0.5rem 0.65rem; border-radius: 0.55rem; font-size: 0.78rem; }
+  #activation-profile-modal .profile-edit-message.is-error { display: block; background: #fff1f2; color: #be123c; }
+  #activation-profile-modal .profile-edit-message.is-info { display: block; background: #eff6ff; color: #1d4ed8; }
+  #activation-profile-modal .profile-loading { margin: 1rem; font-size: 0.84rem; color: #64748b; }
+  #activation-profile-modal .profile-release ul { list-style: none; margin: 0; padding: 0; }
+  #activation-profile-modal .profile-release li { display: flex; justify-content: space-between; gap: 0.75rem; padding: 0.35rem 0; font-size: 0.8rem; color: #0f2744; }
+  #activation-profile-modal .profile-edit-note { margin: 0.55rem 0 0; font-size: 0.72rem; color: #64748b; }
+  #details-modal .hidden, #bulk-actions.hidden, .bulk-action-btn.hidden, #btn-cancel-select.hidden, #selected-count.hidden, #activation-profile-modal.hidden { display: none !important; }
+  @media (max-width: 1100px) {
+    .details-modal-body { grid-template-columns: 1fr 1fr; }
+    .details-actions { grid-column: 1 / -1; }
+  }
+    @media (max-width: 720px) {
+    .details-modal-body, #activation-profile-modal .profile-grid, #activation-profile-modal .profile-doc, .details-fields { grid-template-columns: 1fr; }
+    .details-modal-card { max-height: calc(100dvh - 1.25rem); }
+  }
+  .modal-scroll::-webkit-scrollbar { width: 6px; }
+  .modal-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
+</style>
+</head>
+<body class="abec-app activation-page bg-surface font-sans text-slate-800">
+<div class="flex min-h-screen">
+<!-- BEGIN: Sidebar -->
+<aside class="abec-sidebar" data-purpose="main-sidebar">
+<div class="p-6 flex items-center gap-3">
+<div class="abec-brand-lockup abec-sidebar-brand">
+<div class="abec-brand-mark">
+<div class="abec-brand-logo-spin">
+<svg class="abec-brand-logo" viewBox="0 0 128 128" fill="none" role="img" aria-label="ABEC logo">
+<defs>
+<linearGradient id="sideabecCapLeft" x1="16" y1="22" x2="64" y2="74" gradientUnits="userSpaceOnUse">
+<stop stop-color="#1A3F6B"/><stop offset="1" stop-color="#0A2342"/>
+</linearGradient>
+<linearGradient id="sideabecCapRight" x1="64" y1="18" x2="112" y2="70" gradientUnits="userSpaceOnUse">
+<stop stop-color="#24507F"/><stop offset="1" stop-color="#16375F"/>
+</linearGradient>
+<linearGradient id="sideabecRibbonLeft" x1="28" y1="58" x2="64" y2="112" gradientUnits="userSpaceOnUse">
+<stop stop-color="#A32040"/><stop offset="1" stop-color="#6E1830"/>
+</linearGradient>
+<linearGradient id="sideabecRibbonRight" x1="64" y1="58" x2="100" y2="112" gradientUnits="userSpaceOnUse">
+<stop stop-color="#D4526A"/><stop offset="1" stop-color="#9B2744"/>
+</linearGradient>
+<linearGradient id="sideabecShine" x1="0" y1="0" x2="1" y2="0">
+<stop offset="0" stop-color="#FFFFFF" stop-opacity="0"/>
+<stop offset="0.45" stop-color="#E8F4FF" stop-opacity="0.15"/>
+<stop offset="0.5" stop-color="#FFFFFF" stop-opacity="0.72"/>
+<stop offset="0.55" stop-color="#D6E8F7" stop-opacity="0.15"/>
+<stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+</linearGradient>
+<clipPath id="sideabecIconClip">
+<path d="M64 20 L108 46 L64 70 L20 46 Z"/>
+<circle cx="116" cy="70" r="8"/>
+<path d="M108 44 L118 66 L114 66 L106 48 Z"/>
+<path d="M30 62 L64 108 L64 88 L40 58 Z"/>
+<path d="M98 62 L64 108 L64 88 L88 58 Z"/>
+</clipPath>
+</defs>
+<g>
+<path d="M64 20 L64 70 L20 46 Z" fill="url(#sideabecCapLeft)"/>
+<path d="M64 20 L108 46 L64 70 Z" fill="url(#sideabecCapRight)"/>
+<path d="M64 20 L96 38 L64 34 Z" fill="#2E5A88" opacity="0.35"/>
+<path d="M108 46 C110 52 114 58 116 62" stroke="#8E2340" stroke-width="3.2" stroke-linecap="round"/>
+<circle cx="116" cy="70" r="7" fill="#B02A45"/>
+<circle cx="114" cy="68" r="2.2" fill="#F4C9D2" opacity="0.7"/>
+<path d="M30 62 L64 108 L64 88 L40 58 Z" fill="url(#sideabecRibbonLeft)"/>
+<path d="M98 62 L64 108 L64 88 L88 58 Z" fill="url(#sideabecRibbonRight)"/>
+</g>
+<g clip-path="url(#sideabecIconClip)">
+<rect class="abec-icon-shine" x="-48" y="8" width="36" height="112" fill="url(#sideabecShine)"/>
+</g>
+</svg>
+</div>
+</div>
+<h1 class="abec-brand-name">ABEC</h1>
+</div>
+</div>
+<nav class="flex-1 px-3 mt-4 space-y-1 overflow-y-auto custom-scrollbar">
+<a class="abec-nav-link" href="AdminDashboard.html">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+  Dashboard
+</a>
+<a class="abec-nav-link" href="StudentsApplicants.html">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+  Students &amp; Applicants
+</a>
+<a class="abec-nav-link abec-nav-link-active" href="AccountActivation.html">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+  Account Activation
+</a>
+<a class="abec-nav-link" href="CourseManagement.html">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+  Course Management
+</a>
+<a class="abec-nav-link" href="DocumentManagement.html">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+  Document Management
+</a>
+<a class="abec-nav-link" href="Reports.html">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M8 17V10M12 17V7M16 17v-4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+  Report
+</a>
+</nav>
+<div class="abec-sidebar-footer">
+<div class="abec-profile-chip">
+<div class="w-10 h-10 rounded-full bg-white/15 text-white flex items-center justify-center text-xs font-bold shrink-0" aria-hidden="true">AD</div>
+<div class="overflow-hidden">
+<p class="text-xs font-semibold truncate">Admin</p>
+<p class="text-[10px] text-white/45">Administrator</p>
+</div>
+</div>
+<div class="space-y-1">
+<a class="abec-footer-link" href="UserSettings.html">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+  User Settings
+</a>
+<a class="abec-footer-link" href="../Home/SignOutPage.html">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+  Sign Out
+</a>
+</div>
+</div>
+</aside>
+<!-- END: Sidebar -->
+
+<main class="abec-main">
+<header class="activation-header" data-purpose="page-header">
+  <div class="activation-header-row">
+    <h2 class="text-2xl md:text-3xl font-bold text-abec-blue">Account Activation Management</h2>
+    <div class="abec-header-actions flex items-center shrink-0 relative z-40"></div>
+  </div>
+  <div class="activation-search">
+    <svg fill="none" stroke="#1E3A8A" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke="#1E3A8A" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+    <input id="activation-search" type="search" placeholder="Search" aria-label="Search accounts" class="abec-card abec-card-static text-sm focus:ring-abec-blue focus:border-abec-blue" oninput="filterActivationTable()">
+  </div>
+</header>
+
+<!-- Summary Cards -->
+<section class="activation-summary" data-purpose="activation-summary">
+  <button type="button" class="stat-card is-active abec-card abec-card-static p-5 text-left w-full cursor-pointer" data-filter-tab="all" aria-pressed="true" onclick="filterByStatCard(this)">
+    <div class="flex justify-between items-start mb-3">
+      <p class="text-xs font-semibold uppercase tracking-wide">All Students</p>
+      <div>
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+      </div>
+    </div>
+    <p id="activation-count-total" class="text-3xl font-bold">0</p>
+  </button>
+
+  <button type="button" class="stat-card abec-card abec-card-static p-5 text-left w-full cursor-pointer" data-filter-tab="pending" aria-pressed="false" onclick="filterByStatCard(this)">
+    <div class="flex justify-between items-start mb-3">
+      <p class="text-xs font-semibold uppercase tracking-wide">Pending Activations</p>
+      <div class="text-amber-500">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+      </div>
+    </div>
+    <div class="flex items-center gap-2 flex-wrap">
+      <p id="activation-count-pending" class="text-3xl font-bold">0</p>
+    </div>
+    <p class="text-xs text-slate-400 mt-2">Waiting for account activation</p>
+  </button>
+
+  <button type="button" class="stat-card abec-card abec-card-static p-5 text-left w-full cursor-pointer" data-filter-tab="activated" aria-pressed="false" onclick="filterByStatCard(this)">
+    <div class="flex justify-between items-start mb-3">
+      <p class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Active Accounts</p>
+      <div class="text-green-500">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+      </div>
+    </div>
+    <p id="activation-count-activated" class="text-3xl font-bold">0</p>
+    <p class="text-xs text-slate-400 mt-2">Currently active student accounts</p>
+  </button>
+
+  <button type="button" class="stat-card abec-card abec-card-static p-5 text-left w-full cursor-pointer" data-filter-tab="deactivated" aria-pressed="false" onclick="filterByStatCard(this)">
+    <div class="flex justify-between items-start mb-3">
+      <p class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Deactivated Accounts</p>
+      <div class="text-red-500">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+      </div>
+    </div>
+    <p id="activation-count-deactivated" class="text-3xl font-bold">0</p>
+    <p class="text-xs text-slate-400 mt-2">Deactivated student accounts</p>
+  </button>
+</section>
+
+<!-- Table Card -->
+<section class="abec-card abec-card-static overflow-hidden">
+  <div class="px-4 pt-4 border-b border-slate-100">
+    <div class="activation-board-tools">
+    <div id="select-toolbar" class="hidden">
+      <div class="flex items-center gap-2">
+        <button id="btn-select-mode" type="button" onclick="toggleSelectionMode()" class="text-xs font-bold text-abec-blue border border-abec-blue px-4 py-2 rounded-md hover:bg-abec-blue hover:text-white transition-colors">Select</button>
+        <button id="btn-cancel-select" type="button" onclick="exitSelectionMode()" class="hidden text-xs font-bold text-slate-500 border border-slate-300 px-4 py-2 rounded-md hover:bg-slate-100 transition-colors">Cancel</button>
+        <span id="selected-count" class="hidden text-xs text-slate-500 font-medium">0 selected</span>
+      </div>
+      <div id="bulk-actions" class="hidden flex flex-wrap items-center gap-2">
+        <button type="button" data-bulk="activate" onclick="bulkUpdateStatus('activated')" class="bulk-action-btn hidden text-xs font-bold bg-abec-navy hover:bg-[#2563EB] text-white px-4 py-2 rounded-md transition-colors">Activate Account</button>
+        <button type="button" data-bulk="deactivate" onclick="bulkUpdateStatus('deactivated')" class="bulk-action-btn hidden text-xs font-bold bg-abec-navy hover:bg-[#2563EB] text-white px-4 py-2 rounded-md transition-colors">Deactivate Account</button>
+        <button type="button" data-bulk="reactivate" onclick="bulkUpdateStatus('activated')" class="bulk-action-btn hidden text-xs font-bold bg-abec-navy hover:bg-[#2563EB] text-white px-4 py-2 rounded-md transition-colors">Reactivate Account</button>
+        <button type="button" data-bulk="archive" onclick="bulkArchiveSelected()" class="bulk-action-btn hidden text-xs font-bold bg-red-700 hover:bg-red-800 text-white px-4 py-2 rounded-md transition-colors">Archive</button>
+      </div>
+    </div>
+      <div class="activation-filter">
+        <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+        <span class="text-xs font-medium text-slate-500">Filter by:</span>
+        <select id="activation-course-filter" class="text-xs border-slate-200 rounded-md focus:ring-abec-blue" onchange="filterActivationTable()">
+          <option value="all">All Courses</option>
+          <option value="Computer System Servicing NC II">Computer Systems Servicing</option>
+          <option value="Bookkeeping NC II">Bookkeeping</option>
+          <option value="Electronic Product Assembly and Servicing NC II">Electronic Products Assembly and Servicing</option>
+          <option value="Customer Services NC II">Customer Services</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="overflow-x-auto max-h-[560px] overflow-y-auto">
+    <table class="w-full text-left table-fixed min-w-[760px]">
+      <colgroup>
+        <col class="w-[26%]">
+        <col class="w-[22%]">
+        <col class="w-[14%]">
+        <col class="w-[14%]">
+        <col class="w-[12%]">
+        <col class="w-[12%]">
+      </colgroup>
+      <thead class="bg-slate-50 text-[10px] uppercase font-bold text-slate-500 border-b border-slate-100 sticky top-0 z-10">
+        <tr>
+          <th class="px-6 py-3.5">Applicant Name</th>
+          <th class="px-6 py-3.5">Course</th>
+          <th class="px-6 py-3.5">Confirmation</th>
+          <th class="px-6 py-3.5">Security PIN</th>
+          <th class="px-6 py-3.5">Status</th>
+          <th class="px-6 py-3.5">Date Created</th>
+        </tr>
+      </thead>
+      <tbody id="activation-table-body" class="divide-y divide-slate-100">
+        <tr id="activation-empty-row">
+          <td colspan="6" class="px-6 py-16 text-center text-sm text-slate-400">No accounts pending activation.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+</main>
+</div>
+
+<!-- Student Activation Details Modal -->
+<div id="details-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-5" role="dialog" aria-modal="true">
+  <div class="absolute inset-0 abec-modal-backdrop" onclick="closeDetailsModal()"></div>
+  <div class="details-modal-card relative bg-surface rounded-xl shadow-lg overflow-hidden border border-slate-200">
+    <div class="flex items-center justify-between px-5 pt-4 pb-2 shrink-0">
+      <h3 class="text-xl font-bold text-abec-blue">Student Activation Details</h3>
+      <button type="button" onclick="closeDetailsModal()" class="p-2 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors" aria-label="Close">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+      </button>
+    </div>
+
+    <div class="details-modal-body">
+      <div class="abec-card abec-card-static p-4">
+          <div class="details-identity">
+            <img id="modal-photo" alt="Student photo" class="rounded-lg object-cover border border-slate-200 bg-slate-100" src="">
+            <div class="min-w-0">
+              <h4 id="modal-name" class="text-lg font-bold text-abec-blue">—</h4>
+              <p class="text-xs text-slate-500 mt-1 flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+                <span id="modal-header-email">—</span>
+              </p>
+            </div>
+          </div>
+          <div class="details-fields border-t border-slate-100 pt-3 text-left">
+            <div>
+              <p class="text-[10px] font-bold uppercase tracking-wide text-slate-400">Gmail</p>
+              <p id="modal-email" class="text-sm text-slate-800 mt-0.5">—</p>
+            </div>
+            <div>
+              <p class="text-[10px] font-bold uppercase tracking-wide text-slate-400">Contact Number</p>
+              <p id="modal-phone" class="text-sm text-slate-800 mt-0.5">—</p>
+            </div>
+            <div>
+              <p class="text-[10px] font-bold uppercase tracking-wide text-slate-400">Enrolled Course</p>
+              <p id="modal-course" class="text-sm text-slate-800 mt-0.5">—</p>
+            </div>
+            <div>
+              <p class="text-[10px] font-bold uppercase tracking-wide text-slate-400">Training Intake</p>
+              <p id="modal-intake" class="text-sm text-slate-800 mt-0.5">—</p>
+            </div>
+            <div>
+              <p class="text-[10px] font-bold uppercase tracking-wide text-slate-400">Registration Date</p>
+              <p id="modal-registered" class="text-sm text-slate-800 mt-0.5">—</p>
+            </div>
+            <div>
+              <p class="text-[10px] font-bold uppercase tracking-wide text-slate-400">Confirmation Status</p>
+              <p id="modal-confirmation" class="text-sm text-slate-800 mt-0.5">—</p>
+            </div>
+            <div class="details-span">
+              <p class="text-[10px] font-bold uppercase tracking-wide text-slate-400">Home Address</p>
+              <p id="modal-address" class="text-sm text-slate-800 mt-0.5">—</p>
+            </div>
+            <div>
+              <p class="text-[10px] font-bold uppercase tracking-wide text-slate-400 mb-1.5">Account Activation Status</p>
+              <span id="modal-status-badge" class="inline-block px-2.5 py-1 rounded text-[10px] font-bold uppercase bg-amber-500 text-white">Pending</span>
+            </div>
+          </div>
+          <button id="btn-view-full-info" type="button" onclick="openStudentFullInformation()">View Student Full Information</button>
+        </div>
+
+        <div class="details-status">
+        <div class="abec-card abec-card-static p-4">
+          <h5 class="text-[11px] font-bold uppercase tracking-wide text-abec-blue mb-2">Account Status History</h5>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+              <thead>
+                <tr class="bg-slate-50 text-[10px] uppercase font-bold text-abec-blue">
+                  <th class="px-3 py-2 rounded-l-md">Date</th>
+                  <th class="px-3 py-2">Activity</th>
+                  <th class="px-3 py-2 rounded-r-md">Admin</th>
+                </tr>
+              </thead>
+              <tbody id="modal-history-body" class="divide-y divide-slate-100 text-slate-700">
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div class="abec-card abec-card-static p-3">
+            <div class="flex items-center gap-2 text-abec-blue mb-1.5">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+              <p id="modal-pin-date-label" class="text-[11px] font-semibold text-slate-600">PIN Generation Time</p>
+            </div>
+            <p id="modal-pin-date" class="text-sm font-medium text-slate-800">-- (Not yet activated)</p>
+          </div>
+          <div class="abec-card abec-card-static p-3">
+            <div class="flex items-center gap-2 text-abec-blue mb-1.5">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+              <p class="text-[11px] font-semibold text-slate-600">Activation Date</p>
+            </div>
+            <p id="modal-activation-date" class="text-sm font-medium text-slate-800">-- (Not yet activated)</p>
+          </div>
+        </div>
+        </div>
+
+      <div class="details-actions">
+        <div class="bg-abec-navy rounded-xl p-4 text-white shadow-sm">
+          <div class="flex items-start justify-between gap-3 mb-3">
+            <p id="modal-pin-label" class="text-[10px] font-semibold uppercase tracking-wider text-blue-200">Security PIN Status</p>
+            <button id="modal-copy-pin" type="button" onclick="copyModalPin()" class="hidden shrink-0 inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide border border-white/40 hover:bg-white/10 px-2.5 py-1.5 rounded transition-colors">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+              Copy PIN
+            </button>
+          </div>
+          <p id="modal-pin-display" class="text-2xl font-bold tracking-wide mb-3">Pending Activation</p>
+          <div class="bg-black/25 rounded-lg px-3.5 py-3 flex items-start gap-2.5">
+            <svg class="w-4 h-4 text-amber-300 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path></svg>
+            <p class="text-xs text-blue-100 leading-relaxed italic">Inform the student to keep this PIN confidential for their initial portal access.</p>
+          </div>
+        </div>
+
+        <div class="abec-card abec-card-static p-4">
+          <h5 class="text-[11px] font-bold uppercase tracking-wide text-abec-blue mb-3">Account Operations</h5>
+          <div class="details-operations">
+            <button id="btn-regenerate-pin" type="button" onclick="modalRegeneratePin()" class="w-full py-3 px-4 rounded-lg text-sm font-semibold border-2 border-abec-navy text-abec-navy hover:bg-abec-navy hover:text-white transition-colors flex items-center justify-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+              Generate PIN
+            </button>
+
+            <button id="btn-print-notice" type="button" onclick="modalPrintNotice()" class="w-full py-3 px-4 rounded-lg text-sm font-semibold bg-abec-navy text-white hover:bg-[#2563EB] transition-colors flex items-center justify-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+              Print Activation Notice
+            </button>
+
+            <button id="btn-activate" type="button" onclick="modalUpdateStatus('activated')" class="w-full py-3.5 px-4 rounded-lg text-sm font-semibold bg-emerald-600 hover:bg-emerald-700 text-white transition-colors flex items-center justify-center gap-2">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+              Activate Account
+            </button>
+
+            <button id="btn-deactivate" type="button" onclick="modalUpdateStatus('deactivated')" class="hidden w-full py-3.5 px-4 rounded-lg text-sm font-semibold border-2 border-red-500 text-red-600 hover:bg-red-50 transition-colors flex items-center justify-center gap-2">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M13 7a4 4 0 11-8 0 4 4 0 018 0zM9 14a6 6 0 00-6 6h8.5M16 11l2 2m0 0l2 2m-2-2l-2 2m2-2l2-2" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+              Deactivate Account
+            </button>
+
+            <button id="btn-reactivate" type="button" onclick="modalUpdateStatus('activated')" class="hidden w-full py-3.5 px-4 rounded-lg text-sm font-semibold bg-emerald-600 hover:bg-emerald-700 text-white transition-colors flex items-center justify-center gap-2">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+              Reactivate Account
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="activation-profile-modal" class="hidden fixed inset-0 z-[140] flex items-center justify-center p-3 sm:p-5" role="dialog" aria-modal="true" aria-labelledby="activation-profile-title">
+  <div class="absolute inset-0 abec-modal-backdrop" onclick="closeActivationProfile()"></div>
+  <div class="profile-modal">
+    <button type="button" class="profile-close" onclick="closeActivationProfile()" aria-label="Back to activation details">&times;</button>
+    <div id="activation-profile-body" class="profile-modal-body"></div>
+    <div class="activation-profile-back">
+      <button type="button" onclick="closeActivationProfile()">Back to Activation Details</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  var activeTab = 'all';
+  var selectionMode = false;
+  var activeModalRow = null;
+  var selectableTabs = ['pending', 'activated', 'deactivated'];
+  var bulkActionsByTab = {
+    pending: ['activate', 'archive'],
+    activated: ['deactivate'],
+    deactivated: ['reactivate', 'archive']
+  };
+  var statusMeta = {
+    pending: {
+      label: 'Pending Activation',
+      badge: 'bg-amber-100 text-amber-700',
+      modalBadge: 'bg-amber-500 text-white',
+      modalBadgeText: 'Pending',
+      pin: 'Not Generated',
+      note: 'N/A'
+    },
+    activated: {
+      label: 'Activated',
+      badge: 'bg-green-100 text-green-700',
+      modalBadge: 'bg-emerald-100 text-emerald-700',
+      modalBadgeText: 'Activated',
+      pin: null,
+      note: 'Activated: Today'
+    },
+    deactivated: {
+      label: 'Deactivated',
+      badge: 'bg-slate-200 text-slate-600',
+      modalBadge: 'bg-red-100 text-red-600',
+      modalBadgeText: 'Deactivated',
+      pin: null,
+      note: 'Deactivated: Today'
+    }
+  };
+
+  function filterByStatCard(card) {
+    document.querySelectorAll('[data-filter-tab]').forEach(function (el) {
+      var selected = el === card;
+      el.classList.toggle('is-active', selected);
+      el.setAttribute('aria-pressed', selected ? 'true' : 'false');
+    });
+    activeTab = card.getAttribute('data-filter-tab') || 'all';
+    if (selectionMode) exitSelectionMode();
+    else {
+      filterActivationTable();
+      updateSelectToolbarVisibility();
+    }
+  }
+
+  function filterActivationTable() {
+    var query = document.getElementById('activation-search').value.trim().toLowerCase();
+    var course = document.getElementById('activation-course-filter').value;
+    var rows = document.querySelectorAll('.activation-row');
+    var emptyRow = document.getElementById('activation-empty-row');
+    var visible = 0;
+
+    rows.forEach(function (row) {
+      var name = row.getAttribute('data-name') || '';
+      var email = (row.getAttribute('data-email') || '').toLowerCase();
+      var rowCourse = row.getAttribute('data-course') || '';
+      var status = row.getAttribute('data-status') || '';
+
+      var matchQuery = !query ||
+        name.indexOf(query) !== -1 ||
+        email.indexOf(query) !== -1 ||
+        rowCourse.toLowerCase().indexOf(query) !== -1;
+
+      var matchCourse = course === 'all' || rowCourse === course;
+      var matchTab =
+        activeTab === 'all' ||
+        (activeTab === 'pending' && status === 'pending') ||
+        (activeTab === 'activated' && status === 'activated') ||
+        (activeTab === 'deactivated' && status === 'deactivated');
+
+      var show = matchQuery && matchCourse && matchTab;
+      row.classList.toggle('hidden', !show);
+      if (show) visible++;
+    });
+
+    if (emptyRow) emptyRow.classList.toggle('hidden', rows.length > 0 && visible > 0);
+    updateSelectedCount();
+    updateSelectToolbarVisibility();
+  }
+
+  function updateSelectToolbarVisibility() {
+    var showSelect = selectableTabs.indexOf(activeTab) !== -1;
+    document.getElementById('select-toolbar').classList.toggle('hidden', !showSelect);
+    if (showSelect && selectionMode) updateBulkActionButtons();
+  }
+
+  function updateBulkActionButtons() {
+    var visible = bulkActionsByTab[activeTab] || [];
+    document.querySelectorAll('.bulk-action-btn').forEach(function (btn) {
+      var action = btn.getAttribute('data-bulk');
+      btn.classList.toggle('hidden', visible.indexOf(action) === -1);
+    });
+  }
+
+  function toggleSelectionMode() {
+    if (selectionMode) {
+      exitSelectionMode();
+      return;
+    }
+    if (selectableTabs.indexOf(activeTab) === -1) return;
+
+    selectionMode = true;
+    document.body.classList.add('selection-mode');
+    document.getElementById('btn-select-mode').classList.add('hidden');
+    document.getElementById('btn-cancel-select').classList.remove('hidden');
+    document.getElementById('selected-count').classList.remove('hidden');
+    document.getElementById('bulk-actions').classList.remove('hidden');
+    updateBulkActionButtons();
+    updateSelectedCount();
+  }
+
+  function clearSelections() {
+    document.querySelectorAll('.activation-row').forEach(function (row) {
+      row.classList.remove('selected');
+      var check = row.querySelector('.row-check');
+      if (check) check.checked = false;
+    });
+  }
+
+  function exitSelectionMode() {
+    selectionMode = false;
+    document.body.classList.remove('selection-mode');
+    document.getElementById('btn-select-mode').classList.remove('hidden');
+    document.getElementById('btn-cancel-select').classList.add('hidden');
+    document.getElementById('selected-count').classList.add('hidden');
+    document.getElementById('bulk-actions').classList.add('hidden');
+    clearSelections();
+    filterActivationTable();
+  }
+
+  function handleRowClick(row) {
+    if (selectionMode) {
+      if (row.classList.contains('hidden')) return;
+      if (row.getAttribute('data-status') !== activeTab) return;
+      var check = row.querySelector('.row-check');
+      if (!check) return;
+      check.checked = !check.checked;
+      toggleRowSelection(check);
+      return;
+    }
+    openDetailsModal(row);
+  }
+
+  function toggleRowSelection(checkbox) {
+    var row = checkbox.closest('.activation-row');
+    if (!row) return;
+    row.classList.toggle('selected', checkbox.checked);
+    updateSelectedCount();
+  }
+
+  function updateSelectedCount() {
+    var count = document.querySelectorAll('.activation-row.selected:not(.hidden)').length;
+    var el = document.getElementById('selected-count');
+    if (el) el.textContent = count + ' selected';
+  }
+
+  function getSelectedRows() {
+    return Array.prototype.slice.call(
+      document.querySelectorAll('.activation-row.selected:not(.hidden)')
+    );
+  }
+
+  function applyStatusToRow(row, newStatus) {
+    var meta = statusMeta[newStatus];
+    if (!meta) return;
+
+    row.setAttribute('data-status', newStatus);
+
+    var badge = row.querySelector('.status-badge');
+    if (badge) {
+      badge.textContent = meta.label;
+      badge.className = 'status-badge inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase ' + meta.badge;
+    }
+
+    var pinCell = row.children[2];
+    if (pinCell) {
+      if (meta.pin === 'Not Generated') {
+        pinCell.textContent = 'Not Generated';
+        pinCell.className = 'px-6 py-4 text-sm text-slate-500';
+        row.setAttribute('data-pin', '');
+        row.setAttribute('data-pin-date', '');
+        row.setAttribute('data-activation-date', '');
+      } else {
+        var existingPin = row.getAttribute('data-pin') || '';
+        if (!existingPin || existingPin === 'Not Generated') {
+          existingPin = 'ABEC-' + String(Math.floor(100000 + Math.random() * 900000));
+          row.setAttribute('data-pin', existingPin);
+          row.setAttribute('data-pin-date', 'Just now');
+        }
+        if (newStatus === 'activated') {
+          row.setAttribute('data-activation-date', 'Today');
+        }
+        pinCell.textContent = existingPin;
+        pinCell.className = 'px-6 py-4 text-sm font-medium text-slate-700 pin-value';
+      }
+    }
+
+    var note = row.querySelector('.date-note');
+    if (note) note.textContent = meta.note;
+  }
+
+  function bulkUpdateStatus(newStatus) {
+    var selected = getSelectedRows();
+    if (!selected.length) {
+      alert('Please select at least one account.');
+      return;
+    }
+    selected.forEach(function (row) {
+      applyStatusToRow(row, newStatus);
+    });
+    exitSelectionMode();
+  }
+
+  function bulkArchiveSelected() {
+    var selected = getSelectedRows();
+    if (!selected.length) {
+      alert('Please select at least one account.');
+      return;
+    }
+    selected.forEach(function (row) {
+      row.remove();
+    });
+    exitSelectionMode();
+  }
+
+  function openDetailsModal(row) {
+    activeModalRow = row;
+    window.activeModalRow = row;
+    var status = row.getAttribute('data-status') || 'pending';
+    var meta = statusMeta[status] || statusMeta.pending;
+    var pin = row.getAttribute('data-pin') || '';
+    var pinDate = row.getAttribute('data-pin-date') || '';
+    var activationDate = row.getAttribute('data-activation-date') || '';
+    var created = row.getAttribute('data-created') || '';
+
+    document.getElementById('modal-name').textContent = row.getAttribute('data-display-name') || '';
+    document.getElementById('modal-header-email').textContent = row.getAttribute('data-email') || '';
+    document.getElementById('modal-email').textContent = row.getAttribute('data-email') || '';
+    document.getElementById('modal-phone').textContent = row.getAttribute('data-phone') || '';
+    var courseText = row.getAttribute('data-course') || '';
+    document.getElementById('modal-course').textContent = (window.AbecApi && AbecApi.displayCourseName) ? AbecApi.displayCourseName(courseText) : courseText;
+    document.getElementById('modal-intake').textContent = row.getAttribute('data-intake') || '—';
+    var registeredEl = document.getElementById('modal-registered');
+    if (registeredEl) registeredEl.textContent = row.getAttribute('data-registered') || '—';
+    var confirmationEl = document.getElementById('modal-confirmation');
+    if (confirmationEl) confirmationEl.textContent = row.getAttribute('data-confirmation') || '—';
+    var addressEl = document.getElementById('modal-address');
+    if (addressEl) addressEl.textContent = row.getAttribute('data-address') || '—';
+    var photoSrc = row.getAttribute('data-photo');
+    if (photoSrc) document.getElementById('modal-photo').src = photoSrc;
+
+    var badge = document.getElementById('modal-status-badge');
+    badge.textContent = meta.modalBadgeText;
+    badge.className = 'inline-block px-2.5 py-1 rounded text-[10px] font-bold uppercase ' + meta.modalBadge;
+
+    var historyBody = document.getElementById('modal-history-body');
+    var confirmedAt = row.getAttribute('data-confirmed-at') || created;
+    if (status === 'pending') {
+      historyBody.innerHTML =
+        '<tr><td class="px-3 py-2.5">' + (row.getAttribute('data-registered') || created) + '</td><td class="px-3 py-2.5">Application Registered</td><td class="px-3 py-2.5">System</td></tr>' +
+        '<tr><td class="px-3 py-2.5">' + confirmedAt + '</td><td class="px-3 py-2.5">Slot Confirmed</td><td class="px-3 py-2.5">Applicant</td></tr>' +
+        '<tr><td class="px-3 py-2.5">' + created + '</td><td class="px-3 py-2.5">Moved to Pending Activation</td><td class="px-3 py-2.5">System</td></tr>';
+    } else if (status === 'activated') {
+      historyBody.innerHTML =
+        '<tr><td class="px-3 py-2.5">' + created + '</td><td class="px-3 py-2.5">PIN Generated</td><td class="px-3 py-2.5">Admin</td></tr>' +
+        '<tr><td class="px-3 py-2.5">' + (activationDate || created) + '</td><td class="px-3 py-2.5">Account Activated</td><td class="px-3 py-2.5">Admin</td></tr>';
+    } else {
+      historyBody.innerHTML =
+        '<tr><td class="px-3 py-2.5">' + created + '</td><td class="px-3 py-2.5">PIN Generated</td><td class="px-3 py-2.5">Admin</td></tr>' +
+        '<tr><td class="px-3 py-2.5">' + (activationDate || created) + '</td><td class="px-3 py-2.5">Account Deactivated</td><td class="px-3 py-2.5">Admin</td></tr>';
+    }
+
+    var pinLabel = document.getElementById('modal-pin-label');
+    var pinDisplay = document.getElementById('modal-pin-display');
+    var copyBtn = document.getElementById('modal-copy-pin');
+    var pinDateLabel = document.getElementById('modal-pin-date-label');
+    var pinDateEl = document.getElementById('modal-pin-date');
+    var activationDateEl = document.getElementById('modal-activation-date');
+
+    var regenerateBtn = document.getElementById('btn-regenerate-pin');
+    var printBtn = document.getElementById('btn-print-notice');
+    var activateBtn = document.getElementById('btn-activate');
+    var deactivateBtn = document.getElementById('btn-deactivate');
+    var reactivateBtn = document.getElementById('btn-reactivate');
+
+    // Reset operations visibility
+    activateBtn.classList.add('hidden');
+    deactivateBtn.classList.add('hidden');
+    reactivateBtn.classList.add('hidden');
+    copyBtn.classList.add('hidden');
+
+    printBtn.classList.remove('hidden');
+    regenerateBtn.classList.remove('hidden');
+
+    var disabledBtnClass = 'w-full py-3 px-4 rounded-lg text-sm font-semibold border-2 border-slate-300 text-slate-400 bg-slate-100 cursor-not-allowed flex items-center justify-center gap-2';
+    var disabledPrintClass = 'w-full py-3 px-4 rounded-lg text-sm font-semibold bg-slate-300 text-white cursor-not-allowed flex items-center justify-center gap-2';
+    var enabledPrintClass = 'w-full py-3 px-4 rounded-lg text-sm font-semibold bg-abec-navy text-white hover:bg-[#2563EB] transition-colors flex items-center justify-center gap-2';
+
+    if (status === 'pending') {
+      pinLabel.textContent = 'Security PIN Status';
+      pinDisplay.textContent = 'Pending Activation';
+      pinDateLabel.textContent = 'PIN Generation Time';
+      pinDateEl.textContent = '-- (Not yet activated)';
+      activationDateEl.textContent = '-- (Not yet activated)';
+
+      regenerateBtn.disabled = true;
+      regenerateBtn.className = disabledBtnClass;
+      printBtn.disabled = true;
+      printBtn.className = disabledPrintClass;
+      activateBtn.classList.remove('hidden');
+    } else if (status === 'activated') {
+      pinLabel.textContent = 'Generated Security PIN';
+      pinDisplay.textContent = pin || 'ABEC-000000';
+      copyBtn.classList.remove('hidden');
+      pinDateLabel.textContent = 'PIN Generation Date';
+      pinDateEl.textContent = pinDate || '--';
+      activationDateEl.textContent = activationDate || '--';
+
+      regenerateBtn.disabled = true;
+      regenerateBtn.className = disabledBtnClass;
+      printBtn.disabled = false;
+      printBtn.className = enabledPrintClass;
+      deactivateBtn.classList.remove('hidden');
+    } else {
+      // deactivated — Generate PIN & Print stay visible but disabled
+      pinLabel.textContent = 'Security PIN Status';
+      pinDisplay.textContent = pin || 'ABEC-000000';
+      copyBtn.classList.remove('hidden');
+      pinDateLabel.textContent = 'PIN Generation Date';
+      pinDateEl.textContent = pinDate || '--';
+      activationDateEl.textContent = activationDate || '--';
+
+      regenerateBtn.disabled = true;
+      regenerateBtn.className = disabledBtnClass;
+      printBtn.disabled = true;
+      printBtn.className = disabledPrintClass;
+      reactivateBtn.classList.remove('hidden');
+    }
+
+    document.getElementById('details-modal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeActivationProfile() {
+    var profile = document.getElementById('activation-profile-modal');
+    if (profile) profile.classList.add('hidden');
+  }
+
+  function openStudentFullInformation() {
+    if (!activeModalRow) return;
+    var modal = document.getElementById('activation-profile-modal');
+    var host = document.getElementById('activation-profile-body');
+    var applicantId = activeModalRow.getAttribute('data-applicant-id');
+    modal.classList.remove('hidden');
+    if (!applicantId || !window.AbecProfile) {
+      host.innerHTML = '<p class="profile-loading">This student does not have a registration record to display.</p>';
+      return;
+    }
+    AbecProfile.loadInto(host, applicantId, {
+      applicantId: applicantId,
+      studentId: activeModalRow.getAttribute('data-id'),
+      name: activeModalRow.getAttribute('data-display-name'),
+      course: activeModalRow.getAttribute('data-course'),
+      email: activeModalRow.getAttribute('data-email'),
+      phone: activeModalRow.getAttribute('data-phone'),
+      archived: activeModalRow.getAttribute('data-archived') === '1'
+    }, { actions: false });
+  }
+
+  function closeDetailsModal() {
+    closeActivationProfile();
+    document.getElementById('details-modal').classList.add('hidden');
+    document.body.style.overflow = '';
+    activeModalRow = null;
+    window.activeModalRow = null;
+  }
+
+  function copyModalPin() {
+    var pin = document.getElementById('modal-pin-display').textContent;
+    if (!pin || pin === 'Pending Activation') return;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(pin).then(function () {
+        alert('PIN copied to clipboard.');
+      });
+    } else {
+      alert('PIN: ' + pin);
+    }
+  }
+
+  function modalRegeneratePin() {
+    if (!activeModalRow) return;
+    var btn = document.getElementById('btn-regenerate-pin');
+    if (btn.disabled) return;
+
+    var newPin = 'ABEC-' + String(Math.floor(100000 + Math.random() * 900000));
+    activeModalRow.setAttribute('data-pin', newPin);
+    activeModalRow.setAttribute('data-pin-date', 'Just now');
+
+    var pinCell = activeModalRow.children[2];
+    if (pinCell) {
+      pinCell.textContent = newPin;
+      pinCell.className = 'px-6 py-4 text-sm font-medium text-slate-700 pin-value';
+    }
+
+    document.getElementById('modal-pin-display').textContent = newPin;
+    document.getElementById('modal-pin-date').textContent = 'Just now';
+    document.getElementById('modal-copy-pin').classList.remove('hidden');
+    document.getElementById('modal-pin-label').textContent =
+      activeModalRow.getAttribute('data-status') === 'activated'
+        ? 'Generated Security PIN'
+        : 'Security PIN Status';
+  }
+
+  function modalUpdateStatus(newStatus) {
+    if (!activeModalRow) return;
+    applyStatusToRow(activeModalRow, newStatus);
+    closeDetailsModal();
+    filterActivationTable();
+  }
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape') return;
+    var profile = document.getElementById('activation-profile-modal');
+    if (profile && !profile.classList.contains('hidden')) {
+      closeActivationProfile();
+      return;
+    }
+    if (!document.getElementById('details-modal').classList.contains('hidden')) closeDetailsModal();
+  });
+
+  updateSelectToolbarVisibility();
+  filterActivationTable();
+</script>
+<script src="../../wwwroot/js/sidebar-auto-hide.js"></script>
+<script src="../../wwwroot/js/abec-api.js?v=20261031ux1"></script>
+<script src="../../wwwroot/js/abec-profile-details.js?v=20261031ux1"></script>
+<script src="../../wwwroot/js/abec-other-reason.js"></script>
+<script src="../../wwwroot/js/abec-admin.js?v=20261105icons1"></script>
+<script src="../../wwwroot/js/abec-activation.js?v=20261020name1"></script>
+</body>
+</html>

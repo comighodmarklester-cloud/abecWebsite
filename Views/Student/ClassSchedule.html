@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Training Schedule - ABEC Student</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="../../wwwroot/css/abec-ui.css?v=20261029train4" rel="stylesheet"/>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['Inter', 'Plus Jakarta Sans', 'sans-serif'],
+        },
+        colors: {
+          'abec-navy': '#0B1F3A',
+          'abec-sidebar-active': 'rgba(255,255,255,0.08)',
+          'abec-blue': '#2563EB',
+          'surface': '#F5F9FF',
+        }
+      }
+    }
+  }
+</script>
+<style>
+  body { font-family: 'Plus Jakarta Sans', Inter, sans-serif; }
+  .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+  .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+  .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.18); border-radius: 10px; }
+  #class-cal-grid .cal-day {
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  }
+  #class-cal-grid .cal-day:hover { background-color: #f1f5f9; }
+  #class-cal-grid .cal-day.is-selected {
+    outline: 2px solid #2563EB;
+    outline-offset: 1px;
+  }
+</style>
+</head>
+<body class="abec-app student-module student-desk class-page bg-surface font-sans text-slate-800">
+<div class="student-frame">
+
+<main class="abec-main student-content">
+  <div class="class-layout">
+    <div class="train-main">
+    <section class="train-panel train-sessions">
+      <div class="train-panel-head">
+        <div class="min-w-0">
+          <div class="flex flex-wrap items-center gap-2">
+            <h2>Schedule Sessions</h2>
+            <span id="schedule-status-badge" class="train-status is-active hidden">Active</span>
+          </div>
+          <p id="schedule-course-name">Loading schedule...</p>
+          <p id="schedule-filter-label">Showing all active sessions for your course</p>
+        </div>
+        <button type="button" id="btn-clear-day-filter" class="hidden">Show all days</button>
+      </div>
+      <div id="class-schedule-body" class="train-session-list" data-purpose="schedule-list">
+        <p class="train-empty">Loading schedule...</p>
+      </div>
+    </section>
+
+      <section class="train-panel train-cal">
+        <div class="train-panel-head train-cal-head">
+          <h3>Calendar</h3>
+          <div class="flex items-center gap-0.5">
+            <button type="button" id="class-cal-prev" class="train-cal-nav" aria-label="Previous month">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+            </button>
+            <span id="class-cal-month-label">—</span>
+            <button type="button" id="class-cal-next" class="train-cal-nav" aria-label="Next month">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+            </button>
+          </div>
+        </div>
+        <div class="train-cal-week">
+          <div>S</div><div>M</div><div>T</div><div>W</div><div>T</div><div>F</div><div>S</div>
+        </div>
+        <div id="class-cal-grid"></div>
+        <div class="train-legend">
+          <div><span class="train-swatch is-today"></span><span>Today</span></div>
+          <div><span class="train-swatch is-scheduled"></span><span>Training day</span></div>
+        </div>
+        <div id="day-view-panel" class="train-day-note hidden">
+          <p>Selected day</p>
+          <p id="day-view-date">—</p>
+          <div id="day-view-list"></div>
+        </div>
+      </section>
+    </div>
+
+    <section class="train-panel train-updates">
+        <div class="train-panel-head">
+          <h3>Class Schedule Update</h3>
+        </div>
+        <div id="schedule-notifications" class="train-update-list">
+          <p class="train-empty">No class schedule updates.</p>
+        </div>
+      </section>
+  </div>
+</main>
+</div>
+<script src="../../wwwroot/js/abec-api.js?v=20261031ux1"></script>
+<script src="../../wwwroot/js/abec-student-shell.js?v=20261029docs1"></script>
+<script src="../../wwwroot/js/abec-student.js?v=20261029train3"></script>
+</body>
+</html>

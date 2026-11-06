@@ -1,0 +1,12 @@
+{
+  "Email": {
+    "Enabled": true,
+    "Host": "smtp.gmail.com",
+    "Port": 587,
+    "UseSsl": true,
+    "Username": "abec.legazpi10@gmail.com",
+    "FromAddress": "abec.legazpi10@gmail.com",
+    "FromName": "ABEC System",
+    "PickupDirectory": "App_Data/email-outbox"
+  }
+}

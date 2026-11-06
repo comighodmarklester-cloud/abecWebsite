@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Signed Out - ABEC Institute</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="../../wwwroot/css/abec-ui.css?v=20261018ux2" rel="stylesheet"/>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: { sans: ['Inter', 'Plus Jakarta Sans', 'sans-serif'] },
+        colors: {
+          'abec-navy': '#0B1F3A',
+          'abec-blue': '#2563EB',
+        }
+      }
+    }
+  }
+</script>
+</head>
+<body class="abec-public-surface min-h-screen flex items-center justify-center p-4">
+  <div class="w-full max-w-md abec-card abec-card-static px-8 py-10 text-center">
+    <div class="mx-auto w-14 h-14 rounded-2xl bg-slate-50 flex items-center justify-center mb-6">
+      <svg class="w-7 h-7 text-abec-navy" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"></path>
+      </svg>
+    </div>
+
+    <h1 class="text-2xl font-bold text-abec-navy tracking-tight leading-snug mb-3">
+      You have been successfully signed out
+    </h1>
+    <p class="text-sm text-slate-500 leading-relaxed mb-8">
+      Thank you for using the ABEC Training &amp; Assessment Center portal. Your session has been ended securely to protect your data.
+    </p>
+
+    <div class="space-y-3 mb-8">
+      <a href="LoginPage.html" class="abec-btn abec-btn-primary w-full">
+        Return to Login
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+        </svg>
+      </a>
+      <a href="LandingPage.html" class="abec-btn abec-btn-secondary w-full">
+        Home
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+        </svg>
+      </a>
+      <button type="button" onclick="cancelSignOut()" class="abec-btn abec-btn-ghost w-full">
+        Cancel
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
+    </div>
+
+    <div class="border-t border-slate-100 pt-5 flex items-center justify-center gap-2 text-xs text-slate-400">
+      <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+      </svg>
+      <span>Session terminated: <span id="session-time">—</span></span>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var now = new Date();
+      var time = now.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true
+      });
+      document.getElementById('session-time').textContent = time;
+    })();
+
+    function cancelSignOut() {
+      if (window.history.length > 1) {
+        window.history.back();
+        return;
+      }
+      window.location.href = '../Admin/AdminDashboard.html';
+    }
+
+    try { sessionStorage.removeItem('abec-session'); } catch (e) { /* ignore */ }
+  </script>
+<script src="../../wwwroot/js/abec-api.js?v=20261106studentauth1"></script>
+<script>AbecApi.post('/api/auth/student-logout', {});</script>
+</body>
+</html>

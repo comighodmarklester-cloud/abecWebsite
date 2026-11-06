@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>ABEC_System</RootNamespace>
+    <!-- App Password lives in user-secrets / env / smtp.local.json — never in source. -->
+    <UserSecretsId>abec-system-8f3c2a1e-4b9d-4e7a-9c21-email-smtp</UserSecretsId>
+    <!-- Runtime data and nested build output must not become project/publish inputs. -->
+    <DefaultItemExcludes>$(DefaultItemExcludes);**/App_Data/**;**/bin/**;**/obj/**;**/publish/**;**/artifacts/**</DefaultItemExcludes>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Supply production configuration through the host, not developer config files. -->
+    <Content Update="appsettings.json;appsettings.*.json;smtp.local.json" CopyToPublishDirectory="Never" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="scripts/BatchVerification/**/*.cs" />
+    <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
+    <PackageReference Include="MailKit" Version="4.9.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.11">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="8.0.2" />
+    <PackageReference Include="QuestPDF" Version="2024.12.3" />
+  </ItemGroup>
+
+</Project>

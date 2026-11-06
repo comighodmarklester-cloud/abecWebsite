@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Documents - ABEC Student</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="../../wwwroot/css/abec-ui.css?v=20261029train2" rel="stylesheet"/>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['Inter', 'Plus Jakarta Sans', 'sans-serif'],
+        },
+        colors: {
+          'abec-navy': '#0B1F3A',
+          'abec-sidebar-active': 'rgba(255,255,255,0.08)',
+          'abec-blue': '#2563EB',
+          'surface': '#F5F9FF',
+        }
+      }
+    }
+  }
+</script>
+<style>
+  body { font-family: 'Plus Jakarta Sans', Inter, sans-serif; }
+  .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+  .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+  .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.18); border-radius: 10px; }
+  body.doc-page .doc-page-header { margin-bottom: 0.65rem; }
+  body.doc-page .doc-layout > section { padding: 0.85rem; }
+  body.doc-page .doc-layout > section > .mb-5 { margin-bottom: 0.65rem; }
+  body.doc-page #doc-release-info { margin-bottom: 0.65rem; padding: 0.55rem 0.75rem; font-size: 0.75rem; }
+  body.doc-page #credentials-grid { gap: 0.65rem; }
+  body.doc-page #credentials-grid > div { padding: 0.75rem; }
+  body.doc-page #credentials-grid .w-12 { width: 2rem; height: 2rem; }
+  body.doc-page #credentials-grid .mt-3 { margin-top: 0.5rem; }
+  body.doc-page .doc-layout > section + section { padding: 0; margin-top: 0.65rem; }
+  body.doc-page .doc-layout > section + section > div:first-child { padding: 0.65rem 0.85rem; }
+  body.doc-page #recent-requests-body td,
+  body.doc-page .doc-layout th { padding: 0.55rem 0.85rem; font-size: 0.75rem; }
+  body.doc-page.student-dialog-open { overflow: hidden; }
+  @media (min-width: 900px) {
+    body.doc-page .request-dialog-card { max-width: 54rem; }
+    body.doc-page #new-request-form { display: grid; grid-template-columns: 1fr 1.1fr; gap: 1rem; padding: 1rem 1.25rem; }
+    body.doc-page #new-request-form > * { margin: 0; }
+    body.doc-page #new-request-form > .space-y-4 { grid-column: 2; grid-row: 1 / 3; }
+    body.doc-page #new-request-form > button { grid-column: 1 / -1; }
+  }
+  @media (max-width: 639px) {
+    body.doc-page .doc-layout table { min-width: 0; }
+    body.doc-page .doc-layout thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+    body.doc-page #recent-requests-body, body.doc-page #recent-requests-body tr { display: block; }
+    body.doc-page #recent-requests-body td { display: flex; justify-content: space-between; gap: 1rem; }
+    body.doc-page #recent-requests-body td[data-label]::before { content: attr(data-label); font-weight: 700; flex-shrink: 0; }
+  }
+  @media (min-width: 1100px) {
+    body.doc-page #credentials-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
+</style>
+</head>
+<body class="abec-app student-module student-desk doc-page bg-surface font-sans text-slate-800">
+<div class="student-frame">
+
+<main class="abec-main student-content">
+  <header class="doc-page-header flex flex-wrap items-center justify-between gap-3 mb-4">
+    <h2 class="text-2xl font-bold text-abec-navy">Documents</h2>
+    <button type="button" id="btn-request-tracking" aria-haspopup="dialog" aria-controls="request-tracking-modal" class="bg-abec-navy hover:bg-abec-blue text-white text-sm font-bold px-4 py-2 rounded-lg">Request Tracking</button>
+  </header>
+
+  <div class="doc-layout space-y-4">
+    <!-- ABEC-provided documents (requestable) -->
+    <section class="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+      <div class="mb-5">
+        <p class="text-sm text-slate-500">ABEC prepares and releases these documents after training. Request a document only when it has not been released.</p>
+      </div>
+      <div id="doc-release-info" class="mb-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">Loading release information...</div>
+
+      <div class="mb-5 flex flex-wrap gap-2" id="status-legend" aria-label="Document status legend">
+        <span class="inline-flex items-center rounded-full bg-slate-100 text-slate-600 text-[10px] font-bold uppercase tracking-wide px-2.5 py-1">Not Prepared</span>
+        <span class="inline-flex items-center rounded-full bg-emerald-100 text-emerald-700 text-[10px] font-bold uppercase tracking-wide px-2.5 py-1">Ready for Release</span>
+        <span class="inline-flex items-center rounded-full bg-amber-100 text-amber-700 text-[10px] font-bold uppercase tracking-wide px-2.5 py-1">Pending</span>
+        <span class="inline-flex items-center rounded-full bg-sky-100 text-sky-700 text-[10px] font-bold uppercase tracking-wide px-2.5 py-1">Processing</span>
+        <span class="inline-flex items-center rounded-full bg-orange-100 text-orange-700 text-[10px] font-bold uppercase tracking-wide px-2.5 py-1">On Hold</span>
+        <span class="inline-flex items-center rounded-full bg-violet-100 text-violet-700 text-[10px] font-bold uppercase tracking-wide px-2.5 py-1">Released</span>
+      </div>
+
+      <div id="credentials-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="rounded-xl border border-slate-200 px-4 py-8 text-center text-sm text-slate-500 md:col-span-3">Loading credentials...</div>
+      </div>
+    </section>
+
+    <!-- Recent Requests -->
+    <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+      <div class="px-6 py-5 border-b border-slate-100">
+        <h3 class="text-lg font-bold text-abec-navy">Recent Requests</h3>
+        <p class="text-xs text-slate-500 mt-1">Latest three requests. View all in Request Tracking.</p>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left min-w-[720px]">
+          <thead class="bg-slate-50/80 border-b border-slate-100">
+            <tr class="text-sm font-bold text-abec-navy">
+              <th class="px-6 py-4">Document Type</th>
+              <th class="px-6 py-4">Date Requested</th>
+              <th class="px-6 py-4">Status</th>
+              <th class="px-6 py-4">Purpose</th>
+            </tr>
+          </thead>
+          <tbody id="recent-requests-body" class="divide-y divide-slate-100 text-sm">
+            <tr>
+              <td colspan="4" class="px-6 py-10 text-center text-sm text-slate-500">No recent document requests.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+</div>
+
+<!-- Request Tracking Modal -->
+<div id="request-tracking-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="request-tracking-title">
+  <div class="absolute inset-0 bg-abec-navy/50 backdrop-blur-[1px]" data-close-tracking></div>
+  <div class="relative bg-white rounded-xl shadow-xl w-full max-w-3xl max-h-[90dvh] flex flex-col overflow-hidden">
+    <div class="flex items-center justify-between gap-3 px-5 py-4 border-b border-slate-200">
+      <h3 id="request-tracking-title" class="text-lg font-bold text-abec-navy" tabindex="-1">Request Tracking</h3>
+      <button type="button" class="text-sm font-bold text-abec-navy px-3 py-2 rounded-lg border border-slate-200" data-close-tracking>Close</button>
+    </div>
+    <div id="request-tracking-list" class="space-y-3 p-5 min-h-0 overflow-y-auto">
+      <p class="text-sm text-slate-500 px-1 py-4">Submit a request to start tracking progress.</p>
+    </div>
+  </div>
+</div>
+
+<!-- New Request Modal -->
+<div id="new-request-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="new-request-title">
+  <div class="absolute inset-0 bg-abec-navy/50 backdrop-blur-[1px]" data-close-modal></div>
+  <div class="request-dialog-card relative bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+    <div class="flex items-center justify-between gap-3 px-6 py-5 border-b border-slate-200">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg bg-abec-navy text-white flex items-center justify-center shrink-0">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+        </div>
+        <h3 id="new-request-title" tabindex="-1" class="text-lg font-bold text-abec-navy">New Request</h3>
+      </div>
+      <button type="button" class="text-slate-400 hover:text-slate-700 transition-colors" data-close-modal aria-label="Close">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+      </button>
+    </div>
+
+    <form id="new-request-form" class="px-6 py-5 space-y-5">
+      <div>
+        <div class="flex items-center gap-2 mb-2">
+          <svg class="w-4 h-4 text-abec-blue shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path></svg>
+          <h4 class="text-sm font-bold text-abec-navy">Request Guidelines</h4>
+        </div>
+        <ul class="list-disc pl-5 space-y-1 text-sm text-slate-600">
+          <li>Select the document you need.</li>
+          <li>Choose the reason for your request.</li>
+          <li>Verify that all information is correct.</li>
+          <li>Wait for the administrator's review.</li>
+          <li>Track your request status in Request Tracking.</li>
+          <li>Check your notifications for updates and release instructions.</li>
+        </ul>
+      </div>
+
+      <div class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+        <div class="flex items-center gap-2 mb-1.5">
+          <svg class="w-4 h-4 text-amber-600 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path></svg>
+          <p class="text-sm font-bold text-amber-800">Important Reminder</p>
+        </div>
+        <p class="text-xs leading-relaxed text-amber-900/80">Please request a document only if you genuinely need it and no longer have an existing copy. Make sure your reason is valid, as all requests will be reviewed by the ABEC Administration. Approval is subject to document request policies, including verification of your student status, payment records (if applicable), and eligibility for document release. Submitting a request does not guarantee approval.</p>
+      </div>
+
+      <div class="space-y-4">
+        <div>
+          <label for="req-full-name" class="block text-sm font-medium text-slate-700 mb-1.5">Full Name</label>
+          <input id="req-full-name" name="fullName" type="text" class="w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:border-abec-blue focus:ring-abec-blue" placeholder="Enter your full name"/>
+        </div>
+        <div>
+          <label for="req-contact" class="block text-sm font-medium text-slate-700 mb-1.5">Contact</label>
+          <input id="req-contact" name="contact" type="text" class="w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:border-abec-blue focus:ring-abec-blue" placeholder="Enter your contact number or email"/>
+        </div>
+        <div>
+          <label for="req-course" class="block text-sm font-medium text-slate-700 mb-1.5">Course/Program</label>
+          <select id="req-course" name="course" class="w-full rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-800 focus:border-abec-blue focus:ring-abec-blue">
+            <option value="">Loading course...</option>
+          </select>
+        </div>
+        <div>
+          <label for="req-document" class="block text-sm font-medium text-slate-700 mb-1.5">Document Type</label>
+          <select id="req-document" name="documentType" required class="w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-800 focus:border-abec-blue focus:ring-abec-blue">
+            <option value="National Certificate (TESDA)">National Certificate (TESDA)</option>
+            <option value="Payment Receipt">Payment Receipt</option>
+            <option value="Certificate of Completion">Certificate of Completion</option>
+          </select>
+        </div>
+        <div>
+          <label for="req-purpose" class="block text-sm font-medium text-slate-700 mb-1.5">Purpose of Request</label>
+          <select id="req-purpose" name="purpose" class="w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-800 focus:border-abec-blue focus:ring-abec-blue">
+            <option value="job" selected>Job Application</option>
+            <option value="school">Further Studies</option>
+            <option value="personal">Personal Records</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div id="req-purpose-other-wrap" class="hidden">
+          <label for="req-purpose-other" class="block text-sm font-medium text-slate-700 mb-1.5">Specify Reason</label>
+          <textarea id="req-purpose-other" name="purposeOther" rows="3" maxlength="500" class="w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-800 focus:border-abec-blue focus:ring-abec-blue" placeholder="Enter the specific reason for this request"></textarea>
+        </div>
+      </div>
+
+      <button type="submit" class="w-full bg-abec-navy hover:bg-[#2563EB] text-white text-sm font-bold px-5 py-3 rounded-lg flex items-center justify-center gap-2 transition-colors shadow-sm">
+        Submit Request
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+      </button>
+    </form>
+  </div>
+</div>
+<script src="../../wwwroot/js/abec-api.js?v=20261031ux1"></script>
+<script src="../../wwwroot/js/abec-other-reason.js"></script>
+<script src="../../wwwroot/js/abec-student-shell.js?v=20261029docs1"></script>
+<script src="../../wwwroot/js/abec-student.js?v=20261029train2"></script>
+<script src="../../wwwroot/js/abec-student-documents.js?v=20261106compactdocs1"></script>
+</body>
+</html>

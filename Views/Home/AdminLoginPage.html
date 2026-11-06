@@ -1,0 +1,156 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Admin Login - ABEC Institute</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="../../wwwroot/css/abec-ui.css?v=20261018ux2" rel="stylesheet"/>
+<style data-purpose="admin-login-styling">
+    html, body { height: 100%; max-height: 100dvh; overflow: hidden; overscroll-behavior: none; }
+    body { font-family: 'Plus Jakarta Sans', Inter, sans-serif; }
+    .bg-overlay { background: linear-gradient(100deg, rgba(10, 31, 68, 0.9) 0%, rgba(11, 39, 71, 0.74) 42%, rgba(29, 78, 216, 0.42) 100%); }
+    .login-shell { height: 100dvh; max-height: 100dvh; overflow: hidden; }
+    .login-card-container { width: min(100%, 34rem); max-width: 100%; }
+    .login-card-body { padding: clamp(1.25rem, 2.5vh, 2rem) clamp(1.25rem, 2.8vw, 2.5rem); }
+    body.login-ready #branding-sidebar { display: none !important; }
+    @media (min-width: 1024px) {
+      body.login-ready #branding-sidebar { display: flex !important; width: 40%; flex: 0 0 40%; }
+      body.login-ready main[data-purpose="login-container"] { width: 60%; flex: 0 0 60%; padding: 0; height: 100dvh; }
+      body.login-ready .login-card-container { width: 100%; max-width: none; border-radius: 0; box-shadow: none; height: 100dvh; max-height: 100dvh; }
+    }
+    .admin-portal-card {
+      border: 1px solid #cbd5e1;
+      border-top: 3px solid #051630;
+      background: linear-gradient(180deg, #f8fafc 0%, #ffffff 42%);
+      box-shadow: 0 12px 40px rgba(5, 22, 48, 0.08);
+    }
+    .admin-portal-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #051630;
+      background: #e2e8f0;
+      border: 1px solid #cbd5e1;
+      padding: 0.25rem 0.55rem;
+      border-radius: 999px;
+    }
+    .input-field {
+      background-color: #FFFFFF !important;
+      border: 1px solid #E2E8F0 !important;
+      border-radius: 0.75rem !important;
+      color: #0F172A !important;
+      padding-top: 0.55rem !important;
+      padding-bottom: 0.55rem !important;
+      font-size: 0.875rem;
+    }
+    .input-field:focus {
+      border-color: #051630 !important;
+      box-shadow: 0 0 0 3px rgba(5, 22, 48, 0.12) !important;
+    }
+    .input-field.is-invalid {
+      border-color: #FCA5A5 !important;
+      box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12) !important;
+    }
+    .login-field-error { display: none; color: #DC2626; font-size: 11px; margin-top: 4px; }
+    .login-field-error.is-visible { display: block; }
+    .login-form-error {
+      display: none; align-items: flex-start; gap: 0.5rem;
+      padding: 0.65rem 0.75rem; border-radius: 0.75rem;
+      border: 1px solid #FECACA; background: #FEF2F2; color: #B91C1C;
+      font-size: 0.75rem; line-height: 1.4;
+    }
+    .login-form-error.is-visible { display: flex; }
+    .password-field { position: relative; }
+    .password-field .input-field { padding-right: 2.75rem !important; }
+    .password-toggle {
+      position: absolute; right: 0.65rem; top: 50%; transform: translateY(-50%);
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 1.75rem; height: 1.75rem; border: 0; background: transparent;
+      color: #64748B; border-radius: 0.375rem; cursor: pointer;
+    }
+    .password-toggle .icon-eye-off { display: none; }
+    .password-toggle.is-visible .icon-eye { display: none; }
+    .password-toggle.is-visible .icon-eye-off { display: block; }
+    #branding-sidebar { display: none !important; height: 100dvh; }
+    @media (min-width: 1024px) { #branding-sidebar { display: flex !important; } }
+  </style>
+</head>
+<body class="abec-public-surface login-shell login-ready admin-portal-page flex items-stretch">
+<section id="branding-sidebar" class="flex-col relative text-white overflow-hidden">
+<div class="absolute inset-0 z-0">
+<img alt="ABEC Institute Building" class="object-cover w-full h-full" src="../../wwwroot/images/Photo11ABECBuilding.png">
+<div class="absolute inset-0 bg-overlay"></div>
+</div>
+<div class="relative z-10 p-6 xl:p-8">
+<a href="LandingPage.html" class="inline-flex items-center gap-2 bg-white/10 hover:bg-white/16 px-4 py-2 rounded-full text-sm transition-all border border-white/15">
+<span>←</span> Back to site
+</a>
+</div>
+<div class="relative z-10 flex-grow flex flex-col justify-center px-8 xl:px-12 pb-8">
+<p class="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-300 mb-3">Administrator Portal</p>
+<h1 class="text-3xl xl:text-4xl font-bold tracking-tight leading-tight mb-4">ABEC Admin Access</h1>
+<p class="text-slate-300 max-w-md leading-relaxed text-sm">
+Authorized ABEC personnel only. Sign in to manage applicants, courses, activations, and institutional records.
+</p>
+</div>
+<div class="relative z-10 p-6 xl:p-8 mt-auto flex items-center gap-3">
+<img alt="ABEC Logo" class="w-8 h-8 object-contain shrink-0" src="../../wwwroot/images/Photo2ABECLogo.png">
+<span class="font-bold text-sm xl:text-lg tracking-tight leading-snug">ABEC Institute of Business and Technology Inc.</span>
+</div>
+</section>
+<main class="flex-grow flex items-center justify-center p-4 sm:p-6 lg:p-0 min-h-0 overflow-hidden" data-purpose="login-container">
+<div class="abec-card abec-card-static login-card-container overflow-hidden">
+<div class="login-card-body">
+<div class="mb-4">
+<span class="admin-portal-badge">Administrator</span>
+</div>
+<h2 class="text-2xl font-bold text-slate-900 tracking-tight mb-1">Admin Login</h2>
+<p class="text-sm text-slate-500 mb-5">Sign in with your administrator credentials.</p>
+<div id="panel-admin" class="admin-portal-card rounded-2xl p-6" data-purpose="admin-login-form">
+<form action="#" class="flex flex-col gap-3" method="POST" autocomplete="off" novalidate>
+<div id="admin-login-error" class="login-form-error" role="alert" aria-live="polite"></div>
+<div>
+<label class="block text-xs font-medium text-slate-700 mb-1" for="admin-username">Username</label>
+<input class="w-full input-field rounded-lg px-3" id="admin-username" name="username" type="text" value="" autocomplete="username" spellcheck="false" aria-describedby="admin-username-error">
+<p class="login-field-error" id="admin-username-error"></p>
+</div>
+<div>
+<label class="block text-xs font-medium text-slate-700 mb-1" for="password">Password</label>
+<div class="password-field">
+<input class="w-full input-field rounded-lg px-3" id="password" name="password" type="password" value="" autocomplete="current-password" aria-describedby="admin-password-error">
+<button type="button" class="password-toggle" data-target="password" aria-label="Show password" title="Show password" onclick="togglePasswordVisibility(this)">
+<svg class="icon-eye w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+<svg class="icon-eye-off w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/></svg>
+</button>
+</div>
+<p class="login-field-error" id="admin-password-error"></p>
+</div>
+<div class="flex items-center gap-2">
+<input class="w-4 h-4 rounded-sm border-gray-300 text-slate-800 focus:ring-slate-500 bg-gray-200" id="remember" type="checkbox">
+<label class="text-[11px] text-gray-500" for="remember">Remember this device</label>
+</div>
+<button class="abec-btn abec-btn-primary w-full py-2.5 mt-1" type="submit" id="admin-login-submit">Login</button>
+</form>
+</div>
+</div>
+</div>
+</main>
+<script>
+  function togglePasswordVisibility(btn) {
+    var input = document.getElementById(btn.getAttribute('data-target'));
+    if (!input) return;
+    var show = input.type === 'password';
+    input.type = show ? 'text' : 'password';
+    btn.classList.toggle('is-visible', show);
+    var label = show ? 'Hide' : 'Show';
+    btn.setAttribute('aria-label', label + ' password');
+    btn.setAttribute('title', label + ' password');
+  }
+</script>
+<script src="../../wwwroot/js/abec-api.js?v=20261031ux1"></script>
+<script src="../../wwwroot/js/abec-login.js?v=20261002a"></script>
+</body></html>

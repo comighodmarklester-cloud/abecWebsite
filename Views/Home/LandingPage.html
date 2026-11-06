@@ -1,0 +1,2163 @@
+<!DOCTYPE html><html lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>ABEC Institute of Business and Technology Inc.</title>
+<!-- Tailwind CSS v3 with Plugins -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Custom Style for specific overlay and texture effects -->
+<style data-purpose="custom-styling">
+    html {
+      scroll-behavior: smooth;
+    }
+    section[id] {
+      scroll-margin-top: 88px;
+    }
+    .abec-landing-page section[id]:not(#home) {
+      scroll-margin-top: 96px;
+    }
+    .hero-section {
+      min-height: 100dvh;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .hero-bg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      /* If a crop is needed, keep the right side (students) and top (faces) */
+      object-position: 75% 25%;
+    }
+    .hero-overlay {
+      /* Left-side readibility only — photo on the right stays natural */
+      background: linear-gradient(
+        100deg,
+        rgba(10, 31, 68, 0.88) 0%,
+        rgba(10, 31, 68, 0.72) 28%,
+        rgba(16, 42, 92, 0.38) 48%,
+        rgba(16, 42, 92, 0.08) 68%,
+        rgba(16, 42, 92, 0) 82%
+      );
+    }
+    .hero-section .absolute.inset-0.z-0 {
+      min-height: 100%;
+    }
+    .cta-button-gradient {
+      background: linear-gradient(135deg, #0B2747, #2563EB);
+    }
+    .cta-anim {
+      transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
+      border-radius: 0.75rem;
+    }
+    .cta-anim:hover {
+      box-shadow: 0 8px 24px rgba(11, 39, 71, 0.18);
+    }
+    .login-cta {
+      position: relative;
+      overflow: hidden;
+      z-index: 0;
+      transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    .login-cta:hover {
+      background-color: rgba(255, 255, 255, 0.12);
+      border-color: rgba(255, 255, 255, 0.45);
+      box-shadow: 0 8px 24px rgba(11, 39, 71, 0.2);
+    }
+    #courses,
+    #courses .max-w-7xl,
+    #courses .grid { overflow: visible; }
+    #courses:has(.course-card.is-open) { position: relative; z-index: 20; }
+    .course-card {
+      position: relative;
+      height: 21.5rem;
+      overflow: visible;
+    }
+    .course-card:hover,
+    .course-card.abec-card-interactive:hover { transform: none; }
+    .course-card-surface {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 100%;
+      overflow: hidden;
+      border: 1px solid #e5e7eb;
+      border-radius: 1rem;
+      background: #fff;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px rgba(15, 23, 42, 0.04);
+      transform: scale(1);
+      transform-origin: var(--origin-x, 2.6rem) var(--origin-y, 78%);
+    }
+    #courses.is-ready .course-card-surface {
+      transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1), height 0.7s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.7s ease;
+    }
+    .course-card.is-open { z-index: 6; }
+    .course-card.is-open .course-card-surface {
+      transform: scale(1.045);
+      box-shadow: 0 18px 42px rgba(15, 23, 42, 0.16);
+    }
+    .course-card-media {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 12rem;
+      z-index: 0;
+    }
+    .course-card-media img { width: 100%; height: 100%; object-fit: cover; }
+    .course-card-body {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 1;
+      background: #fff;
+      padding: 1.2rem 1.5rem 4.55rem;
+    }
+    .course-card-wash {
+      position: absolute;
+      inset: 0;
+      z-index: 3;
+      background: #fff;
+      pointer-events: none;
+      clip-path: circle(0% at var(--origin-x, 2.6rem) var(--origin-y, 78%));
+    }
+    #courses.is-ready .course-card-wash {
+      transition: clip-path 0.74s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .course-card.is-open .course-card-wash {
+      clip-path: circle(165% at var(--origin-x, 2.6rem) var(--origin-y, 78%));
+    }
+    .course-details-btn {
+      position: absolute;
+      z-index: 6;
+      left: 1.5rem;
+      bottom: 1.25rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 2.5rem;
+      padding: 0.55rem 1.15rem;
+      border: 0;
+      border-radius: 0.7rem;
+      background: #0B2747;
+      color: #fff;
+      font-size: 0.875rem;
+      font-weight: 700;
+      line-height: 1;
+      cursor: pointer;
+      transition: background-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    .course-details-btn:hover { background: #16365f; box-shadow: 0 8px 18px rgba(11, 39, 71, 0.16); }
+    .course-details-btn:focus-visible { outline: 2px solid #2563EB; outline-offset: 2px; }
+    .course-card-details {
+      position: absolute;
+      z-index: 4;
+      top: 0;
+      left: 0;
+      right: 0;
+      padding: 1.05rem 1.25rem 4.35rem;
+      pointer-events: none;
+      clip-path: circle(0% at var(--origin-x, 2.6rem) var(--origin-y, 78%));
+    }
+    #courses.is-ready .course-card-details {
+      transition: clip-path 0.74s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .course-card.is-open .course-card-details {
+      clip-path: circle(165% at var(--origin-x, 2.6rem) var(--origin-y, 78%));
+    }
+    @media (prefers-reduced-motion: reduce) {
+      #courses.is-ready .course-card-surface,
+      #courses.is-ready .course-card-wash,
+      #courses.is-ready .course-card-details { transition: none; }
+      .course-card.is-open .course-card-surface { transform: none; }
+    }
+    .course-detail-list {
+      display: grid;
+      grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+      gap: 0.7rem 1.15rem;
+      margin: 0.85rem 0 0;
+    }
+    .course-detail-jobs { grid-column: 2; grid-row: 1 / span 3; }
+    @media (max-width: 767px) {
+      .course-detail-list { grid-template-columns: 1fr; gap: 0.7rem; }
+      .course-detail-jobs { grid-column: auto; grid-row: auto; }
+      .course-card.is-open .course-card-surface { transform: scale(1.02); }
+    }
+    .course-detail-list dt {
+      margin: 0 0 0.2rem;
+      color: #2563EB;
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .course-detail-list dd { margin: 0; color: #334155; font-size: 0.92rem; line-height: 1.5; }
+    .course-job-note { margin: 0 0 0.4rem; color: #64748b; font-size: 0.82rem; line-height: 1.4; }
+    .course-job-list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 0.28rem; }
+    .course-job-list li { position: relative; padding-left: 0.9rem; color: #334155; font-size: 0.92rem; line-height: 1.4; }
+    .course-job-list li::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0.5em;
+      width: 0.35rem;
+      height: 0.35rem;
+      border-radius: 999px;
+      background: #2563EB;
+    }
+    .course-detail-pending { color: #64748b; font-style: italic; }
+    @media (max-width: 640px) {
+      .course-details-btn { left: 1.15rem; right: 1.15rem; }
+    }
+    /* Scroll-driven border tracing for Mission/Vision/Scholarship cards */
+    .trace-card {
+      position: relative;
+    }
+    .trace-svg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      overflow: visible;
+      z-index: 5;
+    }
+    /* Trace line cycles through the same palette as the hero CTA hover
+       gradient (gold -> maroon -> deep blue -> teal), glow included */
+    .trace-svg path {
+      fill: none;
+      stroke: #7BA3C9;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-dasharray: 1;
+      stroke-dashoffset: 1;
+      transition: stroke-dashoffset 0.15s linear;
+      filter: none;
+    }
+    #eligibility-btn {
+      transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+    }
+    #eligibility-btn.activated {
+      background-color: #2563EB;
+      color: #fff;
+      box-shadow: 0 4px 14px rgba(27, 79, 122, 0.25);
+    }
+    .institutional-blue {
+      color: #0B1F3A;
+    }
+    .bg-institutional-blue {
+      background-color: #0B1F3A;
+    }
+    body {
+      font-family: 'Plus Jakarta Sans', Inter, sans-serif;
+    }
+    h1, h2, h3, h4 {
+      letter-spacing: -0.02em;
+    }
+    .enroll-input {
+      background-color: #F7F9FC;
+      border: 1px solid #E8EEF5;
+      border-radius: 0.75rem;
+    }
+    .enroll-input.enroll-input-error {
+      border-color: #F87171;
+      background-color: #FEF2F2;
+    }
+    select.enroll-input {
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748B'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.75rem center;
+      background-size: 1rem;
+      padding-right: 2.25rem;
+    }
+    select.enroll-input:disabled {
+      cursor: not-allowed;
+      color: #64748b;
+    }
+    .enroll-section-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #64748B;
+      margin-bottom: 0.55rem;
+    }
+    .enroll-field-error {
+      display: none;
+      color: #DC2626;
+      font-size: 11px;
+      margin-top: 4px;
+    }
+    .enroll-field-error.is-visible {
+      display: block;
+    }
+    #enroll-firstname::placeholder,
+    #enroll-middlename::placeholder,
+    #enroll-lastname::placeholder,
+    #enroll-suffix::placeholder,
+    #enroll-address-field::placeholder,
+    #enroll-province::placeholder,
+    #enroll-city::placeholder,
+    #enroll-barangay::placeholder,
+    #enroll-street::placeholder,
+    #enroll-contact::placeholder {
+      color: #94A3B8;
+      opacity: 1;
+    }
+    /* Soften the default +63 prefix until the applicant starts typing */
+    #enroll-contact.is-prefix-only {
+      color: #94A3B8;
+    }
+    #enroll-contact:not(.is-prefix-only) {
+      color: #0F172A;
+    }
+    .enroll-address-widget {
+      position: relative;
+    }
+    .enroll-address-dropdown {
+      display: none;
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: calc(100% + 4px);
+      max-height: 220px;
+      overflow-y: auto;
+      background: #fff;
+      border: 1px solid #E8EEF5;
+      border-radius: 0.75rem;
+      box-shadow: 0 10px 28px rgba(15, 23, 42, 0.12);
+      z-index: 40;
+    }
+    .enroll-address-dropdown.is-open {
+      display: block;
+    }
+    .enroll-address-option {
+      display: block;
+      width: 100%;
+      text-align: left;
+      padding: 0.65rem 0.85rem;
+      font-size: 0.875rem;
+      color: #0f172a;
+      background: transparent;
+      border: 0;
+      cursor: pointer;
+    }
+    .enroll-address-option:hover,
+    .enroll-address-option.is-active {
+      background: #F1F5F9;
+    }
+    .enroll-address-empty {
+      padding: 0.75rem 0.85rem;
+      font-size: 0.8rem;
+      color: #94A3B8;
+    }
+    .enroll-address-step {
+      padding: 0.5rem 0.85rem;
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #64748B;
+      border-bottom: 1px solid #EEF2F7;
+      background: #F8FAFC;
+    }
+    @keyframes enroll-confirm-pop {
+      from { opacity: 0; transform: scale(0.96) translateY(8px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .enroll-confirm-card {
+      animation: enroll-confirm-pop 0.22s ease;
+    }
+    .enroll-address-street-hint {
+      margin-top: 0.45rem;
+      padding: 0.55rem 0.75rem;
+      font-size: 0.75rem;
+      line-height: 1.45;
+      color: #334155;
+      background: #F1F5F9;
+      border: 1px solid #E2E8F0;
+      border-radius: 0.65rem;
+    }
+    .enroll-address-street-hint.hidden {
+      display: none;
+    }
+    .enroll-step-indicator {
+      margin-bottom: 1.25rem;
+      overflow-x: auto;
+      padding-bottom: 0.25rem;
+    }
+    .enroll-step-track {
+      display: flex;
+      align-items: center;
+      min-width: min(100%, 52rem);
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      gap: 0;
+    }
+    .enroll-step-indicator-item {
+      flex: 0 0 auto;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      color: #94a3b8;
+      padding: 0.4rem 0.5rem;
+      border-radius: 0.5rem;
+      border: 1px solid #e2e8f0;
+      background: #f8fafc;
+      text-align: center;
+      line-height: 1.25;
+      max-width: 6.5rem;
+    }
+    .enroll-step-connector {
+      flex: 1 1 0;
+      min-width: 0.75rem;
+      height: 2px;
+      background: #e2e8f0;
+      margin: 0 0.15rem;
+    }
+    .enroll-step-connector.is-done {
+      background: #5eead4;
+    }
+    .enroll-step-indicator-item.is-active {
+      color: #051630;
+      border-color: #051630;
+      background: #fff;
+      box-shadow: 0 0 0 1px rgba(5, 22, 48, 0.08);
+    }
+    .enroll-step-indicator-item.is-done {
+      color: #0f766e;
+      border-color: #99f6e4;
+      background: #f0fdfa;
+    }
+    .enroll-form-message {
+      display: none;
+      font-size: 0.8125rem;
+      line-height: 1.45;
+      padding: 0.65rem 0.85rem;
+      border-radius: 0.65rem;
+      margin-bottom: 1rem;
+    }
+    .enroll-form-message.is-visible { display: block; }
+    .enroll-form-message.is-error {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #991b1b;
+    }
+    .enroll-form-message.is-success {
+      background: #ecfdf5;
+      border: 1px solid #a7f3d0;
+      color: #065f46;
+    }
+    .enroll-form-message.is-info {
+      background: #fffbeb;
+      border: 1px solid #fcd34d;
+      color: #92400e;
+    }
+    .enroll-dropzone {
+      border: 2px dashed #cbd5e1;
+      border-radius: 0.75rem;
+      padding: 1.25rem;
+      text-align: center;
+      background: #f8fafc;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .enroll-dropzone.is-drag {
+      border-color: #051630;
+      background: #eef2ff;
+    }
+    .enroll-upload-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.45rem 0.5rem;
+      border: 1px solid #e2e8f0;
+      border-radius: 0.5rem;
+      background: #fff;
+      margin-top: 0.35rem;
+    }
+    .enroll-upload-badge { font-size: 0.9rem; }
+    .tesda-screening-box {
+      border-radius: 0.75rem;
+      padding: 0.85rem 1rem;
+      margin-top: 0.75rem;
+      border: 1px solid #e2e8f0;
+    }
+    .tesda-screening-box.tone-green { background: #ecfdf5; border-color: #a7f3d0; color: #065f46; }
+    .tesda-screening-box.tone-amber { background: #fffbeb; border-color: #fcd34d; color: #92400e; }
+    .tesda-screening-box.tone-red { background: #fef2f2; border-color: #fecaca; color: #991b1b; }
+    .tesda-notice {
+      background: #fffbeb;
+      border: 1px solid #fcd34d;
+      border-radius: 0.75rem;
+      padding: 0.85rem 1rem;
+      font-size: 0.8125rem;
+      color: #92400e;
+    }
+    /* Excellence section — subtle looping illustrations */
+    .excellence-anim-card {
+      width: 100%;
+      height: 100%;
+      border-radius: 1rem;
+      background: linear-gradient(160deg, #F8FAFC 0%, #EEF4FA 55%, #E8F0F8 100%);
+      border: 1px solid #EEF2F7;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px rgba(15, 23, 42, 0.04);
+      overflow: hidden;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .excellence-anim-card svg {
+      width: 86%;
+      height: 86%;
+      display: block;
+    }
+    @keyframes ex-float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-6px); }
+    }
+    @keyframes ex-float-slow {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-4px); }
+    }
+    @keyframes ex-pulse-soft {
+      0%, 100% { opacity: 0.35; transform: scale(1); }
+      50% { opacity: 0.55; transform: scale(1.04); }
+    }
+    @keyframes ex-orbit {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    @keyframes ex-dash {
+      to { stroke-dashoffset: -24; }
+    }
+    @keyframes ex-fade-up {
+      0%, 100% { opacity: 0.35; transform: translateY(4px); }
+      50% { opacity: 1; transform: translateY(-2px); }
+    }
+    @keyframes ex-bar {
+      0%, 100% { transform: scaleY(0.55); opacity: 0.55; }
+      50% { transform: scaleY(1); opacity: 1; }
+    }
+    .ex-float { animation: ex-float 4.5s ease-in-out infinite; transform-origin: center; }
+    .ex-float-delay { animation: ex-float-slow 5.2s ease-in-out infinite 0.6s; transform-origin: center; }
+    .ex-pulse { animation: ex-pulse-soft 5s ease-in-out infinite; transform-origin: center; }
+    .ex-orbit { animation: ex-orbit 18s linear infinite; transform-origin: 100px 100px; }
+    .ex-dash { stroke-dasharray: 6 8; animation: ex-dash 2.8s linear infinite; }
+    .ex-chip-1 { animation: ex-fade-up 3.8s ease-in-out infinite; }
+    .ex-chip-2 { animation: ex-fade-up 3.8s ease-in-out infinite 0.9s; }
+    .ex-chip-3 { animation: ex-fade-up 3.8s ease-in-out infinite 1.8s; }
+    .ex-bar-1 { transform-origin: bottom; animation: ex-bar 2.4s ease-in-out infinite; }
+    .ex-bar-2 { transform-origin: bottom; animation: ex-bar 2.4s ease-in-out infinite 0.35s; }
+    .ex-bar-3 { transform-origin: bottom; animation: ex-bar 2.4s ease-in-out infinite 0.7s; }
+    .ex-bar-4 { transform-origin: bottom; animation: ex-bar 2.4s ease-in-out infinite 1.05s; }
+    @media (prefers-reduced-motion: reduce) {
+      .ex-float, .ex-float-delay, .ex-pulse, .ex-orbit, .ex-dash,
+      .ex-chip-1, .ex-chip-2, .ex-chip-3,
+      .ex-bar-1, .ex-bar-2, .ex-bar-3, .ex-bar-4 {
+        animation: none !important;
+      }
+    }
+    .bg-dark-section {
+      background-color: #001529;
+    }
+    .hero-gold {
+      color: #7BA3C9;
+    }
+    .hero-copy h2,
+    .hero-copy p {
+      text-shadow: 0 2px 20px rgba(5, 22, 48, 0.42);
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .hero-ambient-gradient {
+        animation: none !important;
+        opacity: 0.45;
+      }
+    }
+    /* Enrollment modal: card pop-in (wizard steps must not replay stagger — it looks like data reset). */
+    @keyframes modal-pop {
+      from { opacity: 0; transform: scale(0.96) translateY(10px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .modal-card {
+      animation: modal-pop 0.3s ease;
+    }
+    @keyframes enroll-privacy-in {
+      from { opacity: 0; transform: scale(0.97) translateY(8px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .enroll-privacy-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 40;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+    .enroll-privacy-modal.hidden { display: none; }
+    .enroll-privacy-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(5, 22, 48, 0.55);
+    }
+    .enroll-privacy-card {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      width: min(42rem, 100%);
+      max-height: min(86vh, 44rem);
+      background: #fff;
+      border: 1px solid #d7e3f4;
+      border-radius: 1rem;
+      box-shadow: 0 18px 48px rgba(5, 22, 48, 0.22);
+      animation: enroll-privacy-in 0.28s ease;
+      overflow: hidden;
+    }
+    .enroll-privacy-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 1.15rem 1.25rem 1rem;
+      background: #051630;
+      color: #fff;
+    }
+    .enroll-privacy-kicker {
+      margin: 0 0 0.2rem;
+      color: #93c5fd;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .enroll-privacy-head h3 { margin: 0; font-size: 1.2rem; line-height: 1.3; }
+    .enroll-privacy-close {
+      border: 0;
+      background: transparent;
+      color: #dbeafe;
+      font-size: 1.6rem;
+      line-height: 1;
+      cursor: pointer;
+      padding: 0 0.15rem;
+    }
+    .enroll-privacy-close:hover { color: #fff; }
+    .enroll-privacy-close:focus-visible { outline: 2px solid #93c5fd; outline-offset: 2px; }
+    .enroll-privacy-body {
+      overflow-y: auto;
+      padding: 1.15rem 1.25rem 1.35rem;
+      color: #334155;
+      font-size: 0.92rem;
+      line-height: 1.55;
+    }
+    .enroll-privacy-body h4 {
+      margin: 1.05rem 0 0.35rem;
+      color: #0B2747;
+      font-size: 0.95rem;
+    }
+    .enroll-privacy-body h4:first-child { margin-top: 0; }
+    .enroll-privacy-body p { margin: 0 0 0.55rem; }
+    .enroll-privacy-body ul { margin: 0 0 0.55rem; padding-left: 1.15rem; }
+    .enroll-privacy-body li { margin: 0.15rem 0; }
+    .enroll-privacy-placeholder {
+      margin: 0.45rem 0 0.7rem;
+      padding: 0.7rem 0.8rem;
+      border: 1px dashed #93c5fd;
+      border-radius: 0.7rem;
+      background: #f3f7fb;
+      color: #0B2747;
+    }
+    .enroll-privacy-placeholder strong { display: block; margin-bottom: 0.15rem; }
+    .enroll-privacy-panel {
+      margin-top: 1rem;
+      padding: 0.9rem 1rem;
+      border: 1px solid #d7e3f4;
+      border-radius: 0.85rem;
+      background: #f8fbff;
+    }
+    .enroll-privacy-open {
+      display: inline-flex;
+      align-items: center;
+      margin-top: 0.35rem;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      color: #1d4ed8;
+      font-size: 0.92rem;
+      font-weight: 700;
+      text-decoration: underline;
+      text-underline-offset: 0.15rem;
+      cursor: pointer;
+    }
+    .enroll-privacy-open:hover { color: #1e3a8a; }
+    .enroll-privacy-open:focus-visible { outline: 2px solid #2563EB; outline-offset: 3px; }
+    .enroll-privacy-check {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.65rem;
+      margin-top: 0.85rem;
+      color: #0f172a;
+      font-size: 0.9rem;
+      line-height: 1.45;
+    }
+    .enroll-privacy-check input {
+      width: 1.05rem;
+      height: 1.05rem;
+      margin-top: 0.15rem;
+      flex: 0 0 auto;
+      accent-color: #0B2747;
+    }
+    .enroll-privacy-note { margin: 0.45rem 0 0; color: #64748b; font-size: 0.78rem; line-height: 1.45; }
+    .enroll-privacy-error { margin: 0.45rem 0 0; color: #b91c1c; font-size: 0.78rem; }
+    @media (prefers-reduced-motion: reduce) {
+      .enroll-privacy-card { animation: none; }
+    }
+    @keyframes item-in {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    #enroll-step-intro.anim-stagger > * {
+      animation: item-in 0.45s ease backwards;
+    }
+    #enroll-wizard-form .enroll-wizard-panel {
+      animation: none !important;
+    }
+    #enroll-step-intro.anim-stagger > *:nth-child(1) { animation-delay: 0.05s; }
+    #enroll-step-intro.anim-stagger > *:nth-child(2) { animation-delay: 0.1s; }
+    #enroll-step-intro.anim-stagger > *:nth-child(3) { animation-delay: 0.15s; }
+    #enroll-step-intro.anim-stagger > *:nth-child(4) { animation-delay: 0.2s; }
+    #enroll-step-intro.anim-stagger > *:nth-child(5) { animation-delay: 0.25s; }
+    #enroll-step-intro.anim-stagger > *:nth-child(6) { animation-delay: 0.3s; }
+    #enroll-step-intro.anim-stagger > *:nth-child(7) { animation-delay: 0.35s; }
+    #enroll-step-intro.anim-stagger > *:nth-child(8) { animation-delay: 0.4s; }
+    #enroll-step-intro.anim-stagger > *:nth-child(9) { animation-delay: 0.45s; }
+    #enroll-step-intro.anim-stagger > *:nth-child(10) { animation-delay: 0.5s; }
+  </style>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="../../wwwroot/css/abec-ui.css?v=20261018ux2" rel="stylesheet"/>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: { sans: ['Inter', 'Plus Jakarta Sans', 'sans-serif'] }
+      }
+    }
+  }
+</script>
+</head>
+<body class="abec-public-surface abec-landing-page font-sans text-slate-800">
+<!-- BEGIN: MainHeader -->
+<header id="main-header" class="abec-topnav">
+<div class="abec-topnav-inner w-full max-w-none px-4 sm:px-6 lg:px-10">
+<div class="abec-brand-lockup">
+<div class="abec-brand-mark">
+<div class="abec-brand-logo-spin">
+<svg class="abec-brand-logo" viewBox="0 0 128 128" fill="none" role="img" aria-label="ABEC logo">
+<defs>
+<linearGradient id="abecCapLeft" x1="16" y1="22" x2="64" y2="74" gradientUnits="userSpaceOnUse">
+<stop stop-color="#1A3F6B"/><stop offset="1" stop-color="#0A2342"/>
+</linearGradient>
+<linearGradient id="abecCapRight" x1="64" y1="18" x2="112" y2="70" gradientUnits="userSpaceOnUse">
+<stop stop-color="#24507F"/><stop offset="1" stop-color="#16375F"/>
+</linearGradient>
+<linearGradient id="abecRibbonLeft" x1="28" y1="58" x2="64" y2="112" gradientUnits="userSpaceOnUse">
+<stop stop-color="#A32040"/><stop offset="1" stop-color="#6E1830"/>
+</linearGradient>
+<linearGradient id="abecRibbonRight" x1="64" y1="58" x2="100" y2="112" gradientUnits="userSpaceOnUse">
+<stop stop-color="#D4526A"/><stop offset="1" stop-color="#9B2744"/>
+</linearGradient>
+<linearGradient id="abecShine" x1="0" y1="0" x2="1" y2="0">
+<stop offset="0" stop-color="#FFFFFF" stop-opacity="0"/>
+<stop offset="0.45" stop-color="#E8F4FF" stop-opacity="0.15"/>
+<stop offset="0.5" stop-color="#FFFFFF" stop-opacity="0.72"/>
+<stop offset="0.55" stop-color="#D6E8F7" stop-opacity="0.15"/>
+<stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+</linearGradient>
+<clipPath id="abecIconClip">
+<path d="M64 20 L108 46 L64 70 L20 46 Z"/>
+<circle cx="116" cy="70" r="8"/>
+<path d="M108 44 L118 66 L114 66 L106 48 Z"/>
+<path d="M30 62 L64 108 L64 88 L40 58 Z"/>
+<path d="M98 62 L64 108 L64 88 L88 58 Z"/>
+</clipPath>
+</defs>
+<g>
+<path d="M64 20 L64 70 L20 46 Z" fill="url(#abecCapLeft)"/>
+<path d="M64 20 L108 46 L64 70 Z" fill="url(#abecCapRight)"/>
+<path d="M64 20 L96 38 L64 34 Z" fill="#2E5A88" opacity="0.35"/>
+<path d="M108 46 C110 52 114 58 116 62" stroke="#8E2340" stroke-width="3.2" stroke-linecap="round"/>
+<circle cx="116" cy="70" r="7" fill="#B02A45"/>
+<circle cx="114" cy="68" r="2.2" fill="#F4C9D2" opacity="0.7"/>
+<path d="M30 62 L64 108 L64 88 L40 58 Z" fill="url(#abecRibbonLeft)"/>
+<path d="M98 62 L64 108 L64 88 L88 58 Z" fill="url(#abecRibbonRight)"/>
+</g>
+<g clip-path="url(#abecIconClip)">
+<rect class="abec-icon-shine" x="-48" y="8" width="36" height="112" fill="url(#abecShine)"/>
+</g>
+</svg>
+</div>
+</div>
+<div class="abec-name-hover" tabindex="0">
+<span class="abec-brand-name">ABEC</span>
+<p class="abec-brand-tagline">Online Enrollment and Document Release Tracking System</p>
+</div>
+</div>
+<div class="abec-topnav-cluster">
+<div class="abec-topnav-navwrap" id="primary-nav-wrap">
+<nav class="abec-topnav-links abec-topnav-links-landing" aria-label="Primary">
+<a href="#home">Home</a>
+<a href="#about">About</a>
+<a href="#courses">Courses</a>
+<a href="#contact">Contact Us</a>
+</nav>
+</div>
+<div class="abec-topnav-actions">
+<div class="abec-login-dropdown" id="login-dropdown">
+<button type="button" class="abec-login-trigger" aria-expanded="false" aria-haspopup="true" aria-controls="login-menu">
+Log in
+<svg class="abec-login-trigger-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+</button>
+<div class="abec-login-menu" id="login-menu" role="menu">
+<a href="LoginPage.html" role="menuitem">Student</a>
+<a href="AdminLoginPage.html" role="menuitem">Admin</a>
+</div>
+</div>
+<button type="button" class="abec-mobile-menu-toggle md:hidden" id="mobile-menu-toggle" aria-label="Open menu" aria-controls="mobile-nav-drawer">
+<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16m-7 6h7" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"></path></svg>
+</button>
+</div>
+</div>
+</div>
+</header>
+<div class="abec-mobile-nav-drawer" id="mobile-nav-drawer" aria-hidden="true">
+<div class="abec-mobile-nav-backdrop" id="mobile-nav-backdrop"></div>
+<nav class="abec-mobile-nav-panel" aria-label="Mobile">
+<button type="button" class="text-slate-500 text-sm font-semibold mb-3" id="mobile-nav-close" aria-label="Close menu">Close</button>
+<a href="#home">Home</a>
+<a href="#about">About</a>
+<a href="#courses">Courses</a>
+<a href="#contact">Contact Us</a>
+<div class="abec-mobile-nav-divider"></div>
+<p class="text-xs font-bold uppercase tracking-wide text-slate-400 px-2 mb-1">Log in</p>
+<a href="LoginPage.html">Student</a>
+<a href="AdminLoginPage.html">Admin</a>
+</nav>
+</div>
+<!-- END: MainHeader -->
+<!-- BEGIN: HeroSection -->
+<section id="home" class="hero-section relative overflow-hidden">
+<div class="absolute inset-0 z-0">
+<img alt="ABEC Campus and Students" class="hero-bg" src="../../wwwroot/images/Photo1LandingPageBG1.jpg">
+<div class="hero-ambient-gradient" aria-hidden="true"></div>
+<div class="absolute inset-0 hero-overlay"></div>
+</div>
+<div class="hero-layout">
+<div class="hero-copy abec-reveal is-visible">
+<div class="hero-headline-wrap">
+<h2 id="hero-rotating-headline" class="text-4xl md:text-[3.25rem] font-bold leading-[1.12] tracking-tight">
+          Start building your<br>
+          future today at <span class="hero-gold">ABEC Institute of Business<br>and Technology Inc.</span>
+</h2>
+</div>
+<script data-purpose="rotating-headline">
+  (function () {
+    var phrases = [
+      'Start building your<br>future today at <span class="hero-gold">ABEC Institute of Business<br>and Technology Inc.</span>',
+      'Advancing Careers through<br><span class="hero-gold">Excellence &amp; Competence</span>',
+      'Learn practical skills from<br><span class="hero-gold">TESDA-accredited training programs</span>',
+      'Your pathway to a<br><span class="hero-gold">brighter professional future</span>'
+    ];
+    var index = 0;
+    var headline = document.getElementById('hero-rotating-headline');
+    if (!headline) return;
+    setInterval(function () {
+      index = (index + 1) % phrases.length;
+      headline.innerHTML = phrases[index];
+    }, 10000);
+  })();
+</script>
+<p class="text-base md:text-lg text-white/90 mt-4 max-w-md leading-relaxed">
+          ABEC Training &amp; Assessment Center is your partner in professional mastery. Accredited by TESDA, we provide world-class technical vocational education and assessment services.
+        </p>
+</div>
+<div class="hero-cta-row">
+<button type="button" onclick="openEnrollModal()" class="abec-enroll-cta">
+            Enroll Now
+          </button>
+</div>
+</div>
+<p class="hero-footnote">
+      Gain practical skills, learn from experienced trainers, and open doors to better career opportunities. Enroll now and take the first step toward your success!
+    </p>
+</section>
+<!-- END: HeroSection -->
+<!-- BEGIN: ExcellenceSection -->
+<section id="about" class="bg-white abec-section">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10">
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-14 lg:gap-20 items-center">
+<!-- Content -->
+<div class="abec-reveal" data-purpose="excellence-content">
+<h2 class="text-3xl md:text-4xl font-bold text-institutional-blue tracking-tight mb-6">
+            Dedicated to Technical Excellence
+          </h2>
+<p class="text-slate-500 text-lg leading-relaxed mb-6">
+            ABEC has established itself as a trusted institution dedicated to excellence in technical and vocational education. We are committed to developing competent, industry-ready professionals through high-quality training programs, well-structured curricula, and standardized assessment processes. Our team of experienced instructors and industry practitioners brings extensive expertise, ensuring that every learner receives practical, relevant, and career-focused education.
+          </p>
+</div>
+<!-- Animated illustrations -->
+<div class="flex gap-4" data-purpose="excellence-images" aria-hidden="false">
+<!-- Digital Learning -->
+<div class="w-1/2 aspect-square" role="img" aria-label="Animated illustration of digital learning">
+  <div class="excellence-anim-card">
+    <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <circle class="ex-pulse" cx="100" cy="100" r="78" fill="#E8F1F8"/>
+      <circle class="ex-pulse" cx="100" cy="100" r="58" fill="#F4F8FC" opacity="0.9"/>
+      <g class="ex-float">
+        <rect x="46" y="72" width="108" height="68" rx="8" fill="#0B2747"/>
+        <rect x="52" y="78" width="96" height="50" rx="4" fill="#F8FAFC"/>
+        <rect x="52" y="78" width="96" height="50" rx="4" fill="#2563EB" opacity="0.08"/>
+        <path d="M70 96h28M70 106h40M70 116h22" stroke="#2563EB" stroke-width="2.5" stroke-linecap="round" opacity="0.55"/>
+        <circle cx="128" cy="104" r="10" fill="#7BA3C9" opacity="0.85"/>
+        <path d="M125 104l4 4 7-8" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <rect x="78" y="140" width="44" height="6" rx="2" fill="#0B2747"/>
+        <rect x="70" y="146" width="60" height="5" rx="2.5" fill="#2563EB" opacity="0.35"/>
+      </g>
+      <g class="ex-chip-1">
+        <rect x="28" y="48" width="36" height="22" rx="7" fill="#fff" stroke="#D7E4F0" stroke-width="1"/>
+        <path d="M36 55h12M36 61h8" stroke="#2563EB" stroke-width="2" stroke-linecap="round"/>
+      </g>
+      <g class="ex-chip-2">
+        <rect x="138" y="42" width="34" height="22" rx="7" fill="#fff" stroke="#D7E4F0" stroke-width="1"/>
+        <circle cx="149" cy="53" r="4" fill="#7BA3C9"/>
+        <path d="M157 50v6M154 53h6" stroke="#0B2747" stroke-width="1.6" stroke-linecap="round"/>
+      </g>
+      <g class="ex-chip-3">
+        <rect x="142" y="138" width="34" height="22" rx="7" fill="#fff" stroke="#D7E4F0" stroke-width="1"/>
+        <path d="M150 145l5 4 9-9" fill="none" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </g>
+    </svg>
+  </div>
+</div>
+<!-- Skills & Innovation -->
+<div class="w-1/2 aspect-square" role="img" aria-label="Animated illustration of skills development and innovation">
+  <div class="excellence-anim-card">
+    <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <circle class="ex-pulse" cx="100" cy="100" r="78" fill="#E8F1F8"/>
+      <g class="ex-orbit" opacity="0.55">
+        <circle cx="100" cy="100" r="62" fill="none" stroke="#7BA3C9" stroke-width="1.25" class="ex-dash"/>
+        <circle cx="100" cy="38" r="3.5" fill="#2563EB"/>
+      </g>
+      <g class="ex-float-delay">
+        <circle cx="100" cy="78" r="18" fill="#0B2747"/>
+        <circle cx="100" cy="74" r="7" fill="#F8FAFC"/>
+        <path d="M86 98c2.5-8 25.5-8 28 0v6H86v-6z" fill="#F8FAFC"/>
+        <rect x="72" y="112" width="56" height="36" rx="10" fill="#2563EB"/>
+        <rect x="78" y="118" width="44" height="24" rx="6" fill="#F8FAFC" opacity="0.95"/>
+        <g transform="translate(86 122)">
+          <rect class="ex-bar-1" x="0" y="8" width="5" height="12" rx="1.5" fill="#7BA3C9"/>
+          <rect class="ex-bar-2" x="10" y="4" width="5" height="16" rx="1.5" fill="#2563EB"/>
+          <rect class="ex-bar-3" x="20" y="6" width="5" height="14" rx="1.5" fill="#7BA3C9"/>
+          <rect class="ex-bar-4" x="30" y="2" width="5" height="18" rx="1.5" fill="#0B2747"/>
+        </g>
+      </g>
+      <g class="ex-float">
+        <circle cx="48" cy="128" r="16" fill="#fff" stroke="#D7E4F0" stroke-width="1"/>
+        <path d="M48 120v16M40 128h16" stroke="#2563EB" stroke-width="2" stroke-linecap="round"/>
+        <circle cx="48" cy="128" r="5" fill="none" stroke="#7BA3C9" stroke-width="1.5"/>
+      </g>
+      <g class="ex-chip-2">
+        <rect x="138" y="118" width="40" height="26" rx="8" fill="#fff" stroke="#D7E4F0" stroke-width="1"/>
+        <path d="M148 132l5-10 5 10 5-10" fill="none" stroke="#0B2747" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </g>
+    </svg>
+  </div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- END: ExcellenceSection -->
+<!-- BEGIN: InformationBox -->
+<section class="abec-muted-section abec-section">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10">
+<div class="abec-card abec-card-static bg-[#0B1F3A] rounded-[1.25rem] p-8 md:p-16 flex flex-col md:flex-row items-center gap-12 border border-white/5" data-purpose="blue-info-card">
+<div class="md:w-2/3">
+<h2 class="text-2xl md:text-3xl font-bold text-white mb-8 border-l-4 border-sky-300/70 pl-6">
+            What is ABEC Institute of Business and Technology Inc ?
+          </h2>
+<p class="text-blue-100 text-lg leading-relaxed">
+            ABEC Institute of Business and Technology, Inc. is a technical-vocational institution in Albay that provides quality skills training and career-focused education. ABEC helps learners develop practical competencies in business and technology through industry-relevant programs designed for future employment and professional growth.
+          </p>
+</div>
+<div class="md:w-1/3 flex justify-center">
+<!-- Institutional Seal Placeholder -->
+<div class="w-48 h-48 md:w-64 md:h-64">
+<img alt="ABEC Institutional Seal" class="w-full h-full object-contain" src="../../wwwroot/images/Photo5ABECOfficialSeal.png">
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- END: InformationBox -->
+<!-- BEGIN: AccreditationFooter -->
+<section class="bg-dark-section abec-section !py-20">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <!-- Mission Card -->
+      <div class="trace-card bg-[#002855] rounded-xl p-8 border border-blue-900/50 shadow-lg backdrop-blur-sm">
+        <svg class="trace-svg" aria-hidden="true"><path data-side="right" pathLength="1"></path><path data-side="left" pathLength="1"></path></svg>
+        <h2 class="text-2xl md:text-3xl font-bold text-white mb-6 border-l-4 border-sky-300/70 pl-6 uppercase tracking-wide">Mission</h2>
+        <div class="min-h-[150px] flex items-center justify-center border border-dashed border-blue-100/20 rounded-lg">
+          <p class="text-blue-100/50 italic">To provide quality, accessible, and industry-relevant technical-vocational education and assessment services that equip individuals with the skills, knowledge, and confidence needed for professional success</p>
+        </div>
+      </div>
+      <!-- Vision Card -->
+      <div class="trace-card bg-[#002855] rounded-xl p-8 border border-blue-900/50 shadow-lg backdrop-blur-sm">
+        <svg class="trace-svg" aria-hidden="true"><path data-side="right" pathLength="1"></path><path data-side="left" pathLength="1"></path></svg>
+        <h2 class="text-2xl md:text-3xl font-bold text-white mb-6 border-l-4 border-sky-300/70 pl-6 uppercase tracking-wide">Vision</h2>
+        <div class="min-h-[150px] flex items-center justify-center border border-dashed border-blue-100/20 rounded-lg">
+          <p class="text-blue-100/50 italic">To be a trusted and leading TESDA-accredited training and assessment center, recognized for developing highly skilled, competent, and globally competitive professionals.</p>
+        </div>
+      </div>
+    </div>
+    <!-- TESDA Scholarship Program Card -->
+    <div class="trace-card bg-[#0B2747] rounded-xl p-8 md:p-10 border border-blue-900/50 shadow-lg mt-8" data-purpose="scholarship-card" data-trace-target="eligibility-btn">
+      <svg class="trace-svg" aria-hidden="true"><path data-side="right" pathLength="1"></path><path data-side="left" pathLength="1"></path></svg>
+      <span class="inline-block cta-button-gradient text-white text-sm font-bold px-6 py-1.5 rounded-full mb-6">Opportunity</span>
+      <h2 class="text-2xl md:text-3xl font-bold text-white mb-3">TESDA Scholarship Program</h2>
+      <p class="text-blue-100/90 text-sm md:text-base mb-8">The scholarship aims to provide learners with industry-relevant skills, certification, and better career opportunities.</p>
+      <ul class="space-y-5 mb-10">
+        <li class="flex items-start gap-4">
+          <svg class="w-6 h-6 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M12 1.5l2.4 2 3.1-.4 1.2 2.9 2.9 1.2-.4 3.1 2 2.4-2 2.4.4 3.1-2.9 1.2-1.2 2.9-3.1-.4-2.4 2-2.4-2-3.1.4-1.2-2.9-2.9-1.2.4-3.1-2-2.4 2-2.4-.4-3.1 2.9-1.2 1.2-2.9 3.1.4z" fill="#eab308"/>
+            <path d="M8.5 12l2.5 2.5 4.5-4.5" stroke="#0B2747" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <p class="text-white text-sm md:text-base"><span class="font-bold">FREE Skills Training Program</span> for qualified applicants.</p>
+        </li>
+        <li class="flex items-start gap-4">
+          <svg class="w-6 h-6 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M12 1.5l2.4 2 3.1-.4 1.2 2.9 2.9 1.2-.4 3.1 2 2.4-2 2.4.4 3.1-2.9 1.2-1.2 2.9-3.1-.4-2.4 2-2.4-2-3.1.4-1.2-2.9-2.9-1.2.4-3.1-2-2.4 2-2.4-.4-3.1 2.9-1.2 1.2-2.9 3.1.4z" fill="#eab308"/>
+            <path d="M8.5 12l2.5 2.5 4.5-4.5" stroke="#0B2747" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <p class="text-white text-sm md:text-base"><span class="font-bold">FREE TESDA Assessment and Certification</span> upon successful completion.</p>
+        </li>
+        <li class="flex items-start gap-4">
+          <svg class="w-6 h-6 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M12 1.5l2.4 2 3.1-.4 1.2 2.9 2.9 1.2-.4 3.1 2 2.4-2 2.4.4 3.1-2.9 1.2-1.2 2.9-3.1-.4-2.4 2-2.4-2-3.1.4-1.2-2.9-2.9-1.2.4-3.1-2-2.4 2-2.4-.4-3.1 2.9-1.2 1.2-2.9 3.1.4z" fill="#eab308"/>
+            <path d="M8.5 12l2.5 2.5 4.5-4.5" stroke="#0B2747" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <p class="text-white text-sm md:text-base"><span class="font-bold">Opportunity to Gain Industry-Ready Skills</span> for better employment and career opportunities.</p>
+        </li>
+      </ul>
+      <button id="eligibility-btn" onclick="document.getElementById('eligibility-modal').classList.remove('hidden'); document.body.style.overflow='hidden';" class="bg-white hover:bg-gray-100 text-institutional-blue font-bold text-sm md:text-base px-8 py-3 rounded-lg shadow-lg">Check Eligibility</button>
+    </div>
+  </div>
+</section>
+<!-- BEGIN: EligibilityModal -->
+<div id="eligibility-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="eligibility-modal-title">
+  <!-- Backdrop -->
+  <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" data-purpose="modal-backdrop" onclick="document.getElementById('eligibility-modal').classList.add('hidden'); document.body.style.overflow='';"></div>
+  <!-- Card -->
+  <div class="relative bg-[#0B2747] border border-blue-900/50 rounded-xl shadow-lg max-w-2xl w-full max-h-[85vh] flex flex-col">
+    <div class="flex items-start justify-between p-6 md:p-8 pb-4 border-b border-blue-100/10">
+      <h3 id="eligibility-modal-title" class="text-xl md:text-2xl font-bold text-white border-l-4 border-sky-300/70 pl-4">Qualifications</h3>
+      <button aria-label="Close" onclick="document.getElementById('eligibility-modal').classList.add('hidden'); document.body.style.overflow='';" class="text-blue-100/70 hover:text-white transition text-2xl leading-none px-2">&times;</button>
+    </div>
+    <div class="overflow-y-auto p-6 md:p-8 pt-5">
+      <ul class="space-y-4 text-blue-100/95 text-sm md:text-base leading-relaxed list-disc pl-5">
+        <li>Open to Filipino citizens who want to acquire technical-vocational skills and improve their employment opportunities.</li>
+        <li>Applicants must meet the minimum age requirement set by TESDA and the chosen training program.</li>
+        <li>Must have the ability to read, write, and communicate effectively to participate in the training.</li>
+        <li>Must be willing to undergo competency-based training and assessment under TESDA.</li>
+        <li>Applicants should submit the required documents for verification and evaluation.</li>
+        <li>Must pass the screening and qualification process conducted by ABEC Institute of Business and Technology, Inc.</li>
+        <li>Priority may be given to qualified individuals who need financial assistance for skills training.</li>
+        <li>Scholars must commit to complete the training program and participate in the required activities.</li>
+        <li>Successful trainees are expected to take the TESDA National Competency Assessment after completing the program.</li>
+        <li>The scholarship aims to provide learners with industry-relevant skills, certification, and better career opportunities.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+<script data-purpose="scroll-border-trace">
+  (function () {
+    var cards = Array.prototype.slice.call(document.querySelectorAll('.trace-card'));
+    var ticking = false;
+
+    // Two mirrored half-outlines, both starting at the center of the top
+    // edge and descending in sync to meet at the center of the bottom edge
+    function buildPaths() {
+      cards.forEach(function (card) {
+        var w = card.clientWidth;
+        var h = card.clientHeight;
+        var i = 1.5; /* half the stroke width */
+        var rx = 12;
+        var right =
+          'M ' + (w / 2) + ' ' + i +
+          ' H ' + (w - i - rx) +
+          ' A ' + rx + ' ' + rx + ' 0 0 1 ' + (w - i) + ' ' + (i + rx) +
+          ' V ' + (h - i - rx) +
+          ' A ' + rx + ' ' + rx + ' 0 0 1 ' + (w - i - rx) + ' ' + (h - i) +
+          ' H ' + (w / 2);
+        var left =
+          'M ' + (w / 2) + ' ' + i +
+          ' H ' + (i + rx) +
+          ' A ' + rx + ' ' + rx + ' 0 0 0 ' + i + ' ' + (i + rx) +
+          ' V ' + (h - i - rx) +
+          ' A ' + rx + ' ' + rx + ' 0 0 0 ' + (i + rx) + ' ' + (h - i) +
+          ' H ' + (w / 2);
+        card.querySelector('.trace-svg path[data-side="right"]').setAttribute('d', right);
+        card.querySelector('.trace-svg path[data-side="left"]').setAttribute('d', left);
+      });
+    }
+
+    function update() {
+      ticking = false;
+      var vh = window.innerHeight;
+      cards.forEach(function (card) {
+        var r = card.getBoundingClientRect();
+        // Drawing starts when the card's top rises past 90% of the viewport
+        // and completes by the time it reaches 35%.
+        var progress = (vh * 0.9 - r.top) / (vh * 0.55);
+        progress = Math.max(0, Math.min(1, progress));
+        // Retract the line as the card exits past the top of the viewport,
+        // fully gone by the time the top edge is 25% of the viewport above.
+        if (r.top < 0) {
+          var retract = Math.max(0, Math.min(1, -r.top / (vh * 0.25)));
+          progress = progress * (1 - retract);
+        }
+        card.querySelectorAll('.trace-svg path').forEach(function (p) {
+          p.style.strokeDashoffset = 1 - progress;
+        });
+        var targetId = card.getAttribute('data-trace-target');
+        if (targetId) {
+          document.getElementById(targetId).classList.toggle('activated', progress >= 1);
+        }
+      });
+    }
+
+    function onScroll() {
+      if (!ticking) {
+        ticking = true;
+        requestAnimationFrame(update);
+      }
+    }
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', function () {
+      buildPaths();
+      onScroll();
+    });
+    buildPaths();
+    update();
+  })();
+</script>
+<script data-purpose="eligibility-modal-escape">
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      document.getElementById('eligibility-modal').classList.add('hidden');
+      document.body.style.overflow = '';
+    }
+  });
+</script>
+<!-- END: EligibilityModal -->
+<!-- BEGIN: EnrollModal -->
+<div id="enroll-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="enroll-modal-title">
+  <!-- Backdrop -->
+  <!-- Backdrop: dismiss only — do not clear entered registration data -->
+  <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" data-purpose="modal-backdrop" onclick="dismissEnrollModal()"></div>
+  <!-- Card (Portal Login style: white card, navy accents) -->
+  <div class="modal-card relative bg-white border border-gray-300 rounded-xl shadow-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+    <!-- Step 1: Intro -->
+    <div id="enroll-step-intro" class="p-8 md:p-10">
+      <div class="anim-stagger">
+        <div class="flex items-start justify-between mb-2">
+          <h3 id="enroll-modal-title" class="text-2xl font-bold text-slate-900">Enroll Now</h3>
+          <button aria-label="Close" onclick="requestCloseEnrollModal()" class="text-gray-400 hover:text-slate-900 transition text-2xl leading-none px-2">&times;</button>
+        </div>
+        <p class="text-sm text-gray-500 mb-6">Welcome to ABEC Institute of Business and Technology Inc.</p>
+        <div class="mb-6 rounded-lg border border-[#2563EB] bg-[#f3f7fb] px-4 py-3">
+          <p class="text-xs font-bold tracking-wide text-[#0B1F3A] mb-1">IMPORTANT NOTE</p>
+          <p class="text-sm text-slate-700 leading-relaxed">Please enter legibly and complete the details needed. Please do not leave any blank field. Put None or N/A if field is not applicable. The details you put here will be used as the basis for the reporting and printing of the corresponding certificate.</p>
+        </div>
+        <p class="text-sm text-gray-600 leading-relaxed mb-8">
+          You are about to begin your enrollment application. The registration form will ask for your basic information. Please make sure your details are accurate before submitting.
+        </p>
+        <button onclick="showEnrollStep('wizard')" class="w-full bg-[#051630] hover:bg-[#0a2347] text-white py-3 rounded-lg font-semibold text-sm flex items-center justify-center gap-2 transition-colors">
+          Continue
+        </button>
+      </div>
+    </div>
+    <!-- Step 2: Registration Form -->
+    <div id="enroll-step-form" class="hidden p-8 md:p-10">
+      <form id="enroll-wizard-form" action="#" method="POST" class="space-y-5" novalidate onsubmit="return false;">
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <h3 class="text-2xl font-bold text-slate-900 mb-1">Registration Form</h3>
+            <p class="text-sm text-gray-500">Complete each step to apply for enrollment.</p>
+          </div>
+          <button type="button" aria-label="Close" onclick="requestCloseEnrollModal()" class="text-gray-400 hover:text-slate-900 transition text-2xl leading-none px-2 shrink-0">&times;</button>
+        </div>
+        <nav class="enroll-step-indicator" aria-label="Registration steps">
+          <ol class="enroll-step-track">
+            <li class="enroll-step-indicator-item" data-step="1">Assessment</li>
+            <li class="enroll-step-connector" data-after-step="1" aria-hidden="true"></li>
+            <li class="enroll-step-indicator-item" data-step="2">Personal</li>
+            <li class="enroll-step-connector" data-after-step="2" aria-hidden="true"></li>
+            <li class="enroll-step-indicator-item" data-step="3">Contact</li>
+            <li class="enroll-step-connector" data-after-step="3" aria-hidden="true"></li>
+            <li class="enroll-step-indicator-item" data-step="4">Address</li>
+            <li class="enroll-step-connector" data-after-step="4" aria-hidden="true"></li>
+            <li class="enroll-step-indicator-item" data-step="5">Documents</li>
+            <li class="enroll-step-connector" data-after-step="5" aria-hidden="true"></li>
+            <li class="enroll-step-indicator-item" data-step="6">TESDA</li>
+            <li class="enroll-step-connector" data-after-step="6" aria-hidden="true"></li>
+            <li class="enroll-step-indicator-item" data-step="7">Review</li>
+          </ol>
+        </nav>
+        <div id="enroll-form-message" class="enroll-form-message" role="status" aria-live="polite"></div>
+
+        <div class="enroll-wizard-panel" data-step="1">
+          <p class="enroll-section-label">Assessment and Applicant Information</p>
+          <p class="text-xs font-semibold text-slate-800 mb-2">A. School, Training Center, or Company Information</p>
+          <div class="space-y-3">
+            <div>
+              <label class="block text-xs font-medium text-slate-700 mb-1" for="enroll-school-name">Name of School/Training Center/Company</label>
+              <input class="w-full enroll-input rounded-lg py-2.5 px-3 text-sm" id="enroll-school-name" type="text" maxlength="255" autocomplete="organization">
+              <label class="inline-flex items-center gap-2 mt-1 text-xs text-slate-600"><input type="checkbox" data-na-for="enroll-school-name"> Mark as Not Applicable</label>
+              <p class="enroll-field-error" id="enroll-school-name-error"></p>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-700 mb-1" for="enroll-school-address">Address of School/Training Center/Company</label>
+              <input class="w-full enroll-input rounded-lg py-2.5 px-3 text-sm" id="enroll-school-address" type="text" maxlength="255">
+              <label class="inline-flex items-center gap-2 mt-1 text-xs text-slate-600"><input type="checkbox" data-na-for="enroll-school-address"> Mark as Not Applicable</label>
+              <p class="enroll-field-error" id="enroll-school-address-error"></p>
+            </div>
+          </div>
+          <p class="text-xs font-semibold text-slate-800 mt-4 mb-2">B. Assessment Applied For</p>
+          <label class="block text-xs font-medium text-slate-700 mb-1" for="enroll-course">Title of Assessment Applied For <span class="text-red-500">*</span></label>
+          <select class="w-full enroll-input rounded-lg py-2.5 px-3 text-sm" id="enroll-course" name="course">
+            <option value="" selected disabled>Select a course</option>
+          </select>
+          <p class="enroll-field-error" id="enroll-course-error"></p>
+          <p class="text-xs font-semibold text-slate-800 mt-4 mb-2">C. Type of Qualification</p>
+          <div class="space-y-1 text-sm">
+            <label class="flex items-center gap-2"><input type="radio" name="enroll-qualification" value="Full Qualification"> Full Qualification</label>
+            <label class="flex items-center gap-2"><input type="radio" name="enroll-qualification" value="COC"> COC (Certificate of Competency)</label>
+            <label class="flex items-center gap-2"><input type="radio" name="enroll-qualification" value="Renewal"> Renewal</label>
+          </div>
+          <div id="enroll-coc-wrap" class="hidden mt-2">
+            <label class="block text-xs font-medium text-slate-700 mb-1" for="enroll-coc-specify">Please Specify <span class="text-red-500">*</span></label>
+            <input class="w-full enroll-input rounded-lg py-2.5 px-3 text-sm" id="enroll-coc-specify" type="text" maxlength="200">
+            <p class="enroll-field-error" id="enroll-coc-error"></p>
+          </div>
+          <p class="text-xs font-semibold text-slate-800 mt-4 mb-2">D. Applicant Classification</p>
+          <label class="block text-xs font-medium text-slate-700 mb-1" for="enroll-classification">Applicant Classification <span class="text-red-500">*</span></label>
+          <select class="w-full enroll-input rounded-lg py-2.5 px-3 text-sm" id="enroll-classification">
+            <option value="" selected disabled>Select classification</option>
+            <option>Technical and Vocational Education and Training (TVET) Graduating Student</option>
+            <option>Technical and Vocational Education and Training (TVET) Graduate</option>
+            <option>Overseas Filipino Worker (OFW)</option>
+            <option>Industry Worker</option>
+            <option>College Graduate</option>
+            <option>Alternative Learning System (ALS) Graduate</option>
+            <option>Senior/Junior High School Graduate</option>
+          </select>
+          <p class="enroll-field-error" id="enroll-classification-error"></p>
+          <div class="flex gap-3 pt-4">
+            <button type="button" class="enroll-wizard-back-step flex-1 bg-white hover:bg-gray-100 text-[#051630] py-2.5 rounded-lg font-semibold text-sm border border-[#051630]">Back</button>
+            <button type="button" class="enroll-wizard-next-step flex-1 bg-[#051630] hover:bg-[#0a2347] text-white py-2.5 rounded-lg font-semibold text-sm">Next</button>
+          </div>
+        </div>
+
+        <div class="enroll-wizard-panel hidden" data-step="2">
+          <p class="enroll-section-label">Personal Information</p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-medium text-slate-700 mb-1" for="enroll-firstname">First Name <span class="text-red-500">*</span></label>
+              <input class="w-full enroll-input rounded-lg py-2.5 px-3 text-sm" id="enroll-firstname" name="firstName" type="text" autocomplete="given-name" spellcheck="false" required>
+              <p class="enroll-field-error" id="enroll-firstname-error"></p>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-700 mb-1" for="enroll-middlename">Middle Name <span class="text-slate-400 font-normal">(Optional)</span></label>
+              <input class="w-full enroll-input rounded-lg py-2.5 px-3 text-sm" id="enroll-middlename" name="middleName" type="text" autocomplete="additional-name" spellcheck="false">
+              <p class="enroll-field-error" id="enroll-middlename-error"></p>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-700 mb-1" for="enroll-lastname">Last Name <span class="text-red-500">*</span></label>
+              <input class="w-full enroll-input rounded-lg py-2.5 px-3 text-sm" id="enroll-lastname" name="lastName" type="text" autocomplete="family-name" spellcheck="false" required>
+              <p class="enroll-field-error" id="enroll-lastname-error"></p>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-700 mb-1" for="enroll-suffix">Suffix <span class="text-slate-400 font-normal">(Optional)</span></label>
+              <input class="w-full enroll-input rounded-lg py-2.5 px-3 text-sm" id="enroll-suffix" name="suffix" type="text" autocomplete="honorific-suffix" spellcheck="false" placeholder="Jr., Sr., III">
+              <p class="enroll-field-error" id="enroll-suffix-error"></p>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-700 mb-1" for="enroll-gender">Gender <span class="text-red-500">*</span></label>
+              <select class="w-full enroll-input rounded-lg py-2.5 px-3 text-sm" id="enroll-gender" name="gender" required>
+                <option value="" selected disabled>Select gender</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Prefer Not to Say">Prefer Not to Say</option>
+              </select>
+              <p class="enroll-field-error" id="enroll-gender-error"></p>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-700 mb-1" for="enroll-civil-status">Civil Status <span class="text-red-500">*</span></label>
+              <select class="w-full enroll-input rounded-lg py-2.5 px-3 text-sm" id="enroll-civil-status">
+                <option value="" selected disabled>Select civil status</option>
+                <option>Single</option>
+                <option>Married</option>
+                <option>Widower</option>
+                <option>Separated</option>
+              </select>
+              <p class="enroll-field-error" id="enroll-civil-status-error"></p>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-700 mb-1" for="enroll-birthdate">Date of Birth <span class="text-red-500">*</span></label>
+              <input class="w-full enroll-input rounded-lg py-2.5 px-3 text-sm" id="enroll-birthdate" name="birthdate" type="date" autocomplete="bday" required>
+              <p id="enroll-birthdate-display" class="text-[11px] text-slate-500 mt-1"></p>
+              <p class="enroll-field-error" id="enroll-birthdate-error"></p>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-700 mb-1" for="enroll-age">Age</label>
+              <input class="w-full enroll-input rounded-lg py-2.5 px-3 text-sm bg-slate-100" id="enroll-age" name="age" type="text" readonly tabindex="-1" placeholder="Calculated from date of birth">
+              <p class="enroll-field-error" id="enroll-age-error"></p>
+            </div>
+            <div class="sm:col-span-2">
+              <label class="block text-xs font-medium text-slate-700 mb-1" for="enroll-birthplace">Birth Place <span class="text-red-500">*</span></label>
+              <input class="w-full enroll-input rounded-lg py-2.5 px-3 text-sm" id="enroll-birthplace" type="text" maxlength="150" autocomplete="off">
+              <p class="enroll-field-error" id="enroll-birthplace-error"></p>
+            </div>
+          </div>
+          <div class="flex gap-3 pt-4">
+            <button type="button" class="enroll-wizard-back-step flex-1 bg-white hover:bg-gray-100 text-[#051630] py-2.5 rounded-lg font-semibold text-sm border border-[#051630]">Back</button>
+            <button type="button" class="enroll-wizard-next-step flex-1 bg-[#051630] hover:bg-[#0a2347] text-white py-2.5 rounded-lg font-semibold text-sm">Next</button>
+          </div>
+        </div>
+
+        <div class="enroll-wizard-panel hidden" data-step="3">
+          <p class="enroll-section-label">Contact Information and Applicant Background</p>
+          <p class="text-xs font-semibold text-slate-800 mb-2">A. Contact Information</p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-medium text-slate-700 mb-1" for="enroll-tel">Telephone (Tel)</label>
+              <input class="w-full enroll-input rounded-lg py-2.5 px-3 text-sm" id="enroll-tel" type="tel" maxlength="40" autocomplete="tel">
+              <label class="inline-flex items-center gap-2 mt-1 text-xs text-slate-600"><input type="checkbox" data-na-for="enroll-tel"> Mark as Not Applicable</label>
+              <p class="enroll-field-error" id="enroll-tel-error"></p>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-700 mb-1" for="enroll-contact">Mobile Number <span class="text-red-500">*</span></label>
+              <input class="w-full enroll-input rounded-lg py-2.5 px-3 text-sm is-prefix-only" id="enroll-contact" name="contact" type="tel" inputmode="tel" autocomplete="tel" value="+63" placeholder="09171234567" required>
+              <p class="enroll-field-error" id="enroll-contact-error"></p>
+            </div>
+            <div class="sm:col-span-2">
+              <label class="block text-xs font-medium text-slate-700 mb-1" for="enroll-email">Email Address <span class="text-red-500">*</span></label>
+              <input class="w-full enroll-input rounded-lg py-2.5 px-3 text-sm" id="enroll-email" name="email" type="email" autocomplete="email" required>
+              <p class="enroll-field-error" id="enroll-email-error"></p>
+            </div>
+            <div class="sm:col-span-2">
+              <label class="block text-xs font-medium text-slate-700 mb-1" for="enroll-fax">Fax</label>
+              <input class="w-full enroll-input rounded-lg py-2.5 px-3 text-sm" id="enroll-fax" type="text" maxlength="40">
+              <label class="inline-flex items-center gap-2 mt-1 text-xs text-slate-600"><input type="checkbox" data-na-for="enroll-fax"> Mark as Not Applicable</label>
+              <p class="enroll-field-error" id="enroll-fax-error"></p>
+            </div>
+          </div>
+          <p class="text-xs font-semibold text-slate-800 mt-4 mb-2">B. Highest Educational Attainment</p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-1 text-sm">
+            <label class="flex items-center gap-2"><input type="radio" name="enroll-education" value="Elementary Graduate"> Elementary Graduate</label>
+            <label class="flex items-center gap-2"><input type="radio" name="enroll-education" value="High School Graduate"> High School Graduate</label>
+            <label class="flex items-center gap-2"><input type="radio" name="enroll-education" value="TVET Graduate"> TVET Graduate</label>
+            <label class="flex items-center gap-2"><input type="radio" name="enroll-education" value="College Level"> College Level</label>
+            <label class="flex items-center gap-2"><input type="radio" name="enroll-education" value="College Graduate"> College Graduate</label>
+            <label class="flex items-center gap-2"><input type="radio" name="enroll-education" value="Others"> Others</label>
+          </div>
+          <div id="enroll-education-other-wrap" class="hidden mt-2">
+            <label class="block text-xs font-medium text-slate-700 mb-1" for="enroll-education-other">Please Specify <span class="text-red-500">*</span></label>
+            <input class="w-full enroll-input rounded-lg py-2.5 px-3 text-sm" id="enroll-education-other" type="text" maxlength="150">
+          </div>
+          <p class="enroll-field-error" id="enroll-education-error"></p>
+          <p class="text-xs font-semibold text-slate-800 mt-4 mb-2">C. Employment Status</p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-1 text-sm">
+            <label class="flex items-center gap-2"><input type="radio" name="enroll-employment" value="Casual"> Casual</label>
+            <label class="flex items-center gap-2"><input type="radio" name="enroll-employment" value="Contractual"> Contractual</label>
+            <label class="flex items-center gap-2"><input type="radio" name="enroll-employment" value="Job Order"> Job Order</label>
+            <label class="flex items-center gap-2"><input type="radio" name="enroll-employment" value="Probationary"> Probationary</label>
+            <label class="flex items-center gap-2"><input type="radio" name="enroll-employment" value="Self-Employed"> Self-Employed</label>
+            <label class="flex items-center gap-2"><input type="radio" name="enroll-employment" value="Overseas Filipino Worker (OFW)"> Overseas Filipino Worker (OFW)</label>
+          </div>
+          <p class="enroll-field-error" id="enroll-employment-error"></p>
+          <div class="flex gap-3 pt-4">
+            <button type="button" class="enroll-wizard-back-step flex-1 bg-white hover:bg-gray-100 text-[#051630] py-2.5 rounded-lg font-semibold text-sm border border-[#051630]">Back</button>
+            <button type="button" class="enroll-wizard-next-step flex-1 bg-[#051630] hover:bg-[#0a2347] text-white py-2.5 rounded-lg font-semibold text-sm">Next</button>
+          </div>
+        </div>
+
+        <div class="enroll-wizard-panel hidden" data-step="4">
+          <p class="enroll-section-label">Residential Address</p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div class="sm:col-span-2">
+              <label class="block text-xs font-medium text-slate-700 mb-1" for="enroll-street">Number/Street/Zone/Purok <span class="text-red-500">*</span></label>
+              <input class="w-full enroll-input rounded-lg py-2.5 px-3 text-sm" id="enroll-street" name="streetDetails" type="text" maxlength="255" autocomplete="address-line1">
+              <p class="enroll-field-error" id="enroll-street-error"></p>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-700 mb-1" for="enroll-barangay">Barangay <span class="text-red-500">*</span></label>
+              <input class="w-full enroll-input rounded-lg py-2.5 px-3 text-sm" id="enroll-barangay" name="barangay" type="text" maxlength="150" autocomplete="address-level3">
+              <p class="enroll-field-error" id="enroll-barangay-error"></p>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-700 mb-1" for="enroll-district">District <span class="text-red-500">*</span></label>
+              <input class="w-full enroll-input rounded-lg py-2.5 px-3 text-sm" id="enroll-district" type="text" maxlength="100">
+              <label class="inline-flex items-center gap-2 mt-1 text-xs text-slate-600"><input type="checkbox" data-na-for="enroll-district"> Mark as Not Applicable</label>
+              <p class="enroll-field-error" id="enroll-district-error"></p>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-700 mb-1" for="enroll-city">Municipality/City <span class="text-red-500">*</span></label>
+              <input class="w-full enroll-input rounded-lg py-2.5 px-3 text-sm" id="enroll-city" name="cityMunicipality" type="text" maxlength="100" autocomplete="address-level2">
+              <p class="enroll-field-error" id="enroll-city-error"></p>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-700 mb-1" for="enroll-province">Province <span class="text-red-500">*</span></label>
+              <input class="w-full enroll-input rounded-lg py-2.5 px-3 text-sm" id="enroll-province" name="province" type="text" maxlength="100" autocomplete="address-level1">
+              <p class="enroll-field-error" id="enroll-province-error"></p>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-700 mb-1" for="enroll-region">Region <span class="text-red-500">*</span></label>
+              <select class="w-full enroll-input rounded-lg py-2.5 px-3 text-sm" id="enroll-region" autocomplete="address-level1">
+                <option value="" selected disabled>Select a region</option>
+                <option value="National Capital Region (NCR)" data-code="NCR">National Capital Region (NCR)</option>
+                <option value="Cordillera Administrative Region (CAR)" data-code="CAR">Cordillera Administrative Region (CAR)</option>
+                <option value="Ilocos Region (Region I)" data-code="I">Ilocos Region (Region I)</option>
+                <option value="Cagayan Valley (Region II)" data-code="II">Cagayan Valley (Region II)</option>
+                <option value="Central Luzon (Region III)" data-code="III">Central Luzon (Region III)</option>
+                <option value="CALABARZON (Region IV-A)" data-code="IV-A">CALABARZON (Region IV-A)</option>
+                <option value="MIMAROPA Region (Region IV-B)" data-code="IV-B">MIMAROPA Region (Region IV-B)</option>
+                <option value="Bicol Region (Region V)" data-code="V">Bicol Region (Region V)</option>
+                <option value="Western Visayas (Region VI)" data-code="VI">Western Visayas (Region VI)</option>
+                <option value="Central Visayas (Region VII)" data-code="VII">Central Visayas (Region VII)</option>
+                <option value="Eastern Visayas (Region VIII)" data-code="VIII">Eastern Visayas (Region VIII)</option>
+                <option value="Zamboanga Peninsula (Region IX)" data-code="IX">Zamboanga Peninsula (Region IX)</option>
+                <option value="Northern Mindanao (Region X)" data-code="X">Northern Mindanao (Region X)</option>
+                <option value="Davao Region (Region XI)" data-code="XI">Davao Region (Region XI)</option>
+                <option value="SOCCSKSARGEN (Region XII)" data-code="XII">SOCCSKSARGEN (Region XII)</option>
+                <option value="Caraga (Region XIII)" data-code="XIII">Caraga (Region XIII)</option>
+                <option value="Bangsamoro Autonomous Region in Muslim Mindanao (BARMM)" data-code="BARMM">Bangsamoro Autonomous Region in Muslim Mindanao (BARMM)</option>
+              </select>
+              <p class="enroll-field-error" id="enroll-region-error"></p>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-700 mb-1" for="enroll-zip">ZIP Code <span class="text-red-500">*</span></label>
+              <input class="w-full enroll-input rounded-lg py-2.5 px-3 text-sm" id="enroll-zip" type="text" inputmode="numeric" maxlength="4" autocomplete="postal-code" placeholder="4500">
+              <p class="enroll-field-error" id="enroll-zip-error"></p>
+            </div>
+          </div>
+          <div class="flex gap-3 pt-4">
+            <button type="button" class="enroll-wizard-back-step flex-1 bg-white hover:bg-gray-100 text-[#051630] py-2.5 rounded-lg font-semibold text-sm border border-[#051630]">Back</button>
+            <button type="button" class="enroll-wizard-next-step flex-1 bg-[#051630] hover:bg-[#0a2347] text-white py-2.5 rounded-lg font-semibold text-sm">Next</button>
+          </div>
+        </div>
+
+        <div class="enroll-wizard-panel hidden" data-step="5">
+          <p class="enroll-section-label">Required Documents</p>
+          <p class="text-xs font-semibold text-slate-800 mb-2">A. Upload the Following Documents</p>
+          <p class="text-[11px] text-slate-600 mb-3">Please upload PDF files only. Add the four required documents below. Each file is named automatically.</p>
+          <div id="enroll-credential-dropzone" class="enroll-dropzone">
+            <p class="text-sm text-slate-600">Drag &amp; Drop PDFs here / Browse</p>
+            <p class="text-[11px] text-slate-500 mt-1">PDF only · Max 100 MB · Transcript of Records, Form 138, Honorable Dismissal, and Certificate of Good Moral Character</p>
+          </div>
+          <input type="file" id="enroll-credential-input" class="hidden" accept="application/pdf,.pdf" multiple>
+          <div id="enroll-credential-list" class="mt-3 space-y-2"></div>
+          <div class="mt-6 border-t border-slate-200 pt-5">
+            <p class="enroll-section-label">Valid ID</p>
+            <label class="block text-xs font-medium text-slate-700 mb-1" for="enroll-id-type">Select ID Type <span class="text-red-500">*</span></label>
+            <select id="enroll-id-type" class="w-full enroll-input rounded-lg py-2.5 px-3 text-sm">
+              <option value="" selected disabled>Select ID type</option>
+              <option value="School ID">School ID</option>
+              <option value="PhilID / National ID">PhilID / National ID</option>
+              <option value="Driver's License">Driver's License</option>
+              <option value="Passport">Passport</option>
+              <option value="UMID">UMID</option>
+              <option value="Other Accepted ID">Other Accepted ID</option>
+            </select>
+            <div id="enroll-identity-dropzone" class="enroll-dropzone mt-3">
+              <p class="text-sm text-slate-600">Drag &amp; drop / Browse one ID</p>
+              <p class="text-[11px] text-slate-500 mt-1">PDF, JPG, JPEG, PNG · Max 100 MB</p>
+            </div>
+            <input type="file" id="enroll-identity-file" class="hidden" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png">
+            <div id="enroll-identity-file-display" class="mt-2"></div>
+          </div>
+          <div class="flex gap-3 pt-4">
+            <button type="button" class="enroll-wizard-back-step flex-1 bg-white hover:bg-gray-100 text-[#051630] py-2.5 rounded-lg font-semibold text-sm border border-[#051630]">Back</button>
+            <button type="button" class="enroll-wizard-next-step flex-1 bg-[#051630] hover:bg-[#0a2347] text-white py-2.5 rounded-lg font-semibold text-sm">Next</button>
+          </div>
+        </div>
+
+        <div class="enroll-wizard-panel hidden" data-step="6">
+          <p class="enroll-section-label">TESDA Eligibility Check</p>
+          <p class="text-xs text-slate-600 mb-4">Initial screening only — final TESDA eligibility is determined by the ABEC Administrator.</p>
+          <div class="space-y-4">
+            <fieldset>
+              <legend class="text-sm font-semibold text-slate-800">Have you previously enrolled in a TESDA program?</legend>
+              <label class="inline-flex items-center gap-2 mr-4 text-sm mt-2"><input type="radio" name="tesda-prev-enrolled" value="no" checked> No</label>
+              <label class="inline-flex items-center gap-2 text-sm mt-2"><input type="radio" name="tesda-prev-enrolled" value="yes"> Yes</label>
+            </fieldset>
+            <div id="tesda-prev-details" class="hidden grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50 border border-slate-200 rounded-lg p-3">
+              <div class="sm:col-span-2 text-xs font-bold text-slate-700">Previous TESDA Training Information</div>
+              <input id="tesda-prev-course" class="enroll-input rounded-lg py-2 px-3 text-sm" placeholder="Course / Qualification">
+              <input id="tesda-prev-institution" class="enroll-input rounded-lg py-2 px-3 text-sm" placeholder="Training Institution">
+              <select id="tesda-prev-status" class="enroll-input rounded-lg py-2 px-3 text-sm">
+                <option value="">Status</option>
+                <option>Completed</option>
+                <option>Ongoing</option>
+              </select>
+              <input id="tesda-prev-year" class="enroll-input rounded-lg py-2 px-3 text-sm" placeholder="Year" inputmode="numeric">
+            </div>
+            <fieldset>
+              <legend class="text-sm font-semibold text-slate-800">Are you currently enrolled in a TESDA program?</legend>
+              <label class="inline-flex items-center gap-2 mr-4 text-sm mt-2"><input type="radio" name="tesda-current-enrolled" value="no" checked> No</label>
+              <label class="inline-flex items-center gap-2 text-sm mt-2"><input type="radio" name="tesda-current-enrolled" value="yes"> Yes</label>
+            </fieldset>
+            <div id="tesda-current-notice" class="hidden tesda-notice">
+              <p class="font-bold mb-1">⚠️ TESDA Training Notice</p>
+              <p>You indicated that you are currently enrolled in a TESDA program. TESDA scholarship training must be availed one at a time and not simultaneously. Your eligibility will be subject to verification by the ABEC Administrator.</p>
+              <button type="button" id="tesda-ack-current" class="mt-3 bg-[#051630] text-white text-xs font-semibold px-3 py-2 rounded-lg">I Understand</button>
+            </div>
+            <fieldset>
+              <legend class="text-sm font-semibold text-slate-800">Have you completed a TESDA qualification?</legend>
+              <label class="inline-flex items-center gap-2 mr-4 text-sm mt-2"><input type="radio" name="tesda-completed" value="no" checked> No</label>
+              <label class="inline-flex items-center gap-2 text-sm mt-2"><input type="radio" name="tesda-completed" value="yes"> Yes</label>
+            </fieldset>
+            <div id="tesda-completed-details" class="hidden">
+              <label class="block text-xs font-medium text-slate-700 mb-1" for="tesda-completed-name">What TESDA qualification have you completed?</label>
+              <input id="tesda-completed-name" class="w-full enroll-input rounded-lg py-2.5 px-3 text-sm" placeholder="e.g. Cookery NC II">
+            </div>
+            <div id="tesda-same-qual-warning" class="hidden tesda-notice">
+              <p class="font-bold mb-1">⚠️ Qualification Notice</p>
+              <p>You indicated that you have already completed this qualification. Based on TESDA scholarship guidelines, a qualification already completed by the scholar may affect multiple scholarship availment. Your application will be reviewed by the ABEC Administrator.</p>
+              <button type="button" id="tesda-ack-same-qual" class="mt-3 bg-[#051630] text-white text-xs font-semibold px-3 py-2 rounded-lg">I Understand</button>
+            </div>
+            <div id="tesda-screening-result" class="tesda-screening-box tone-green"></div>
+          </div>
+          <div class="flex gap-3 pt-4">
+            <button type="button" class="enroll-wizard-back-step flex-1 bg-white hover:bg-gray-100 text-[#051630] py-2.5 rounded-lg font-semibold text-sm border border-[#051630]">Back</button>
+            <button type="button" class="enroll-wizard-next-step flex-1 bg-[#051630] hover:bg-[#0a2347] text-white py-2.5 rounded-lg font-semibold text-sm">Next</button>
+          </div>
+        </div>
+
+        <div class="enroll-wizard-panel hidden" data-step="7">
+          <p class="enroll-section-label">Review Your Application</p>
+          <div id="review-sections" class="space-y-3 text-sm"></div>
+          <div class="mt-4 rounded-lg border border-[#2563EB] bg-[#f3f7fb] px-4 py-3 text-sm text-slate-700">
+            <p class="font-bold text-[#0B1F3A] mb-1">Important: Application Confirmation and Document Submission</p>
+            <p>After submitting your application, ABEC will send an email confirming your application and providing information about your enrollment slot. Your application form will be attached to the email when available. Please print the application form and submit it to the ABEC office at the designated location.</p>
+            <p class="mt-2">If all available slots are already filled, ABEC will notify you through email. Please wait for the official confirmation of your application status.</p>
+            <p class="mt-2 font-semibold">ABEC office</p>
+            <p>122 Peñaranda Street, Legazpi, Bicol</p>
+            <p>3F PVLB Building, Peñaranda St., Legazpi City, Albay, Philippines</p>
+          </div>
+          <div class="enroll-privacy-panel">
+            <p class="enroll-section-label">Data Privacy Notice</p>
+            <p class="text-sm text-slate-700 leading-relaxed">Please read how this registration form uses your personal information before you submit your application.</p>
+            <button type="button" class="enroll-privacy-open" id="enroll-privacy-open">Read Data Privacy Notice</button>
+            <label class="enroll-privacy-check" for="enroll-privacy-ack">
+              <input type="checkbox" id="enroll-privacy-ack" name="enroll-privacy-ack">
+              <span>I acknowledge that I have read and understood the Data Privacy Notice.</span>
+            </label>
+            <p class="enroll-privacy-note">This confirms that you have read the notice. It is not consent for every use of your information. Where consent is required, it will be requested separately.</p>
+            <p id="enroll-privacy-ack-error" class="enroll-privacy-error hidden" role="alert"></p>
+          </div>
+          <div class="flex gap-3 pt-4">
+            <button type="button" class="enroll-wizard-back-step flex-1 bg-white hover:bg-gray-100 text-[#051630] py-2.5 rounded-lg font-semibold text-sm border border-[#051630]">Back</button>
+            <button type="button" id="enroll-wizard-submit" class="flex-1 bg-[#051630] hover:bg-[#0a2347] text-white py-2.5 rounded-lg font-semibold text-sm">Submit Application</button>
+          </div>
+        </div>
+
+      </form>
+    </div>
+  </div>
+  <div id="enroll-privacy-modal" class="enroll-privacy-modal hidden" role="dialog" aria-modal="true" aria-labelledby="enroll-privacy-title" aria-hidden="true">
+    <div class="enroll-privacy-backdrop" data-enroll-privacy-close></div>
+    <div class="enroll-privacy-card">
+      <div class="enroll-privacy-head">
+        <div>
+          <p class="enroll-privacy-kicker">ABEC Institute of Business and Technology, Inc.</p>
+          <h3 id="enroll-privacy-title">Data Privacy Notice</h3>
+        </div>
+        <button type="button" class="enroll-privacy-close" id="enroll-privacy-close" data-enroll-privacy-close aria-label="Close">×</button>
+      </div>
+      <div class="enroll-privacy-body">
+        <p>This notice describes how the ABEC online enrollment and document release system handles personal information that you enter in this registration form. It is written for the Philippine Data Privacy Act of 2012 (Republic Act No. 10173) and the general privacy-notice expectations of the National Privacy Commission. It describes this system as it currently works. Items the institution still has to confirm are marked as placeholders and are not presented as official policy.</p>
+        <h4>Personal Information Collected</h4>
+        <p>The registration form asks for information you provide, including:</p>
+        <ul>
+          <li>Your name, suffix, gender, and civil status.</li>
+          <li>Your date of birth, age, and place of birth.</li>
+          <li>Your email address, mobile number, and any telephone, fax, or other contact number you enter.</li>
+          <li>Your education level and employment status.</li>
+          <li>Your address, including street, barangay, district, city or municipality, province, region, and ZIP code.</li>
+          <li>The course you are applying for, the qualification type, and your applicant classification.</li>
+          <li>The school, training center, or company name and address, when you provide them.</li>
+          <li>Your answers about previous, current, or completed TESDA-related training. These answers are used for ABEC’s initial screening. This system does not treat them as an official TESDA eligibility decision.</li>
+          <li>The type of valid ID you select, and the ID file you upload.</li>
+          <li>Credential files you upload, such as a transcript of records, Form 138, honorable dismissal, or certificate of good moral character.</li>
+        </ul>
+        <p>After you submit, the system also creates an application reference and keeps the application status. If a message is sent, it records whether that email was sent or failed.</p>
+        <h4>Purpose of Data Collection and Processing</h4>
+        <p>The system uses this information to:</p>
+        <ul>
+          <li>Receive and review your enrollment application.</li>
+          <li>Show the application to authorized ABEC administrators, including the course and uploaded files.</li>
+          <li>Support the administrator’s initial check of the TESDA-related answers you entered.</li>
+          <li>Send a confirmation or later status message to the email address you provided. The confirmation can include a PDF copy of your application form.</li>
+          <li>Tell you, in that message, to print the form and bring it to the ABEC office when asked.</li>
+          <li>Notify administrators that a new application was submitted.</li>
+          <li>Keep the same application available if ABEC later confirms a slot and continues enrollment or document release in this system.</li>
+        </ul>
+        <p>The form also states that the details you enter are used as the basis for reporting and for printing the corresponding certificate.</p>
+        <h4>Legal Basis for Processing</h4>
+        <p>The information needed to receive and administer your application is processed because you asked ABEC to take steps toward enrollment. Where a separate legal obligation applies to a TESDA-registered training institution, that obligation has to be confirmed by the institution. This notice does not create one.</p>
+        <p>Checking the acknowledgment box only confirms that you have read and understood this notice. It is not consent to every processing activity. If a particular use depends on consent under Republic Act No. 10173, that consent has to be requested on its own and must not be assumed from this checkbox.</p>
+        <h4>Data Storage and Security</h4>
+        <p>Your application details are stored in this system’s database. Uploaded credential and ID files are stored on the server outside the public website folder, under the application’s secure upload area. Authorized administrator accounts can open those records inside the system.</p>
+        <p>This notice does not claim a specific security certification, encryption standard, or National Privacy Commission registration. Those items are still for the institution to confirm.</p>
+        <h4>Data Sharing and Disclosure</h4>
+        <p>Within this system, your application and files are available to authorized ABEC administrators. Status messages, including a PDF of the application form when it is attached, are sent to your own email address through the email service configured for this system.</p>
+        <p>Submitting the form does not, by itself, transmit your record to TESDA or another government agency. The software has no automatic transfer of that kind. If ABEC later shares information outside this system, including for TESDA training or because a law requires it, that sharing is an institutional practice and is not performed automatically here.</p>
+        <div class="enroll-privacy-placeholder">
+          <strong>Other recipients — to be confirmed by the institution</strong>
+          <span>Any regular disclosure to TESDA, a scholarship office, an insurer, or another organization is not defined in this system and must be added by ABEC before it is treated as part of this notice.</span>
+        </div>
+        <h4>Data Retention Period</h4>
+        <p>This system does not delete applications on a timer. A record and its uploaded files stay until an authorized administrator changes or removes them.</p>
+        <div class="enroll-privacy-placeholder">
+          <strong>Retention period — to be confirmed by the institution</strong>
+          <span>The length of time ABEC must keep enrollment, assessment, and certificate records is not set in this software. ABEC needs to state that period after checking its TESDA and institutional requirements.</span>
+        </div>
+        <h4>Rights of Data Subjects</h4>
+        <p>Under Republic Act No. 10173, you have rights that include the right to be informed, to access your personal data, to correct it, to object to or suspend certain processing, to request erasure or blocking where the law allows it, to data portability where it applies, and to claim damages where the law provides a remedy. You may also file a complaint with the National Privacy Commission.</p>
+        <p>How ABEC will receive and act on those requests depends on the designated privacy contact below. That contact is not yet identified in this system.</p>
+        <h4>Privacy Contact</h4>
+        <p>The office address already published in this system is 3F PVLB Building, Peñaranda St., Legazpi City, Albay, Philippines (122 Peñaranda Street, Legazpi, Bicol). That address is the training office shown on the application messages. It is not, by itself, a designated Data Protection Officer.</p>
+        <div class="enroll-privacy-placeholder">
+          <strong>Data Protection Officer or designated privacy contact — to be confirmed by the institution</strong>
+          <span>Name: [To be confirmed by the institution]</span><br>
+          <span>Official privacy email: [To be confirmed by the institution]</span><br>
+          <span>Official privacy phone: [To be confirmed by the institution]</span>
+        </div>
+        <p>Until ABEC names that contact, do not treat the general office mailbox or phone number published elsewhere on this website as the Data Protection Officer’s official channel.</p>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- Close registration confirmation (matches enroll form styling) -->
+<div id="enroll-close-confirm" class="hidden fixed inset-0 z-[110] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="enroll-close-confirm-title">
+  <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" data-purpose="confirm-backdrop" onclick="cancelCloseEnrollModal()"></div>
+  <div class="enroll-confirm-card relative bg-white border border-gray-300 rounded-xl shadow-lg max-w-sm w-full p-6 md:p-7">
+    <h3 id="enroll-close-confirm-title" class="text-xl font-bold text-slate-900 mb-2">Close registration?</h3>
+    <p class="text-sm text-gray-600 leading-relaxed mb-6">
+      Are you sure you want to close the registration form? Any information you entered will be cleared.
+    </p>
+    <div class="flex gap-3">
+      <button type="button" onclick="cancelCloseEnrollModal()" class="flex-1 bg-white hover:bg-gray-100 text-[#051630] py-3 rounded-lg font-semibold text-sm border border-[#051630] transition-colors">
+        Keep editing
+      </button>
+      <button type="button" onclick="confirmCloseEnrollModal()" class="flex-1 bg-[#051630] hover:bg-[#0a2347] text-white py-3 rounded-lg font-semibold text-sm transition-colors">
+        Yes, close
+      </button>
+    </div>
+  </div>
+</div>
+<script data-purpose="enroll-modal">
+  function openEnrollModal() {
+    // Re-open without wiping fields — data is only cleared after confirmed X close (or successful submit).
+    var formStep = document.getElementById('enroll-step-form');
+    var hasFormProgress = formStep && !formStep.classList.contains('hidden');
+    if (!hasFormProgress) showEnrollStep('intro');
+    document.getElementById('enroll-modal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+  }
+
+  /** Backdrop / Escape: hide modal but keep entered registration data. */
+  function dismissEnrollModal() {
+    cancelCloseEnrollModal();
+    document.getElementById('enroll-modal').classList.add('hidden');
+    document.body.style.overflow = '';
+  }
+
+  function isEnrollCloseConfirmOpen() {
+    var el = document.getElementById('enroll-close-confirm');
+    return el && !el.classList.contains('hidden');
+  }
+
+  /** Intentional close via X: show designed confirmation dialog. */
+  function requestCloseEnrollModal() {
+    var confirmEl = document.getElementById('enroll-close-confirm');
+    if (!confirmEl) return;
+    confirmEl.classList.remove('hidden');
+  }
+
+  function cancelCloseEnrollModal() {
+    var confirmEl = document.getElementById('enroll-close-confirm');
+    if (confirmEl) confirmEl.classList.add('hidden');
+  }
+
+  function confirmCloseEnrollModal() {
+    cancelCloseEnrollModal();
+    if (typeof window.resetEnrollRegistrationForm === 'function') {
+      window.resetEnrollRegistrationForm();
+    }
+    showEnrollStep('intro');
+    document.getElementById('enroll-modal').classList.add('hidden');
+    document.body.style.overflow = '';
+  }
+
+  // Kept for successful submit and any legacy callers that should fully close.
+  function closeEnrollModal() {
+    dismissEnrollModal();
+  }
+
+  function showEnrollStep(step) {
+    var showForm = step === 'form' || step === 'wizard';
+    document.getElementById('enroll-step-intro').classList.toggle('hidden', step !== 'intro');
+    document.getElementById('enroll-step-form').classList.toggle('hidden', !showForm);
+    if (showForm) {
+      var contact = document.getElementById('enroll-contact');
+      if (contact) {
+        if (!contact.value) contact.value = '+63';
+        var value = String(contact.value || '').trim();
+        contact.classList.toggle('is-prefix-only', !value || value === '+63');
+      }
+    }
+    if (step === 'wizard' && window.AbecEnrollWizard && typeof window.AbecEnrollWizard.goToStep === 'function') {
+      var stepNum = typeof window.AbecEnrollWizard.getCurrentStep === 'function'
+        ? window.AbecEnrollWizard.getCurrentStep() : 1;
+      if (!stepNum || stepNum < 1) window.AbecEnrollWizard.goToStep(1);
+      else window.AbecEnrollWizard.goToStep(stepNum);
+    }
+  }
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape') return;
+    var privacy = document.getElementById('enroll-privacy-modal');
+    if (privacy && !privacy.classList.contains('hidden')) {
+      var privacyClose = document.getElementById('enroll-privacy-close');
+      if (privacyClose) privacyClose.click();
+      else {
+        privacy.classList.add('hidden');
+        privacy.setAttribute('aria-hidden', 'true');
+      }
+      return;
+    }
+    if (isEnrollCloseConfirmOpen()) {
+      cancelCloseEnrollModal();
+      return;
+    }
+    var modal = document.getElementById('enroll-modal');
+    if (modal && !modal.classList.contains('hidden')) {
+      dismissEnrollModal();
+    }
+  });
+</script>
+<script src="../../wwwroot/js/abec-api.js?v=20261031ux1"></script>
+<script src="../../wwwroot/js/abec-landing.js?v=20261030spread1"></script>
+<script src="../../wwwroot/js/abec-enroll-wizard.js?v=20261031ux1"></script>
+<!-- END: EnrollModal --><section id="courses" class="bg-white abec-section">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10">
+    <div class="text-center mb-12">
+      <h2 class="text-3xl md:text-4xl font-bold text-institutional-blue mb-4">Explore Our Courses</h2>
+      <p class="text-gray-600 text-lg max-w-3xl mx-auto">Industry-aligned programs designed to give you a competitive edge in today's global market.</p>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+      <article class="course-card abec-card-interactive">
+        <div class="course-card-surface">
+          <div class="course-card-media">
+            <img src="../../wwwroot/images/Photo9ComputerSystemsServicing.jpg" alt="Computer Systems Servicing" class="w-full h-full object-cover">
+          </div>
+          <div class="course-card-body">
+            <h3 class="text-xl font-bold text-institutional-blue">Computer Systems Servicing <span class="whitespace-nowrap">NC II</span></h3>
+          </div>
+          <div class="course-card-wash" aria-hidden="true"></div>
+          <div class="course-card-details" id="course-detail-computer" aria-hidden="true">
+            <h3 class="text-xl font-bold text-institutional-blue">Computer Systems Servicing <span class="whitespace-nowrap">NC II</span></h3>
+            <dl class="course-detail-list">
+              <div><dt>Course Description</dt><dd data-course-description="computer">Install, configure, and maintain computer systems and networks.</dd></div>
+              <div><dt>Training Duration</dt><dd data-course-duration="computer">35 days</dd></div>
+              <div><dt>Total Training Hours</dt><dd data-course-total="computer">280 hours</dd></div>
+              <div class="course-detail-jobs"><dt>Job Opportunities</dt><dd><p class="course-job-note">Possible entry-level roles to apply for:</p><ul class="course-job-list"><li>Computer Technician</li><li>IT Support Assistant</li><li>Computer Service Technician</li><li>Hardware Support Technician</li><li>Technical Support Assistant</li><li>and more...</li></ul></dd></div>
+            </dl>
+          </div>
+          <button type="button" class="course-details-btn" data-course-open="computer" aria-expanded="false" aria-controls="course-detail-computer"><span class="course-details-label">Details</span></button>
+        </div>
+      </article>
+      <article class="course-card abec-card-interactive">
+        <div class="course-card-surface">
+          <div class="course-card-media">
+            <img src="../../wwwroot/images/Photo8Bookkeeping.jpg" alt="Bookkeeping" class="w-full h-full object-cover">
+          </div>
+          <div class="course-card-body">
+            <h3 class="text-xl font-bold text-institutional-blue">Bookkeeping <span class="whitespace-nowrap">NC III</span></h3>
+          </div>
+          <div class="course-card-wash" aria-hidden="true"></div>
+          <div class="course-card-details" id="course-detail-bookkeeping" aria-hidden="true">
+            <h3 class="text-xl font-bold text-institutional-blue">Bookkeeping <span class="whitespace-nowrap">NC III</span></h3>
+            <dl class="course-detail-list">
+              <div><dt>Course Description</dt><dd data-course-description="bookkeeping">Perform journalizing, posting, and preparation of financial reports.</dd></div>
+              <div><dt>Training Duration</dt><dd data-course-duration="bookkeeping">37 training days + 19 on-the-job training days</dd></div>
+              <div><dt>Total Training Hours</dt><dd data-course-total="bookkeeping">448 hours</dd></div>
+              <div class="course-detail-jobs"><dt>Job Opportunities</dt><dd><p class="course-job-note">Possible entry-level roles to apply for:</p><ul class="course-job-list"><li>Junior Bookkeeper</li><li>Accounting Assistant</li><li>Accounts Payable Clerk</li><li>Accounts Receivable Clerk</li><li>Payroll Assistant</li><li>Accounting Clerk</li><li>and more...</li></ul></dd></div>
+            </dl>
+          </div>
+          <button type="button" class="course-details-btn" data-course-open="bookkeeping" aria-expanded="false" aria-controls="course-detail-bookkeeping"><span class="course-details-label">Details</span></button>
+        </div>
+      </article>
+      <article class="course-card abec-card-interactive">
+        <div class="course-card-surface">
+          <div class="course-card-media">
+            <img src="../../wwwroot/images/Photo7ElectronicProductsAssemblyandServicing.jpg" alt="Electronic Products Assembly and Servicing" class="w-full h-full object-cover">
+          </div>
+          <div class="course-card-body">
+            <h3 class="text-xl font-bold text-institutional-blue">Electronic Products Assembly and Servicing</h3>
+          </div>
+          <div class="course-card-wash" aria-hidden="true"></div>
+          <div class="course-card-details" id="course-detail-electronic" aria-hidden="true">
+            <h3 class="text-xl font-bold text-institutional-blue">Electronic Products Assembly and Servicing</h3>
+            <dl class="course-detail-list">
+              <div><dt>Course Description</dt><dd data-course-description="electronic">Assemble and service electronic products and appliances.</dd></div>
+              <div><dt>Training Duration</dt><dd data-course-duration="electronic">33 days</dd></div>
+              <div><dt>Total Training Hours</dt><dd data-course-total="electronic">264 hours</dd></div>
+              <div class="course-detail-jobs"><dt>Job Opportunities</dt><dd><p class="course-job-note">Possible entry-level roles to apply for:</p><ul class="course-job-list"><li>Electronics Assembler</li><li>Consumer Electronics Technician</li><li>Appliance Service Technician</li><li>Electronics Repair Technician</li><li>Audio-Video Equipment Technician</li><li>Electronics Production Operator</li><li>and more...</li></ul></dd></div>
+            </dl>
+          </div>
+          <button type="button" class="course-details-btn" data-course-open="electronic" aria-expanded="false" aria-controls="course-detail-electronic"><span class="course-details-label">Details</span></button>
+        </div>
+      </article>
+      <article class="course-card abec-card-interactive">
+        <div class="course-card-surface">
+          <div class="course-card-media">
+            <img src="../../wwwroot/images/Photo6CustomerServices.jpg" alt="Customer Services" class="w-full h-full object-cover">
+          </div>
+          <div class="course-card-body">
+            <h3 class="text-xl font-bold text-institutional-blue">Customer Services <span class="whitespace-nowrap">NC II</span></h3>
+          </div>
+          <div class="course-card-wash" aria-hidden="true"></div>
+          <div class="course-card-details" id="course-detail-customer" aria-hidden="true">
+            <h3 class="text-xl font-bold text-institutional-blue">Customer Services <span class="whitespace-nowrap">NC II</span></h3>
+            <dl class="course-detail-list">
+              <div><dt>Course Description</dt><dd data-course-description="customer">Deliver professional frontline and customer support services.</dd></div>
+              <div><dt>Training Duration</dt><dd data-course-duration="customer">30 days</dd></div>
+              <div><dt>Total Training Hours</dt><dd data-course-total="customer">240 hours</dd></div>
+              <div class="course-detail-jobs"><dt>Job Opportunities</dt><dd><p class="course-job-note">Possible entry-level roles to apply for:</p><ul class="course-job-list"><li>Customer Service Representative</li><li>Customer Support Associate</li><li>Front Desk Assistant</li><li>Call Center Representative</li><li>Client Service Assistant</li><li>Receptionist</li><li>and more...</li></ul></dd></div>
+            </dl>
+          </div>
+          <button type="button" class="course-details-btn" data-course-open="customer" aria-expanded="false" aria-controls="course-detail-customer"><span class="course-details-label">Details</span></button>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+<section id="contact" class="abec-contact abec-section font-sans">
+  <link rel="stylesheet" href="../../wwwroot/lib/leaflet/leaflet.css">
+  <style>
+    .abec-contact {
+      background:
+        linear-gradient(180deg, rgba(11, 31, 58, 0.06) 0%, rgba(255, 255, 255, 0) 240px),
+        #ffffff;
+      color: #0B1F3A;
+    }
+    .abec-contact-panel {
+      background: #fff;
+      border: 1px solid rgba(27, 79, 122, 0.16);
+      border-radius: 1rem;
+      box-shadow: 0 8px 24px rgba(11, 39, 71, 0.06);
+      padding: 0.35rem 1rem;
+    }
+    .abec-contact-row {
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+      padding: 0.85rem 0.25rem;
+      border-top: 1px solid rgba(27, 79, 122, 0.1);
+      border-radius: 0.7rem;
+      transition: background-color 0.25s ease;
+    }
+    .abec-contact-row:first-child { border-top: 0; }
+    .abec-contact-row:hover { background: rgba(27, 79, 122, 0.05); }
+    .abec-contact-row .material-symbols-outlined {
+      color: #2563EB;
+      font-size: 22px;
+      margin-top: 0.1rem;
+    }
+    .abec-contact-row h3 {
+      color: #2563EB;
+      font-size: 1rem;
+      font-weight: 700;
+      margin: 0 0 0.2rem;
+    }
+    .abec-contact-row p {
+      margin: 0;
+      color: #374151;
+      font-size: 0.875rem;
+      line-height: 1.5;
+    }
+    .abec-contact-row a {
+      color: #2563EB;
+      font-weight: 700;
+      font-size: 0.875rem;
+      word-break: break-word;
+      text-decoration: none;
+    }
+    .abec-contact-row a:hover { color: #0B1F3A; }
+    .abec-contact-map-shell {
+      position: relative;
+      z-index: 0;
+      isolation: isolate;
+      border-radius: 1rem;
+      overflow: hidden;
+      background: #fff;
+      border: 1px solid rgba(27, 79, 122, 0.16);
+      box-shadow: 0 10px 28px rgba(11, 39, 71, 0.08);
+    }
+    #abec-contact-map {
+      height: 32rem;
+      width: 100%;
+      background: #e7eef6;
+    }
+    #abec-contact-map .leaflet-tile,
+    #abec-contact-map img {
+      max-width: none !important;
+      max-height: none !important;
+    }
+    .abec-map-status {
+      position: absolute;
+      inset: 0;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      text-align: center;
+      color: #0B1F3A;
+      background: rgba(255, 255, 255, 0.92);
+      font-size: 0.875rem;
+    }
+    .abec-map-status[hidden] { display: none; }
+    .abec-directions {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #0B2747, #2563EB);
+      color: #fff;
+      font-size: 0.875rem;
+      font-weight: 700;
+      text-decoration: none;
+      padding: 0.7rem 1.05rem;
+      border-radius: 0.75rem;
+      box-shadow: 0 8px 18px rgba(11, 39, 71, 0.16);
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+    .abec-directions:hover {
+      color: #fff;
+      transform: translateY(-2px);
+      box-shadow: 0 12px 24px rgba(11, 39, 71, 0.22);
+    }
+    .abec-pin-wrap { background: none !important; border: 0 !important; }
+    .abec-pin { display: flex; flex-direction: column; align-items: center; width: 56px; }
+    .abec-pin-label {
+      background: #0B1F3A;
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      line-height: 1;
+      padding: 3px 6px;
+      border-radius: 999px;
+      margin-bottom: 2px;
+    }
+    @media (max-width: 768px) {
+      #abec-contact-map { height: 22rem; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .abec-contact-row,
+      .abec-directions { transition: none; }
+      .abec-directions:hover { transform: none; }
+    }
+  </style>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10">
+    <h2 class="text-3xl md:text-4xl font-bold text-institutional-blue tracking-tight mb-10">Contact Us</h2>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-start">
+      <div class="space-y-6">
+        <div>
+          <h3 class="text-[#2563EB] font-bold text-lg mb-2">ABEC Institute of Business and Technology Inc</h3>
+          <p class="text-gray-700 text-sm leading-relaxed">Dedicated to high-quality technical vocational training and assessment for the Filipino workforce.</p>
+        </div>
+        <div class="flex gap-4">
+          <div class="w-1.5 bg-[#2563EB] shrink-0"></div>
+          <p class="text-sm font-bold text-gray-800 leading-snug">
+            For inquiries about TESDA scholarship programs, available courses, enrollment requirements, and training schedules, contact ABEC Institute of Business and Technology, Inc. through their official communication channels.
+          </p>
+        </div>
+        <div class="abec-contact-panel">
+          <div class="abec-contact-row">
+            <span class="material-symbols-outlined" aria-hidden="true">location_on</span>
+            <div>
+              <h3>Address:</h3>
+              <p>122 Peñaranda Street, Legazpi, Bicol</p>
+              <p>3F PVLB Building, Peñaranda St.,<br>Legazpi City, Albay, Philippines</p>
+            </div>
+          </div>
+          <div class="abec-contact-row">
+            <span class="material-symbols-outlined" aria-hidden="true">call</span>
+            <div>
+              <h3>Phone:</h3>
+              <p>0919-069-4398 / (052) 480-5526</p>
+            </div>
+          </div>
+          <div class="abec-contact-row">
+            <span class="material-symbols-outlined" aria-hidden="true">facebook</span>
+            <div>
+              <h3>Social Media Page:</h3>
+              <p>ABEC Institute of Business and Technology Inc</p>
+            </div>
+          </div>
+          <div class="abec-contact-row">
+            <span class="material-symbols-outlined" aria-hidden="true">schedule</span>
+            <div>
+              <h3>Office Hours:</h3>
+              <p>Monday – Friday<br>8:00 AM – 5:00 PM</p>
+            </div>
+          </div>
+          <div class="abec-contact-row">
+            <span class="material-symbols-outlined" aria-hidden="true">mail</span>
+            <div>
+              <h3>Email Address:</h3>
+              <p><a href="mailto:abecsystem@gmail.com">abecsystem@gmail.com</a></p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <h3 class="text-[#2563EB] font-bold text-lg mb-4">Location:</h3>
+        <div class="abec-contact-map-shell">
+          <div id="abec-contact-map" role="region" aria-label="Interactive map of 122 Peñaranda Street, Legazpi, Bicol"></div>
+          <p id="abec-map-status" class="abec-map-status" hidden>Map tiles could not be loaded. The address is still listed here, and Get Directions opens it in Google Maps.</p>
+        </div>
+        <div class="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <p class="text-sm text-gray-700">122 Peñaranda Street, Legazpi, Bicol</p>
+            <p class="text-xs text-gray-600 mt-1">The pin marks Peñaranda Street in the Legazpi Port District from OpenStreetMap. Building number 122 is not a separate mapped point.</p>
+          </div>
+          <a class="abec-directions shrink-0" href="https://www.google.com/maps/dir/?api=1&amp;destination=122+Pe%C3%B1aranda+Street%2C+Legazpi%2C+Bicol" target="_blank" rel="noopener noreferrer">Get Directions</a>
+        </div>
+        <p class="text-center text-gray-600 text-xs mt-8">ABEC Institute of Business and Technology Inc 2026</p>
+      </div>
+    </div>
+  </div>
+  <script src="../../wwwroot/lib/leaflet/leaflet.js"></script>
+  <script>
+    (function () {
+      var el = document.getElementById('abec-contact-map');
+      if (!el || !window.L || el.getAttribute('data-ready') === '1') return;
+      el.setAttribute('data-ready', '1');
+      var lat = 13.1472258;
+      var lon = 123.7538898;
+      var map = L.map(el, { scrollWheelZoom: true }).setView([lat, lon], 16);
+      var status = document.getElementById('abec-map-status');
+      var errors = 0;
+      var usingFallback = false;
+      function watch(layer) {
+        layer.on('tileload', function () {
+          if (status) status.hidden = true;
+        });
+        layer.on('tileerror', function () {
+          errors += 1;
+          if (!usingFallback && errors >= 4) {
+            usingFallback = true;
+            map.removeLayer(layer);
+            watch(L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+              subdomains: 'abcd',
+              maxZoom: 20,
+              attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
+            }).addTo(map));
+          } else if (usingFallback && errors >= 12 && status) {
+            status.hidden = false;
+          }
+        });
+      }
+      watch(L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      }).addTo(map));
+      var icon = L.divIcon({
+        className: 'abec-pin-wrap',
+        html: '<div class="abec-pin"><span class="abec-pin-label">ABEC</span><svg width="28" height="40" viewBox="0 0 28 40" aria-hidden="true"><path d="M14 0C6.3 0 0 6.2 0 13.8 0 24 14 40 14 40s14-16 14-26.2C28 6.2 21.7 0 14 0z" fill="#2563EB"/><circle cx="14" cy="14" r="5.5" fill="#fff"/></svg></div>',
+        iconSize: [56, 62],
+        iconAnchor: [28, 62],
+        popupAnchor: [0, -56]
+      });
+      L.marker([lat, lon], { icon: icon }).addTo(map).bindPopup(
+        '<strong>ABEC Institute of Business and Technology Inc</strong><br>122 Peñaranda Street, Legazpi, Bicol<br>3F PVLB Building, Peñaranda St., Legazpi City, Albay, Philippines<br><span style="color:#4b5563">Pin marks Peñaranda Street in the port district. Building number 122 is not a separate mapped point.</span>'
+      ).openPopup();
+      function fit() { map.invalidateSize(); }
+      window.addEventListener('resize', fit);
+      setTimeout(fit, 200);
+      setTimeout(fit, 800);
+    })();
+  </script>
+</section>
+<footer class="bg-white py-12 border-t border-gray-200">
+<div class="max-w-4xl mx-auto px-4 text-center">
+<p class="text-institutional-blue font-bold text-lg leading-relaxed">
+        ABEC Institute of Business and Technology, Inc. is a TESDA-accredited technical-vocational institution in Albay that provides skills-based training in business and technology. Through TESDA-registered programs, ABEC equips learners with industry-relevant competencies and prepares them for employment and career advancement.
+      </p>
+</div>
+</footer>
+<!-- END: AccreditationFooter -->
+
+
+
+
+
+
+
+
+<script src="../../wwwroot/js/abec-landing-chrome.js?v=20261012d"></script>
+<script data-purpose="premium-chrome">
+  (function () {
+    var closeBtn = document.getElementById('mobile-nav-close');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', function () {
+        var drawer = document.getElementById('mobile-nav-drawer');
+        if (drawer) {
+          drawer.classList.remove('is-open');
+          drawer.setAttribute('aria-hidden', 'true');
+          document.body.style.overflow = '';
+        }
+      });
+    }
+
+    var reveals = document.querySelectorAll('.abec-reveal');
+    if ('IntersectionObserver' in window && reveals.length) {
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-visible');
+            io.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+      reveals.forEach(function (el) { io.observe(el); });
+    } else {
+      reveals.forEach(function (el) { el.classList.add('is-visible'); });
+    }
+  })();
+</script>
+</body></html>
