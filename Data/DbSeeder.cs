@@ -3,6 +3,8 @@ using ABEC_System.Constants;
 using ABEC_System.Models;
 using ABEC_System.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace ABEC_System.Data;
 
@@ -649,7 +651,11 @@ public static partial class DbSeeder
         CancellationToken cancellationToken)
     {
         if (await ColumnExistsAsync(db, table, column, cancellationToken)) return;
-        await db.Database.ExecuteSqlRawAsync($"ALTER TABLE `{table}` ADD COLUMN `{column}` {definition}", cancellationToken);
+        // Schema identifiers cannot be SQL parameters. Quote/escape them with the provider;
+        // definition is trusted SQL from the private, code-defined schema upgrades only.
+        var sqlHelper = db.GetService<ISqlGenerationHelper>();
+        var sql = $"ALTER TABLE {sqlHelper.DelimitIdentifier(table)} ADD COLUMN {sqlHelper.DelimitIdentifier(column)} {definition}";
+        await db.Database.ExecuteSqlRawAsync(sql, cancellationToken);
     }
 
     private static async Task EnsureApplicantRegistrationSchemaAsync(ApplicationDbContext db, CancellationToken cancellationToken)
@@ -713,7 +719,9 @@ public static partial class DbSeeder
         CancellationToken cancellationToken)
     {
         if (!await ColumnExistsAsync(db, table, column, cancellationToken)) return;
-        await db.Database.ExecuteSqlRawAsync($"ALTER TABLE `{table}` DROP COLUMN `{column}`", cancellationToken);
+        var sqlHelper = db.GetService<ISqlGenerationHelper>();
+        var sql = $"ALTER TABLE {sqlHelper.DelimitIdentifier(table)} DROP COLUMN {sqlHelper.DelimitIdentifier(column)}";
+        await db.Database.ExecuteSqlRawAsync(sql, cancellationToken);
     }
 
     private static async Task<bool> ColumnExistsAsync(

@@ -65,10 +65,10 @@ not the entire source directory.
 - Rotate the database and SMTP passwords if they have been committed, shared,
   or included in an accessible artifact. Check old build and deployment copies.
 - Check the actual Git repository with `git ls-files` and `git check-ignore -v`.
-  This workspace has no `.git` metadata, so tracked files and commit history could
-  not be inspected. Ignore rules do not untrack existing files or erase history.
-  Untrack sensitive paths in the real repository after checking their contents;
-  if secrets entered history, rotate them and arrange appropriate history cleanup.
+  The initial review preceded Git initialization. A later check found no tracked
+  files matching the current ignore rules. Commit history and other copies still
+  need review. Ignore rules do not untrack files or erase history; if secrets
+  entered history, rotate them and arrange appropriate history cleanup.
 - Fix server-side authorization before exposing the application publicly.
   `Controllers/ApplicantController.cs` exposes applicant lists/details without an
   authorization attribute. `Controllers/StudentApiController.cs` exposes profile
@@ -77,15 +77,13 @@ not the entire source directory.
   `StudentAccountController` authorization does not protect these other routes.
   These are application defects that `.gitignore` cannot fix; see the existing
   `docs/system-audit/08-findings-and-risk-register.md` for further audit context.
-- Upgrade and verify MailKit before release. The Release publish reported
-  `NU1902` for the project's MailKit 4.9.0 dependency. The maintainer's
-  [CVE-2026-41319 advisory](https://github.com/jstedfast/MailKit/security/advisories/GHSA-9j88-vvj5-vhgr)
-  lists versions through 4.15.1 as affected by a STARTTLS response-injection
-  vulnerability and 4.16.0 as patched. `Services/EmailService.cs` uses STARTTLS.
-  Dependency upgrades and application authorization changes were not included in
-  this file-exclusion change.
+- Review duplicate contact numbers within a batch in the existing database.
+  During the development-server restart, the schema upgrade stopped at its
+  duplicate-contact integrity check. The server starts and can connect to MySQL,
+  but the remaining schema upgrade cannot complete until those data conflicts
+  are resolved. No duplicate records were merged, deleted, or reassigned.
 
-## Verification
+## Initial file-exclusion verification
 
 - Git's actual ignore matcher passed checks for 53 sensitive/generated paths and
   24 source/example paths, using temporary Git metadata without initializing or
@@ -97,8 +95,46 @@ not the entire source directory.
   `smtp.local.json`, `App_Data`, or nested build/IDE directories were present.
 - Searched every published file, including binaries, for the existing database
   and SMTP password values; neither value was present.
-- The build also reported existing nullable-reference and interpolated-SQL
-  analyzer warnings. Those warnings were not changed by this review.
+- This initial build reported nullable-reference, interpolated-SQL, and MailKit
+  warnings, which were addressed in the follow-up below.
+
+## Build diagnostic fixes
+
+The follow-up fixes on November 7, 2026 address the reproduced build diagnostics:
+
+- `ScheduleService` supplies non-null room, trainer, and status values to conflict
+  checks, and its active-status guard explicitly accepts absent status values.
+- The schema add/drop helpers use the database provider to delimit and escape
+  table/column names. Schema definitions remain trusted, code-defined SQL;
+  identifiers cannot be represented by SQL value parameters.
+- MailKit was updated from 4.9.0 to 4.16.0, the patched version identified in the
+  [maintainer's STARTTLS advisory](https://github.com/jstedfast/MailKit/security/advisories/GHSA-9j88-vvj5-vhgr).
+- Auditing transitive dependencies identified further package warnings.
+  MySqlConnector is now pinned to 2.6.1, the version listed in the
+  [maintainer's TLS advisory](https://github.com/mysql-net/MySqlConnector/security/advisories/GHSA-473q-m89c-ghf8).
+  `System.Security.Cryptography.Pkcs` is pinned to 8.0.2, addressing Microsoft's
+  [CVE-2026-70162](https://github.com/dotnet/announcements/issues/454) and
+  [CVE-2026-84008](https://github.com/dotnet/announcements/issues/468) advisories.
+  `NuGetAuditMode=all` keeps transitive dependency auditing enabled.
+
+Follow-up verification:
+
+- Dependency restore with transitive auditing completed without warnings.
+- The Debug build passed with `--warnaserror`: zero errors and zero warnings.
+- The Release publish passed with `--warnaserror`, to `obj/build-fix-publish`.
+  All 287 artifact files were checked; local settings, `App_Data`, and the
+  existing database/SMTP password values were absent.
+- The existing BatchVerification integration checks all passed using an isolated
+  temporary database cloned from schema only. The test database and its files
+  were removed afterward; existing records were preserved.
+- The local development server was restarted at `http://localhost:5188`.
+  `/api/health` reports `ok=true` and `database=true`. The duplicate-contact
+  startup warning described above remains actionable.
+
+The initial Debug build also failed because a running development server held
+`bin/Debug/net8.0/ABEC System.dll` open. Stopping that project's process released
+the lock and allowed the build to finish. Stop the running app before rebuilding
+the same Debug output directory; restart it after the build.
 
 Git exclusions prevent accidental additions of matching untracked files. They
 do not prevent forced Git additions, server access to files, or arbitrary manual

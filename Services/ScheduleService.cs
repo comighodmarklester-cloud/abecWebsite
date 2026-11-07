@@ -239,9 +239,9 @@ public class ScheduleService : IScheduleService
             ScheduleDate = entity.ScheduleDate,
             StartTime = entity.StartTime,
             EndTime = entity.EndTime,
-            Room = entity.Room,
-            Trainer = entity.Trainer,
-            Status = entity.Status
+            Room = entity.Room ?? string.Empty,
+            Trainer = entity.Trainer ?? string.Empty,
+            Status = entity.Status ?? SystemConstants.ScheduleStatuses.Inactive
         }, id, cancellationToken);
 
         if (conflictCheck.Success && conflictCheck.Data)
@@ -339,7 +339,7 @@ public class ScheduleService : IScheduleService
 
     private async Task<ApiResponse<object>> EnsureSingleActiveAsync(
         int courseId,
-        string status,
+        string? status,
         int? excludeScheduleId,
         CancellationToken cancellationToken)
     {

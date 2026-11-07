@@ -37,7 +37,7 @@ public partial class ApplicationDbContext : DbContext
         modelBuilder.Entity<Admin>(e =>
         {
             e.HasIndex(x => x.Username).IsUnique();
-            e.Property(x => x.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            e.Property(x => x.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP(6)");
         });
 
         modelBuilder.Entity<AdminActivityLog>(e =>
@@ -46,7 +46,7 @@ public partial class ApplicationDbContext : DbContext
                 .WithMany(a => a.ActivityLogs)
                 .HasForeignKey(x => x.AdminId)
                 .OnDelete(DeleteBehavior.Cascade);
-            e.Property(x => x.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            e.Property(x => x.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP(6)");
             e.HasIndex(x => x.AdminId);
         });
 
@@ -60,7 +60,7 @@ public partial class ApplicationDbContext : DbContext
                 .WithMany(b => b.Applicants)
                 .HasForeignKey(x => x.BatchId)
                 .OnDelete(DeleteBehavior.SetNull);
-            e.Property(x => x.ApplicationDate).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            e.Property(x => x.ApplicationDate).HasDefaultValueSql("CURRENT_TIMESTAMP(6)");
             e.Property(x => x.ApplicationStatus).HasConversion<string>();
             e.HasIndex(x => x.ConfirmationToken).IsUnique();
             e.Property(x => x.ConfirmationToken).HasMaxLength(64);
@@ -86,7 +86,7 @@ public partial class ApplicationDbContext : DbContext
                 .WithMany(b => b.Students)
                 .HasForeignKey(x => x.BatchId)
                 .OnDelete(DeleteBehavior.Restrict);
-            e.Property(x => x.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            e.Property(x => x.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP(6)");
         });
 
         modelBuilder.Entity<BatchHistory>(e =>
@@ -95,7 +95,7 @@ public partial class ApplicationDbContext : DbContext
                 .WithMany(b => b.BatchHistories)
                 .HasForeignKey(x => x.BatchId)
                 .OnDelete(DeleteBehavior.Cascade);
-            e.Property(x => x.ActionDate).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            e.Property(x => x.ActionDate).HasDefaultValueSql("CURRENT_TIMESTAMP(6)");
         });
 
         modelBuilder.Entity<CourseSchedule>(e =>
@@ -116,7 +116,7 @@ public partial class ApplicationDbContext : DbContext
                 .WithMany(s => s.DocumentRequests)
                 .HasForeignKey(x => x.StudentId)
                 .OnDelete(DeleteBehavior.Cascade);
-            e.Property(x => x.RequestDate).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            e.Property(x => x.RequestDate).HasDefaultValueSql("CURRENT_TIMESTAMP(6)");
             e.Property(x => x.RequestStatus).HasMaxLength(40);
             e.Property(x => x.HoldReason).HasMaxLength(500);
         });
@@ -131,7 +131,7 @@ public partial class ApplicationDbContext : DbContext
                 .WithMany(a => a.Notifications)
                 .HasForeignKey(x => x.ApplicantId)
                 .OnDelete(DeleteBehavior.Cascade);
-            e.Property(x => x.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            e.Property(x => x.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP(6)");
         });
 
         modelBuilder.Entity<Archive>(e =>
@@ -140,7 +140,7 @@ public partial class ApplicationDbContext : DbContext
                 .WithMany(s => s.Archives)
                 .HasForeignKey(x => x.StudentId)
                 .OnDelete(DeleteBehavior.Cascade);
-            e.Property(x => x.ArchiveDate).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            e.Property(x => x.ArchiveDate).HasDefaultValueSql("CURRENT_TIMESTAMP(6)");
         });
 
         modelBuilder.Entity<UserSetting>(e =>
@@ -168,7 +168,7 @@ public partial class ApplicationDbContext : DbContext
                 .WithMany(a => a.RegistrationDocuments)
                 .HasForeignKey(x => x.ApplicantId)
                 .OnDelete(DeleteBehavior.Cascade);
-            e.Property(x => x.UploadedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            e.Property(x => x.UploadedAt).HasDefaultValueSql("CURRENT_TIMESTAMP(6)");
             e.HasIndex(x => x.ApplicantId);
         });
     }
