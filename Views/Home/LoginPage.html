@@ -182,43 +182,9 @@
     .password-toggle.is-visible .icon-eye-off {
       display: block;
     }
-    .login-tab {
-      border-bottom: 1px solid #EEF2F7;
-      color: #64748B;
-      font-weight: 500;
-      transition: color 0.2s ease, border-color 0.2s ease;
-      padding-top: clamp(0.5rem, 1.2vh, 0.75rem);
-      padding-bottom: clamp(0.5rem, 1.2vh, 0.75rem);
-    }
-    .login-tab:hover,
-    .login-tab.active {
-      color: #0B2747;
-      font-weight: 650;
-      border-bottom-color: #2563EB;
-    }
-    /* Fixed-size form stack: all panels share one cell so switching never resizes */
-    .panel-stack {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr);
-      width: 100%;
-      align-items: stretch;
-    }
+    .panel-stack,
     .panel-stack > .form-panel {
-      grid-area: 1 / 1;
       width: 100%;
-      transition: opacity 0.22s ease;
-    }
-    .panel-stack > .form-panel.panel-hidden {
-      opacity: 0;
-      visibility: hidden;
-      pointer-events: none;
-      z-index: 0;
-    }
-    .panel-stack > .form-panel:not(.panel-hidden) {
-      opacity: 1;
-      visibility: visible;
-      pointer-events: auto;
-      z-index: 1;
     }
 
     /* Welcome vs login stage: collapse welcome after continue; keep login stage stable */
@@ -413,86 +379,11 @@
 <input class="w-4 h-4 rounded-sm border-gray-300 text-slate-800 focus:ring-slate-500 bg-gray-200" id="student-remember" type="checkbox">
 <label class="text-[11px] text-gray-500" for="student-remember">Remember this device</label>
 </div>
-<!-- Login + Create Account Buttons -->
-<div class="form-compact-actions space-y-2">
-<button class="abec-btn abec-btn-primary w-full py-2.5" type="submit">
-                Login</span>
-</button>
-<button class="abec-btn abec-btn-ghost w-full py-2.5" type="button" onclick="switchLoginTab('register')">
-                Create Account
-</button>
-</div>
-</form>
-</div>
-<!-- Create Account Panel -->
-<div id="panel-register" class="form-panel panel-hidden border border-slate-100 rounded-2xl bg-slate-50/50" data-purpose="register-form">
-<form action="#" class="flex flex-col" method="POST" autocomplete="off">
-<!-- Name Fields -->
-<div class="grid grid-cols-[1fr_1fr_52px] gap-2">
-<div>
-<label class="block text-xs font-medium text-slate-700 mb-1" for="reg-surname">Surname</label>
-<input class="w-full input-field rounded-lg px-3 focus:ring-0 focus:border-slate-400 transition-all" id="reg-surname" name="surname" type="text" value="" autocomplete="off">
-</div>
-<div>
-<label class="block text-xs font-medium text-slate-700 mb-1" for="reg-firstname">First Name</label>
-<input class="w-full input-field rounded-lg px-3 focus:ring-0 focus:border-slate-400 transition-all" id="reg-firstname" name="firstname" type="text" value="" autocomplete="off">
-</div>
-<div>
-<label class="block text-xs font-medium text-slate-700 mb-1" for="reg-mi">M.I.</label>
-<input class="w-full input-field rounded-lg px-3 focus:ring-0 focus:border-slate-400 transition-all" id="reg-mi" name="mi" type="text" value="" maxlength="2" autocomplete="off">
-</div>
-</div>
-<!-- Email -->
-<div>
-<label class="block text-xs font-medium text-slate-700 mb-1" for="reg-email">Email Address</label>
-<input class="w-full input-field rounded-lg px-3 focus:ring-0 focus:border-slate-400 transition-all" id="reg-email" name="email" type="email" value="" autocomplete="off">
-</div>
-<!-- Passwords -->
-<div class="grid grid-cols-2 gap-2">
-<div>
-<label class="block text-xs font-medium text-slate-700 mb-1" for="reg-password">Password</label>
-<div class="password-field">
-<input class="w-full input-field rounded-lg px-3 focus:ring-0 focus:border-slate-400 transition-all" id="reg-password" name="password" type="password" value="" autocomplete="new-password">
-<button type="button" class="password-toggle" data-target="reg-password" aria-label="Show password" title="Show password" onclick="togglePasswordVisibility(this)">
-<svg class="icon-eye w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-<svg class="icon-eye-off w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/></svg>
-</button>
-</div>
-</div>
-<div>
-<label class="block text-xs font-medium text-slate-700 mb-1" for="reg-confirm">Confirm Password</label>
-<div class="password-field">
-<input class="w-full input-field rounded-lg px-3 focus:ring-0 focus:border-slate-400 transition-all" id="reg-confirm" name="confirm" type="password" value="" autocomplete="new-password">
-<button type="button" class="password-toggle" data-target="reg-confirm" aria-label="Show confirm password" title="Show confirm password" onclick="togglePasswordVisibility(this)">
-<svg class="icon-eye w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-<svg class="icon-eye-off w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/></svg>
-</button>
-</div>
-</div>
-</div>
-<!-- Security PIN -->
-<div>
-<label class="block text-xs font-medium text-slate-700 mb-1" for="reg-pin">Security PIN</label>
-<div class="password-field">
-<input class="w-full input-field rounded-lg px-3 focus:ring-0 focus:border-slate-400 transition-all" id="reg-pin" name="pin" type="password" value="" inputmode="numeric" autocomplete="off">
-<button type="button" class="password-toggle" data-target="reg-pin" aria-label="Show security PIN" title="Show security PIN" onclick="togglePasswordVisibility(this)">
-<svg class="icon-eye w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-<svg class="icon-eye-off w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/></svg>
-</button>
-</div>
-<p class="text-[10px] text-gray-500 leading-snug mt-1">
-                PIN is issued by the ABEC Registrar after enrollment is approved.
-              </p>
-</div>
-<!-- Register Button -->
+<!-- Login button -->
 <div class="form-compact-actions">
 <button class="abec-btn abec-btn-primary w-full py-2.5" type="submit">
-                Register
+                Login
 </button>
-<p class="text-center text-[11px] text-gray-500 mt-2">
-                Already have an account?
-                <a class="font-bold text-slate-800 hover:underline" href="#" onclick="switchLoginTab('student'); return false;">Login</a>
-</p>
 </div>
 </form>
 </div>
@@ -501,12 +392,11 @@
 <!-- end stage-login -->
 </div>
 <!-- end login-stage-stack -->
-<script data-purpose="login-tab-switching">
+<script data-purpose="login-page-controls">
   function showLoginStage() {
     document.body.classList.add('login-ready');
     document.getElementById('stage-welcome').classList.add('stage-hidden');
     document.getElementById('stage-login').classList.remove('stage-hidden');
-    switchLoginTab('student');
   }
 
   function togglePasswordVisibility(btn) {
@@ -516,9 +406,7 @@
     input.type = show ? 'text' : 'password';
     btn.classList.toggle('is-visible', show);
     var target = btn.getAttribute('data-target');
-    var fieldLabel = (target === 'student-pin' || target === 'reg-pin')
-      ? 'security PIN'
-      : (target === 'reg-confirm' ? 'confirm password' : 'password');
+    var fieldLabel = target === 'student-pin' ? 'security PIN' : 'password';
     var label = show ? 'Hide' : 'Show';
     if (target === 'student-password' && btn.querySelector('span')) btn.querySelector('span').textContent = label;
     btn.setAttribute('aria-label', label + ' ' + fieldLabel);
@@ -532,14 +420,12 @@
 
   function clearAuthFields() {
     [
-      'student-email', 'student-pin', 'student-username', 'student-password',
-      'reg-surname', 'reg-firstname', 'reg-mi',
-      'reg-email', 'reg-password', 'reg-confirm', 'reg-pin'
+      'student-email', 'student-pin', 'student-username', 'student-password'
     ].forEach(function (id) {
       var el = document.getElementById(id);
       if (el) {
         el.value = '';
-        if (id === 'student-pin' || id === 'reg-password' || id === 'reg-confirm' || id === 'reg-pin') {
+        if (id === 'student-pin' || id === 'student-password') {
           el.type = 'password';
         }
         syncFilledState(el);
@@ -548,22 +434,10 @@
     document.querySelectorAll('.password-toggle').forEach(function (btn) {
       btn.classList.remove('is-visible');
       var target = btn.getAttribute('data-target');
-      var fieldLabel = (target === 'student-pin' || target === 'reg-pin')
-        ? 'security PIN'
-        : (target === 'reg-confirm' ? 'confirm password' : 'password');
+      var fieldLabel = target === 'student-pin' ? 'security PIN' : 'password';
       btn.setAttribute('aria-label', 'Show ' + fieldLabel);
       btn.setAttribute('title', 'Show ' + fieldLabel);
     });
-  }
-
-  function switchLoginTab(which) {
-    if (which === 'register') {
-      document.getElementById('panel-student').classList.add('panel-hidden');
-      document.getElementById('panel-register').classList.remove('panel-hidden');
-      return;
-    }
-    document.getElementById('panel-student').classList.remove('panel-hidden');
-    document.getElementById('panel-register').classList.add('panel-hidden');
   }
 
   function initFilledInputs() {
