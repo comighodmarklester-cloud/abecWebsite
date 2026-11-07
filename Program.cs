@@ -221,7 +221,16 @@ var viewsPath = Path.Combine(app.Environment.ContentRootPath, "Views");
 app.UseStaticFiles(new StaticFileOptions
 {
     FileProvider = new PhysicalFileProvider(viewsPath),
-    RequestPath = "/Views"
+    RequestPath = "/Views",
+    OnPrepareResponse = context =>
+    {
+        if (string.Equals(Path.GetExtension(context.File.Name), ".html", StringComparison.OrdinalIgnoreCase))
+        {
+            context.Context.Response.Headers.CacheControl = "no-store, no-cache, max-age=0, must-revalidate";
+            context.Context.Response.Headers.Pragma = "no-cache";
+            context.Context.Response.Headers.Expires = "0";
+        }
+    }
 });
 
 app.UseRouting();
