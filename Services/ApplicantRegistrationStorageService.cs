@@ -95,7 +95,9 @@ public class ApplicantRegistrationStorageService
 
     public async Task<ApiResponse<IReadOnlyList<ApplicantRegistrationDocumentDto>>> ListAllAsync(CancellationToken cancellationToken = default, int? batchId = null)
     {
+        var selectedBatchId = await _db.ResolveReadBatchIdAsync(batchId, cancellationToken);
         var docs = await _db.ApplicantRegistrationDocuments.AsNoTracking()
+            .Where(d => _db.Applicants.Any(a => a.ApplicantId == d.ApplicantId && a.BatchId == selectedBatchId))
             .OrderBy(d => d.ApplicantId)
             .ThenBy(d => d.DocumentLabel)
             .ToListAsync(cancellationToken);
@@ -112,12 +114,9 @@ public class ApplicantRegistrationStorageService
         if (doc is null)
             return (null, null, null, "Document not found.");
 
-        var fullPath = Path.Combine(SecureRoot, doc.StoredRelativePath.Replace('/', Path.DirectorySeparatorChar));
-        if (!File.Exists(fullPath))
-            return (null, null, null, "File is missing on the server.");
-
-        var stream = new FileStream(fullPath, FileMode.Open, FileAccess.Read, FileShare.Read);
-        return (stream, doc.ContentType, doc.OriginalFileName, null);
+        var (stream, contentType) = await UploadedDocument.OpenAsync(SecureRoot, doc.StoredRelativePath, cancellationToken);
+        return stream is null ? (null, null, null, "The stored file is missing or has an unsupported type.")
+            : (stream, contentType, Path.GetFileName(doc.OriginalFileName), null);
     }
 
     private async Task<ApplicantRegistrationDocument> SaveFileAsync(
@@ -147,7 +146,7 @@ public class ApplicantRegistrationStorageService
             DocumentLabel = label,
             OriginalFileName = safeOriginal,
             StoredRelativePath = relative,
-            ContentType = string.IsNullOrWhiteSpace(file.ContentType) ? "application/octet-stream" : file.ContentType,
+            ContentType = UploadedDocument.ContentType(storedName)!,
             SizeBytes = file.Length,
             UploadedAt = DateTime.Now
         };
@@ -189,20 +188,14 @@ public class ApplicantRegistrationStorageService
 
     private static async Task<bool> HasPdfHeaderAsync(IFormFile file, CancellationToken cancellationToken)
     {
-        var header = new byte[5];
         await using var stream = file.OpenReadStream();
-        var read = await stream.ReadAsync(header.AsMemory(0, 5), cancellationToken);
-        return read >= 4 && header[0] == (byte)'%' && header[1] == (byte)'P' && header[2] == (byte)'D' && header[3] == (byte)'F';
+        return await UploadedDocument.HasSignatureAsync(stream, "application/pdf", cancellationToken);
     }
 
     private static async Task<bool> HasImageHeaderAsync(IFormFile file, string ext, CancellationToken cancellationToken)
     {
-        var header = new byte[8];
         await using var stream = file.OpenReadStream();
-        var read = await stream.ReadAsync(header.AsMemory(0, 8), cancellationToken);
-        if (ext is ".jpg" or ".jpeg")
-            return read >= 3 && header[0] == 0xFF && header[1] == 0xD8 && header[2] == 0xFF;
-        return read >= 8 && header[0] == 0x89 && header[1] == 0x50 && header[2] == 0x4E && header[3] == 0x47;
+        return await UploadedDocument.HasSignatureAsync(stream, UploadedDocument.ContentType("file" + ext), cancellationToken);
     }
 
     private static string? CanonicalCredentialLabel(string? value)
@@ -267,7 +260,7 @@ public class ApplicantRegistrationStorageService
         Category = d.Category,
         DocumentLabel = d.DocumentLabel,
         OriginalFileName = d.OriginalFileName,
-        ContentType = d.ContentType,
+        ContentType = UploadedDocument.ContentType(d.StoredRelativePath) ?? "application/octet-stream",
         SizeBytes = d.SizeBytes,
         UploadedAt = d.UploadedAt
     };

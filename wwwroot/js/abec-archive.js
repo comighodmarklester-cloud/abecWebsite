@@ -9,6 +9,7 @@
     'Academic Dismissal',
     'Withdrawal',
     'Inactive Lead',
+    'Rejected Slots',
     'Other'
   ];
 
@@ -17,7 +18,8 @@
     'Deactivated',
     'Academic Dismissal',
     'Withdrawal',
-    'Inactive Lead'
+    'Inactive Lead',
+    'Rejected Slots'
   ];
   var STATUS_CARDS = [
     { key: 'all', label: 'All Students' },
@@ -26,6 +28,7 @@
     { key: 'Academic Dismissal', label: 'Academic Dismissal' },
     { key: 'Withdrawal', label: 'Withdrawal' },
     { key: 'Inactive Lead', label: 'Inactive Lead' },
+    { key: 'Rejected Slots', label: 'Rejected Slots' },
     { key: 'Other', label: 'Others' }
   ];
 
@@ -35,6 +38,7 @@
     'Academic Dismissal': 'bg-rose-50 text-rose-700',
     Withdrawal: 'bg-amber-50 text-amber-700',
     'Inactive Lead': 'bg-violet-50 text-violet-700',
+    'Rejected Slots': 'bg-cyan-50 text-cyan-700',
     Other: 'bg-orange-50 text-orange-700'
   };
 

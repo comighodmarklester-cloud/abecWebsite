@@ -2,6 +2,25 @@
 (function () {
   'use strict';
   if (!window.AbecApi) return;
+  var historyBatchId = null;
+  var initialHistorySnapshot = null;
+  var initialized = false;
+  var templateLoad = null;
+
+  function activeBatchPath(path) {
+    if (!state.batchId || !/^\/api\/(applicants|activations|archives|document-requests|course-documents)(\/|\?|$)/.test(path)) return path;
+    var url = new URL(path, location.origin);
+    url.searchParams.set('batchId', state.batchId);
+    return url.pathname + url.search;
+  }
+  var scopedApi = {};
+  ['get', 'post', 'put', 'postForm', 'request'].forEach(function (method) {
+    scopedApi[method] = function (path) {
+      var args = Array.prototype.slice.call(arguments);
+      args[0] = activeBatchPath(path);
+      return AbecApi[method].apply(AbecApi, args);
+    };
+  });
 
   var CREDENTIALS = [
     { key: 'Form138', name: 'Form 138' },
@@ -40,8 +59,8 @@
 
   var state = {
     tab: 'applicants',
-    batchId: new URLSearchParams(location.search).get('batchId') || '',
-    batches: [], readOnly: true, loadVersion: 0,
+    batchId: '',
+    readOnly: true, loadVersion: 0,
     loading: true,
     error: '',
     notice: '',
@@ -64,7 +83,7 @@
     queueFilters: { q: '', type: '', status: '' },
     releaseBoard: null,
     boardLoading: false,
-    filters: { q: '', course: '', batch: '', status: '', docs: '', type: '', requests: '', archive: '' }
+    filters: { q: '', course: '', status: '', docs: '', type: '', requests: '', archive: '' }
   };
 
   function esc(value) {
@@ -211,7 +230,6 @@
     return sectionRows().filter(function (row) {
       if (!matchesQuery(row)) return false;
       if (state.filters.course && String(rowCourseId(row)) !== String(state.filters.course)) return false;
-      if (state.tab === 'enrolled' && state.filters.batch && row.student && String(row.student.batchId) !== String(state.filters.batch)) return false;
       if (state.tab === 'applicants') {
         if (state.filters.status && String(row.applicant.applicationStatus || '') !== state.filters.status) return false;
       } else if (state.tab === 'enrolled') {
@@ -255,57 +273,15 @@
     return ['pending', 'processing', 'hold', 'ready', 'released', 'rejected'].indexOf(tone) >= 0 ? tone : 'pending';
   }
 
-  var toastTimer = null;
-  var toastHideTimer = null;
-  var TOAST_ICONS = {
-    ok: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>',
-    error: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6 6l12 12M18 6L6 18"/></svg>',
-    warn: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.3 4.8L2.9 18a2 2 0 001.7 3h14.8a2 2 0 001.7-3l-7.4-13.2a2 2 0 00-3.4 0z"/></svg>',
-    info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8h.01M11 12h1v5h1"/></svg>'
-  };
-
   function showToast(text, kind) {
-    var toast = document.getElementById('doc-toast');
-    if (!toast) return;
-    if (toastTimer) clearTimeout(toastTimer);
-    if (toastHideTimer) clearTimeout(toastHideTimer);
-    if (!text) {
-      toast.hidden = true;
-      toast.className = 'doc-toast';
-      toast.innerHTML = '';
-      return;
-    }
-    var tone = kind || 'info';
-    toast.hidden = false;
-    toast.className = 'doc-toast is-' + tone;
-    toast.innerHTML = (TOAST_ICONS[tone] || TOAST_ICONS.info) + '<span>' + esc(text) + '</span>';
-    void toast.offsetWidth;
-    toast.classList.add('is-in');
-    toastTimer = setTimeout(function () {
-      toast.classList.remove('is-in');
-      toast.classList.add('is-out');
-      toastHideTimer = setTimeout(function () {
-        toast.hidden = true;
-        toast.className = 'doc-toast';
-      }, 220);
-    }, 5000);
+    window.AbecFeedback.notify({ message: text, type: kind });
   }
 
   function setNotice(text, kind) {
-    state.notice = text || '';
-    var el = document.getElementById('doc-notice');
-    if (el) {
-      el.className = 'doc-notice' + (text ? ' is-' + (kind || 'info') : '');
-      el.textContent = text || '';
-      el.hidden = !text;
-    }
-    var queue = document.getElementById('doc-queue-notice');
-    if (queue) {
-      queue.className = 'doc-notice' + (text ? ' is-' + (kind || 'info') : '');
-      queue.textContent = text || '';
-      queue.hidden = !text || !state.queueOpen;
-    }
-    showToast(text, kind === 'ok' ? 'ok' : (kind === 'error' ? 'error' : 'info'));
+    state.notice = '';
+    window.AbecFeedback.inline(document.getElementById('doc-notice'), '', kind);
+    window.AbecFeedback.inline(document.getElementById('doc-queue-notice'), '', kind);
+    showToast(text, kind);
   }
 
   function readFilters() {
@@ -317,7 +293,6 @@
     state.filters.type = (document.getElementById('doc-type') || {}).value || '';
     state.filters.requests = (document.getElementById('doc-requests') || {}).value || '';
     state.filters.archive = (document.getElementById('doc-archive') || {}).value || '';
-    if (String(previousCourse) !== String(state.filters.course)) state.filters.batch = '';
     render();
     if (String(previousCourse) !== String(state.filters.course)) loadReleaseBoard();
   }
@@ -328,10 +303,9 @@
       if (el) el.value = '';
     });
     var course = keepCourse ? state.filters.course : '';
-    var batch = keepCourse ? state.filters.batch : '';
     var courseSelect = document.getElementById('doc-course');
     if (courseSelect && !keepCourse) courseSelect.value = '';
-    state.filters = { q: '', course: course, batch: batch, status: '', docs: '', type: '', requests: '', archive: '' };
+    state.filters = { q: '', course: course, status: '', docs: '', type: '', requests: '', archive: '' };
     if (!keepCourse) state.releaseBoard = null;
     render();
   }
@@ -546,6 +520,12 @@
     var total = document.getElementById('doc-queue-total');
     var result = document.getElementById('doc-queue-result');
     if (!body) return;
+    if (state.loading || state.error) {
+      body.innerHTML = '<tr><td class="doc-empty" colspan="7">' + esc(state.loading ? 'Loading document requests...' : state.error) + '</td></tr>';
+      if (total) total.textContent = '';
+      if (result) result.textContent = '';
+      return;
+    }
     var all = queuedRequests();
     var rows = filteredQueue();
     if (total) total.textContent = all.length + (all.length === 1 ? ' request record' : ' request records');
@@ -561,13 +541,13 @@
     body.innerHTML = rows.map(function (item) {
       var request = item.request;
       return '<tr>' +
-        '<td>' + esc(item.queueNo) + '</td>' +
-        '<td class="doc-name">' + esc(request.studentName || '—') + '</td>' +
-        '<td>' + esc(courseLabel(request.courseName) || 'N/A') + '</td>' +
-        '<td>' + esc(request.documentType || '—') + '</td>' +
-        '<td>' + esc(formatDate(request.requestDate)) + '</td>' +
-        '<td>' + badge(visibleStatus(request.requestStatus) || '—', statusTone(visibleStatus(request.requestStatus))) + '</td>' +
-        '<td><button type="button" class="doc-action" data-review-request="' + esc(request.requestId) + '">Review</button></td>' +
+        '<td data-label="Queue No.">' + esc(item.queueNo) + '</td>' +
+        '<td data-label="Student Name" class="doc-name">' + esc(request.studentName || '—') + '</td>' +
+        '<td data-label="Course">' + esc(courseLabel(request.courseName) || 'N/A') + '</td>' +
+        '<td data-label="Requested Document">' + esc(request.documentType || '—') + '</td>' +
+        '<td data-label="Request Date">' + esc(formatDate(request.requestDate)) + '</td>' +
+        '<td data-label="Status">' + badge(visibleStatus(request.requestStatus) || '—', statusTone(visibleStatus(request.requestStatus))) + '</td>' +
+        '<td data-label="Action"><button type="button" class="doc-action" data-review-request="' + esc(request.requestId) + '">Review</button></td>' +
         '</tr>';
     }).join('');
   }
@@ -656,7 +636,7 @@
   }
 
   async function loadReleaseBoard() {
-    if (state.tab !== 'enrolled' || !state.filters.course) {
+    if (state.tab !== 'enrolled' || !state.filters.course || !state.batchId) {
       state.releaseBoard = null;
       state.boardLoading = false;
       renderCourseRelease();
@@ -669,7 +649,7 @@
     var path = '/api/course-documents/board?courseId=' + encodeURIComponent(courseId);
     if (batchId) path += '&batchId=' + encodeURIComponent(batchId);
     var boardBatch = state.batchId;
-    var result = await AbecApi.get(path);
+    var result = await scopedApi.get(path);
     if (boardBatch !== state.batchId) return;
     if (String(state.filters.course) !== courseId) return;
     state.boardLoading = false;
@@ -679,17 +659,15 @@
       return;
     }
     state.releaseBoard = result.data;
-    var selected = result.data.timeline && result.data.timeline.batchId;
-    if (selected) state.filters.batch = String(selected);
     renderCourseRelease();
     renderTable();
   }
 
   async function saveAssessmentDate(value) {
     if (state.readOnly) { showToast("This completed batch is view-only.", "error"); return; }
-    var batchId = state.filters.batch || (state.releaseBoard && state.releaseBoard.timeline && state.releaseBoard.timeline.batchId);
+    var batchId = state.batchId;
     if (!batchId) return;
-    var result = await AbecApi.put('/api/course-documents/batches/' + encodeURIComponent(batchId) + '/assessment', {
+    var result = await scopedApi.put('/api/course-documents/batches/' + encodeURIComponent(batchId) + '/assessment', {
       assessmentDate: value || null
     });
     showToast(result.message || (result.success ? 'Assessment date saved.' : 'The assessment date was not saved.'), result.success ? 'ok' : 'error');
@@ -744,13 +722,15 @@
     body.innerHTML = '<p class="doc-empty">Loading record...</p>';
     var applicant = row.applicant;
     if (row.student && row.student.applicantId && (!applicant || !applicant.address)) {
-      var detail = await AbecApi.get('/api/applicants/' + encodeURIComponent(row.student.applicantId));
+      var detail = await scopedApi.get('/api/applicants/' + encodeURIComponent(row.student.applicantId));
       if (detail.success && detail.data) applicant = detail.data;
     }
     var coursePack = null;
-    if (row.student && !row.student.isArchived) {
+    if (row.student) {
       if (recordBatch && recordBatch !== state.batchId) return;
-      var packRes = await AbecApi.get('/api/course-documents/student/' + encodeURIComponent(row.student.studentId));
+      var packRes = await scopedApi.post('/api/course-documents/student/' + encodeURIComponent(row.student.studentId) + '/prepare', {});
+      var verified = await scopedApi.get('/api/course-documents/student/' + encodeURIComponent(row.student.studentId) + '/eligibility');
+      if (packRes.success) packRes.data.eligibility = verified.success ? verified.data : {};
       coursePack = packRes.success ? packRes.data : { error: packRes.message || 'Course documents could not be loaded.' };
     }
     if (state.openKey !== key || recordBatch !== state.batchId) return;
@@ -789,7 +769,7 @@
   }
 
   function courseReleaseSection(row, pack, applicant) {
-    if (!row.student || row.student.isArchived) return '';
+    if (!row.student) return '';
     if (!pack || pack.error) {
       return '<section class="doc-course-docs"><h4>Course-related documents</h4><p class="doc-muted">' + esc((pack && pack.error) || 'Course documents could not be loaded.') + '</p></section>';
     }
@@ -811,13 +791,13 @@
       if (doc.documentType === 'Certificate of Completion' && courseName) {
         uploadText = 'Upload Certificate of Completion for ' + courseName + '.';
       }
-      var drop = released || state.readOnly ? '' :
+      var drop = released ? '' :
         '<label class="req-drop course-doc-drop">' +
           '<strong>' + esc(uploadText) + '</strong>' +
           '<span>PDF, JPG, or PNG. Uploading does not release the document.</span>' +
           '<input class="course-doc-file" type="file" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/png,image/jpeg" data-course-file="' + esc(doc.courseDocumentId) + '">' +
         '</label>';
-      var release = ready && !state.readOnly
+      var release = ready
         ? '<button type="button" class="doc-link" data-course-release="' + esc(doc.courseDocumentId) + '" data-course-name="' + esc(doc.documentType) + '">Release</button>'
         : '';
       return '<article class="course-release-card' + flags + '">' +
@@ -889,10 +869,21 @@
     return '<div class="doc-review">' +
       '<section class="doc-creds"><h4>Registration documents</h4><div class="doc-cred-grid">' + docRows + '</div></section>' +
       courseReleaseSection(row, coursePack, applicant) +
+      eligibilityForm(row, coursePack) +
       '<section class="doc-info"><h4>Basic information</h4><div class="doc-info-grid">' + info + '</div></section>' +
       '<section class="doc-form"><h4>Application form</h4>' + form + '</section>' +
       requestSection +
       '</div>';
+  }
+
+  function eligibilityForm(row, pack) {
+    if (!row.student) return '';
+    var v = pack && pack.eligibility || {};
+    return '<section class="doc-info"><h4>Individual document eligibility</h4><p>Verify actual payment and the student’s required training and assessment days. Batch completion does not set these values.</p>' +
+      '<form data-eligibility-student="' + row.student.studentId + '">' +
+      [['feesPaid','feesPaidAt','All required fees paid'],['trainingCompleted','trainingCompletedAt','Required training days completed'],['assessmentCompleted','assessmentCompletedAt','Required assessment days completed']].map(function (x) {
+        return '<label style="display:block;margin:.6rem 0"><input type="checkbox" name="' + x[0] + '"' + (v[x[1]] ? ' checked' : '') + '> ' + x[2] + '</label>';
+      }).join('') + '<button class="doc-link" type="submit">Save verification</button><p data-eligibility-message role="status"></p></form></section>';
   }
 
   function findQueued(requestId) {
@@ -910,7 +901,7 @@
   }
 
   function requestFileUrl(requestId, inline) {
-    return '/api/document-requests/' + encodeURIComponent(requestId) + '/file' + (inline ? '?inline=true' : '');
+    return activeBatchPath('/api/document-requests/' + encodeURIComponent(requestId) + '/file' + (inline ? '?inline=true' : ''));
   }
 
   function allowedNext(status) {
@@ -940,9 +931,9 @@
     if (request.holdReason) meta += '<div><span>Hold reason</span><strong>' + esc(request.holdReason) + '</strong></div>';
     if (request.releaseDate) meta += '<div><span>Release date</span><strong>' + esc(formatDate(request.releaseDate)) + '</strong></div>';
     var allowed = allowedNext(request.requestStatus);
-    var canEditFile = !state.readOnly && (request.requestStatus === 'Pending' || request.requestStatus === 'Processing');
+    var canEditFile = (request.requestStatus === 'Pending' || request.requestStatus === 'Processing');
     var picks = STATUS_ACTIONS.map(function (action) {
-      var enabled = !state.readOnly && allowed.indexOf(action.next) >= 0;
+      var enabled = allowed.indexOf(action.next) >= 0;
       return '<button type="button" class="doc-link" data-next-status="' + esc(action.next) + '" data-request-id="' + esc(request.requestId) + '"' + (enabled ? '' : ' disabled') + '>' + esc(action.label) + '</button>';
     }).join('');
     var fileBlock = '';
@@ -1056,7 +1047,6 @@
   }
 
   async function releaseCourseDocument(documentId) {
-    if (state.readOnly) { showToast("This completed batch is view-only.", "error"); return; }
     state.savingStatus = true;
     var ok = document.getElementById('doc-confirm-ok');
     var cancel = document.getElementById('doc-confirm-cancel');
@@ -1064,7 +1054,7 @@
     if (cancel) cancel.disabled = true;
     var result;
     try {
-      result = await AbecApi.post('/api/course-documents/' + encodeURIComponent(documentId) + '/release', {});
+      result = await scopedApi.post('/api/course-documents/' + encodeURIComponent(documentId) + '/release', {});
     } catch (err) {
       result = { success: false, message: 'Unable to release the document.' };
     } finally {
@@ -1077,7 +1067,6 @@
   }
 
   async function uploadCourseFile(documentId, file) {
-    if (state.readOnly) { showToast("This completed batch is view-only.", "error"); return; }
     if (!documentId || !file || state.uploading) return;
     state.uploading = true;
     var session = AbecApi.getSession();
@@ -1104,6 +1093,17 @@
   }
 
   async function openCourseFile(documentId, inline) {
+    var id = Number(documentId);
+    if (!Number.isSafeInteger(id) || id <= 0) {
+      showToast('Select a valid document.', 'error');
+      return;
+    }
+    // Navigate only to a fixed, authenticated same-origin route. The server verifies
+    // ownership, storage containment and content type before streaming the preview.
+    if (inline) {
+      window.open('/api/course-documents/' + id + '/file?inline=true', '_blank', 'noopener,noreferrer');
+      return;
+    }
     var session = AbecApi.getSession();
     var headers = {};
     if (session && session.role === 'Admin' && session.userId) headers['X-Abec-Admin-Id'] = String(session.userId);
@@ -1112,16 +1112,18 @@
       showToast('The file could not be opened.', 'error');
       return;
     }
-    var blob = await response.blob();
-    var url = URL.createObjectURL(blob);
-    if (inline) {
-      window.open(url, '_blank', 'noopener');
+    var contentType = (response.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
+    if (['application/pdf', 'image/jpeg', 'image/png'].indexOf(contentType) < 0) {
+      showToast('The server returned an unsupported document type.', 'error');
       return;
     }
+    var blob = await response.blob();
+    var url = URL.createObjectURL(blob);
     var link = document.createElement('a');
     link.href = url;
     link.download = 'document';
     link.click();
+    window.setTimeout(function () { URL.revokeObjectURL(url); }, 1500);
   }
 
   function openConfirm(requestId, next) {
@@ -1178,7 +1180,6 @@
   }
 
   async function updateRequest(requestId, status, reason) {
-    if (state.readOnly) { showToast("This completed batch is view-only.", "error"); return; }
     var current = findQueued(requestId);
     if (!current || allowedNext(current.request.requestStatus).indexOf(status) < 0) {
       showToast('The status update was unsuccessful. That status change is not allowed for the current request.', 'error');
@@ -1191,7 +1192,7 @@
     if (cancel) cancel.disabled = true;
     var result;
     try {
-      result = await AbecApi.put('/api/document-requests/' + encodeURIComponent(requestId) + '/status', {
+      result = await scopedApi.put('/api/document-requests/' + encodeURIComponent(requestId) + '/status', {
         status: status,
         holdReason: reason || null
       });
@@ -1215,7 +1216,6 @@
   }
 
   async function uploadRequestFile(requestId, file) {
-    if (state.readOnly) { showToast("This completed batch is view-only.", "error"); return; }
     var item = findQueued(requestId);
     if (!item || (item.request.requestStatus !== 'Pending' && item.request.requestStatus !== 'Processing') || String(state.openRequestId) !== String(requestId)) {
       setNotice('A file can be uploaded only for the open Pending or Processing request.', 'error');
@@ -1225,12 +1225,12 @@
     var name = String(file.name || '').toLowerCase();
     if (!/\.(pdf|png|jpe?g)$/.test(name)) {
       var msg = document.getElementById('doc-request-upload-msg');
-      if (msg) { msg.textContent = 'Allowed file types: PDF, JPG, JPEG, PNG.'; msg.className = 'req-upload-msg is-error'; }
+      window.AbecFeedback.inline(msg, 'Allowed file types: PDF, JPG, JPEG, PNG.', 'error');
       return;
     }
     if (file.size > 20 * 1024 * 1024) {
       var big = document.getElementById('doc-request-upload-msg');
-      if (big) { big.textContent = 'Each file must be 20 MB or smaller.'; big.className = 'req-upload-msg is-error'; }
+      window.AbecFeedback.inline(big, 'Each file must be 20 MB or smaller.', 'error');
       return;
     }
     state.uploading = true;
@@ -1239,13 +1239,13 @@
     if (chosen) chosen.textContent = file.name + (file.size ? ' · ' + fileSizeLabel(file.size) : '') + ' · Uploading…';
     var data = new FormData();
     data.append('file', file);
-    var result = await AbecApi.postForm('/api/document-requests/' + encodeURIComponent(requestId) + '/file', data);
+    var result = await scopedApi.postForm('/api/document-requests/' + encodeURIComponent(requestId) + '/file', data);
     state.uploading = false;
     var shown = outcome(result, result && result.success ? 'Document file uploaded.' : 'Unable to upload the file.');
     if (!shown.refresh) {
       renderRequestReview();
       var err = document.getElementById('doc-request-upload-msg');
-      if (err) { err.textContent = shown.text; err.className = 'req-upload-msg is-error'; }
+      window.AbecFeedback.inline(err, shown.text, shown.kind);
       return;
     }
     var keepQueue = state.queueOpen;
@@ -1256,18 +1256,17 @@
     if (keepQueue) openQueue();
     if (keepRequest) openRequestReview(keepRequest);
     var okMsg = document.getElementById('doc-request-upload-msg');
-    if (okMsg) { okMsg.textContent = shown.text; okMsg.className = 'req-upload-msg is-ok'; }
+    window.AbecFeedback.inline(okMsg, shown.text, shown.kind);
   }
 
   async function removeRequestFile(requestId) {
-    if (state.readOnly) { showToast("This completed batch is view-only.", "error"); return; }
     var item = findQueued(requestId);
     if (!item || (item.request.requestStatus !== 'Pending' && item.request.requestStatus !== 'Processing') || String(state.openRequestId) !== String(requestId) || state.uploading) return;
     state.uploading = true;
     renderRequestReview();
     var result;
     try {
-      result = await AbecApi.request('/api/document-requests/' + encodeURIComponent(requestId) + '/file', { method: 'DELETE' });
+      result = await scopedApi.request('/api/document-requests/' + encodeURIComponent(requestId) + '/file', { method: 'DELETE' });
     } catch (err) {
       result = { success: false, message: 'Unable to remove the document.' };
     }
@@ -1276,7 +1275,7 @@
     if (!shown.refresh) {
       renderRequestReview();
       var error = document.getElementById('doc-request-upload-msg');
-      if (error) { error.textContent = shown.text; error.className = 'req-upload-msg is-error'; }
+      window.AbecFeedback.inline(error, shown.text, shown.kind);
       return;
     }
     var keepQueue = state.queueOpen;
@@ -1287,7 +1286,7 @@
     if (keepQueue) openQueue();
     if (keepRequest) openRequestReview(keepRequest);
     var ok = document.getElementById('doc-request-upload-msg');
-    if (ok) { ok.textContent = shown.text; ok.className = 'req-upload-msg is-ok'; }
+    window.AbecFeedback.inline(ok, shown.text, shown.kind);
   }
 
   async function load() {
@@ -1295,21 +1294,30 @@
     state.loading = true;
     state.error = '';
     render();
-    var batchResult = await AbecApi.get('/api/batches');
+    var batchResult = historyBatchId
+      ? { success: true, data: { batchId: historyBatchId, status: 'Completed' } }
+      : await scopedApi.get('/api/batches/active');
     if (version !== state.loadVersion) return;
-    if (!batchResult.success) { state.loading = false; state.error = batchResult.message; render(); return; }
-    state.batches = batchResult.data || [];
-    if (!state.batchId) state.batchId = String((state.batches.find(function (b) { return b.status === 'Active'; }) || state.batches[0] || {}).batchId || '');
-    var selected = state.batches.find(function (b) { return String(b.batchId) === state.batchId; });
+    if (!batchResult.success) { clearBatchRecords(); state.batchId = ''; state.readOnly = true; state.loading = false; state.error = batchResult.message || 'The active batch could not be loaded.'; render(); return; }
+    var selected = batchResult.data;
+    var activeId = selected ? String(selected.batchId) : '';
+    if (activeId !== state.batchId) clearBatchRecords();
+    state.batchId = activeId;
     state.readOnly = !selected || selected.status !== 'Active';
-    renderBatches();
-    if (!selected) { state.loading = false; state.error = 'No batch is available. Create a batch first.'; render(); return; }
+    if (!selected) { state.loading = false; state.error = 'No active batch. Manage batches in Batch Management.'; render(); return; }
+    var snapshot = initialHistorySnapshot;
+    initialHistorySnapshot = null;
+    var snapshotPath = '/api/batches/' + encodeURIComponent(state.batchId) + '/documents';
+    if (historyBatchId) snapshotPath += '?batchId=' + encodeURIComponent(state.batchId);
     var loaded = await Promise.all([
-      AbecApi.get('/api/batches/' + encodeURIComponent(state.batchId) + '/documents'), AbecApi.get('/api/courses')
+      snapshot ? Promise.resolve({ success: true, data: snapshot }) : scopedApi.get(snapshotPath), scopedApi.get('/api/courses')
     ]);
     if (version !== state.loadVersion) return;
     if (!loaded[0].success) { state.loading = false; state.error = loaded[0].message; render(); return; }
     var data = loaded[0].data;
+    if (!data || !data.batch || String(data.batch.batchId) !== state.batchId) {
+      clearBatchRecords(); state.loading = false; state.error = 'The document records do not match the selected batch.'; render(); return;
+    }
     state.readOnly = data.readOnly;
     var results = [
       {success:true, data:data.applicants}, {success:true, data:data.students}, loaded[1],
@@ -1321,8 +1329,8 @@
       render();
       return;
     }
-    state.applicants = results[0].data || [];
-    state.students = results[1].data || [];
+    state.applicants = (results[0].data || []).filter(function (a) { return String(a.batchId) === state.batchId; });
+    state.students = (results[1].data || []).filter(function (s) { return String(s.batchId) === state.batchId; });
     state.courses = results[2].success ? (results[2].data || []) : [];
     state.docsReady = !!results[3].success;
     state.docsByApplicant = {};
@@ -1332,7 +1340,9 @@
       state.docsByApplicant[key].push(doc);
     });
     state.requestsReady = !!results[4].success;
-    state.requestList = results[4].success ? (results[4].data || []) : [];
+    state.requestList = results[4].success ? (results[4].data || []).filter(function (r) {
+      return state.students.some(function (s) { return s.studentId === r.studentId; });
+    }) : [];
     state.requestsByStudent = {};
     state.requestList.forEach(function (request) {
       var key = String(request.studentId);
@@ -1348,68 +1358,33 @@
     if (!results[3].success) setNotice(results[3].message || 'Registration documents could not be loaded.', 'error');
     else if (!results[4].success) setNotice(results[4].message || 'Document requests could not be loaded.', 'error');
     render();
-    applyNotificationTarget();
+    if (historyBatchId) openQueue();
+    else applyNotificationTarget();
   }
 
-  function renderBatches() {
-    var shell = document.getElementById('doc-batch-shell');
-    if (!shell) {
-      shell = document.createElement('div'); shell.id = 'doc-batch-shell';
-      document.querySelector('.doc-page-header').appendChild(shell);
-    }
-    var menuWasOpen = shell.querySelector('.doc-batch-menu');
-    menuWasOpen = menuWasOpen && menuWasOpen.open;
-    var selected = state.batches.find(function (b) { return String(b.batchId) === state.batchId; });
-    shell.innerHTML = '<details class="doc-batch-menu"><summary class="doc-link">Batches: ' + esc(selected ? selected.batchName : 'Select batch') + '</summary><div class="doc-batch-options">' + state.batches.map(function (b) {
-      return '<button type="button" data-select-batch="' + b.batchId + '" aria-current="' + (String(b.batchId) === state.batchId) + '">' + esc(b.batchName) + ' | ' + (b.status === 'Active' ? 'Active' : 'View-only') + (b.unreadDocumentNotifications ? ' <span class="doc-batch-unread">' + b.unreadDocumentNotifications + '</span>' : '') + '</button>';
-    }).join('') + '</div></details><p class="doc-muted">' + (state.readOnly ? 'View-Only Mode - historical records' : 'Active batch - editing enabled') + '</p><details id="doc-batch-notifications"><summary>Document notifications</summary><div id="doc-batch-notification-list">Open to load notifications.</div></details>';
-    shell.querySelector('.doc-batch-menu').open = !!menuWasOpen;
-    shell.querySelector('#doc-batch-notifications').addEventListener('toggle', function (event) { if (event.target.open) loadBatchNotifications(); });
-  }
-
-  async function loadBatchNotifications() {
-    var batchId = state.batchId;
-    var result = await AbecApi.get('/api/notifications/admin?batchId=' + encodeURIComponent(batchId));
-    if (batchId !== state.batchId) return;
-    var list = document.getElementById('doc-batch-notification-list');
-    if (!list) return;
-    list.innerHTML = result.success ? (result.data || []).map(function (n) {
-      return '<article><strong>' + esc(n.title) + '</strong><p>' + esc(n.message) + '</p><small>' + esc(formatDate(n.createdAt)) + '</small>' + (n.requestId ? '<button type="button" class="doc-link" data-batch-view-request="' + n.requestId + '" data-batch-read-id="' + n.notificationId + '">View request</button>' : '') + (n.status === 'Unread' ? '<button type="button" class="doc-link" data-batch-notification-read="' + n.notificationId + '">Mark read</button>' : '') + '</article>';
-    }).join('') || '<p>No document notifications.</p>' : esc(result.message);
-  }
-
-  async function refreshBatchCounts() {
-    var result = await AbecApi.get('/api/batches');
+  async function refreshActiveBatch() {
+    if (historyBatchId) return;
+    if (state.loading) return;
+    var result = await scopedApi.get('/api/batches/active');
     if (!result.success) return;
-    var unchanged = JSON.stringify(state.batches) === JSON.stringify(result.data || []);
-    state.batches = result.data || [];
-    var selected = state.batches.find(function (b) { return String(b.batchId) === state.batchId; });
-    if (!selected || state.readOnly !== (selected.status !== 'Active')) { switchBatch(state.batchId); return; }
-    if (unchanged) return;
-    var open = document.getElementById('doc-batch-notifications');
-    var wasOpen = open && open.open;
-    renderBatches();
-    if (wasOpen) document.getElementById('doc-batch-notifications').open = true;
+    var active = result.data;
+    if ((active ? String(active.batchId) : '') !== state.batchId || state.readOnly !== (!active || active.status !== 'Active')) { await load(); return; }
   }
 
-  function switchBatch(batchId) {
-    state.batchId = String(batchId); state.readOnly = true;
+  function clearBatchRecords() {
     state.applicants = []; state.students = []; state.requestList = []; state.requestsByStudent = {}; state.docsByApplicant = {}; state.archiveByStudent = {};
     state.releaseBoard = null; state.openKey = ''; state.openRequestId = 0; state.confirm = null; state.queueOpen = false;
-    state.filters.batch = state.batchId;
     state.docsReady = false; state.requestsReady = false;
     closeQueue(); closeModal();
-    var menu = document.querySelector('.doc-batch-menu'); if (menu) menu.open = false;
     var queueBody = document.getElementById('doc-queue-body'); if (queueBody) queueBody.innerHTML = '';
     ['doc-modal', 'doc-request-modal', 'doc-confirm'].forEach(function (id) { var el = document.getElementById(id); if (el) el.classList.add('hidden'); });
     document.body.style.overflow = '';
-    var url = new URL(location.href); url.searchParams.set('batchId', state.batchId); history.replaceState(null, '', url);
-    load();
   }
 
   function applyNotificationTarget() {
     var params = new URLSearchParams(window.location.search);
     if (params.get('view') !== 'requests') return;
+    params = AbecApi.consumePageAction(['view', 'applicantId', 'requestType', 'requestName']);
 
     openQueue();
     var applicantId = params.get('applicantId') || '';
@@ -1440,30 +1415,29 @@
     openRequestReview(target.requestId);
   }
 
-  document.addEventListener('DOMContentLoaded', function () {
+  function initialize() {
     if (!document.getElementById('doc-body')) return;
-    AbecApi.requireRole('Admin');
-    document.addEventListener('click', async function (event) {
-      var menu = document.querySelector('.doc-batch-menu');
-      if (menu && !event.target.closest('.doc-batch-menu')) menu.open = false;
-      var choice = event.target.closest('[data-select-batch]');
-      if (choice) { switchBatch(choice.getAttribute('data-select-batch')); return; }
-      var view = event.target.closest('[data-batch-view-request]');
-      if (view) {
-        openQueue(); openRequestReview(view.getAttribute('data-batch-view-request'));
-        await AbecApi.put('/api/notifications/' + view.getAttribute('data-batch-read-id') + '/read', {});
-        await refreshBatchCounts(); return;
-      }
-      var read = event.target.closest('[data-batch-notification-read]');
-      if (read) {
-        var result = await AbecApi.put('/api/notifications/' + read.getAttribute('data-batch-notification-read') + '/read', {});
-        if (result.success) { await refreshBatchCounts(); await loadBatchNotifications(); }
-      }
+    if (!AbecApi.requireRole('Admin')) return;
+    if (initialized) return load();
+    initialized = true;
+    document.addEventListener('submit', async function (event) {
+      var form = event.target.closest('[data-eligibility-student]');
+      if (!form) return;
+      event.preventDefault();
+      var button = form.querySelector('button'); button.disabled = true;
+      var payload = {};
+      ['feesPaid','trainingCompleted','assessmentCompleted'].forEach(function (name) { payload[name] = form.elements[name].checked; });
+      var result = await scopedApi.put('/api/course-documents/student/' + form.dataset.eligibilityStudent + '/eligibility', payload);
+      button.disabled = false;
+      window.AbecFeedback.inline(form.querySelector('[data-eligibility-message]'), result.message, result.success ? 'success' : 'error');
     });
-    document.addEventListener('keydown', function (event) {
-      if (event.key === 'Escape') document.querySelectorAll('#doc-batch-shell details').forEach(function (el) { el.open = false; });
-    });
-    window.setInterval(refreshBatchCounts, 15000);
+    // Historical batch links no longer select the data shown on this page.
+    var pageUrl = new URL(location.href);
+    if (!historyBatchId && pageUrl.searchParams.has('batchId')) {
+      pageUrl.searchParams.delete('batchId');
+      history.replaceState(null, '', pageUrl);
+    }
+    window.setInterval(refreshActiveBatch, 15000);
     document.getElementById('doc-tabs').addEventListener('click', function (event) {
       var button = event.target.closest('[data-doc-tab]');
       if (!button) return;
@@ -1476,7 +1450,10 @@
     });
     document.getElementById('doc-clear').addEventListener('click', clearFilters);
     document.getElementById('doc-open-queue').addEventListener('click', openQueue);
-    document.getElementById('doc-queue-back').addEventListener('click', closeQueue);
+    document.getElementById('doc-queue-back').addEventListener('click', function () {
+      if (historyBatchId) window.closeBatchDocuments();
+      else closeQueue();
+    });
     document.getElementById('doc-queue-search').addEventListener('input', readQueueFilters);
     document.getElementById('doc-queue-type').addEventListener('change', readQueueFilters);
     document.getElementById('doc-queue-status').addEventListener('change', readQueueFilters);
@@ -1569,11 +1546,6 @@
       readFilters();
     });
     document.getElementById('doc-course-release').addEventListener('change', function (event) {
-      if (event.target.id === 'doc-release-batch') {
-        state.filters.batch = event.target.value || '';
-        loadReleaseBoard();
-        return;
-      }
       if (event.target.id === 'doc-assessment-date') saveAssessmentDate(event.target.value);
     });
     var reviewModal = document.getElementById('doc-modal');
@@ -1622,6 +1594,45 @@
       else if (state.openRequestId) closeRequestReview();
       else closeModal();
     });
-    load();
-  });
+    return load();
+  }
+
+  // Reuse the canonical page markup and the exact queue/review workflow. Batch
+  // history supplies its own snapshot; normal Document Management remains active-only.
+  window.AbecRequestedDocuments = {
+    prepare: function (host) {
+      if (!document.body.classList.contains('batch-management-page')) return Promise.reject(new Error('Historical requests must be opened from Batch Management.'));
+      if (document.getElementById('doc-body')) return Promise.resolve();
+      if (!templateLoad) templateLoad = (async function () {
+        var response = await fetch('/Views/Admin/DocumentManagement.html', { credentials: 'same-origin' });
+        if (!response.ok) throw new Error('The Requested Documents view could not be loaded.');
+        var template = new DOMParser().parseFromString(await response.text(), 'text/html');
+        var board = template.querySelector('.doc-board');
+        var dialogs = ['doc-confirm', 'doc-request-modal', 'doc-modal'].map(function (id) { return template.getElementById(id); });
+        if (!board || !board.querySelector('#doc-body') || !board.querySelector('#doc-queue-body') || dialogs.some(function (el) { return !el; }))
+          throw new Error('The Requested Documents view is unavailable. Sign in again and retry.');
+        host.replaceChildren(document.importNode(board, true));
+        dialogs.forEach(function (dialog) { document.body.appendChild(document.importNode(dialog, true)); });
+      })().catch(function (err) { templateLoad = null; throw err; });
+      return templateLoad;
+    },
+    open: async function (snapshot) {
+      if (!document.body.classList.contains('batch-management-page') || !snapshot || !snapshot.batch) return false;
+      historyBatchId = Number(snapshot.batch.batchId);
+      initialHistorySnapshot = snapshot;
+      state.queueOpen = true;
+      await initialize();
+      return !state.error && state.batchId === String(historyBatchId);
+    },
+    clear: function () {
+      ++state.loadVersion;
+      initialHistorySnapshot = null;
+      clearBatchRecords();
+      closeConfirm();
+    },
+    closeReview: function () { closeConfirm(); closeRequestReview(); closeModal(); },
+    busy: function () { return state.savingStatus || state.uploading; },
+    reviewOpen: function () { return !!(state.confirm || state.openRequestId || state.openKey); }
+  };
+  document.addEventListener('DOMContentLoaded', initialize);
 })();

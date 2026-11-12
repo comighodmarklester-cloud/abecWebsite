@@ -1,0 +1,125 @@
+/* Requested course tools and mobile overrides, loaded after each page's styles. */
+.barangay-input { position: relative; }
+.barangay-input > span { position: absolute; left: .8rem; top: 50%; transform: translateY(-50%); color: #475569; pointer-events: none; z-index: 1; }
+.barangay-input input { padding-left: 3.7rem !important; }
+.review-history-link { align-self: flex-start; color: #2563eb; font-size: .875rem; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+.abec-new-public-course h3 { font-size: 1.25rem; color: #0b2747; font-weight: 700; margin-bottom: 1rem; }
+.abec-new-public-course p { margin-top: .75rem; line-height: 1.6; overflow-wrap: anywhere; }
+.mobile-nav-close, .mobile-nav-backdrop { display: none; }
+.course-top-actions { display: flex; flex-direction: column; align-items: flex-start; gap: .75rem; margin-bottom: 1.25rem; }
+.report-mobile-status-labels { display: none; }
+#course-grid.has-extra-courses { overflow-y: auto; grid-template-rows: none; grid-auto-rows: minmax(230px, auto); padding: .2rem .3rem; }
+body.schedule-view-open #schedule-card-grid.has-extra-courses { overflow-y: auto; grid-template-rows: none; grid-auto-rows: minmax(220px, auto); }
+@media (min-width: 901px) {
+  body.schedule-view-open #schedule-card-grid.has-extra-courses { grid-auto-rows: minmax(280px, auto); }
+  body.schedule-view-open #schedule-card-grid.has-extra-courses .schedule-course-card { height: auto; min-height: 280px; overflow: visible; }
+}
+.abec-tool-dialog { width: min(34rem, calc(100% - 2rem)); max-height: calc(100dvh - 2rem); border: 1px solid #d7e4f4; border-radius: 1rem; padding: 1.5rem; color: #334155; background: white; box-shadow: 0 24px 70px #0b274744; overflow-y: auto; }
+.abec-tool-dialog::backdrop { background: #0b1f3a99; }
+.abec-tool-dialog h3 { color: #2563eb; font-size: 1.15rem; font-weight: 700; }
+.course-tool-form { display: grid; gap: 1rem; }
+.course-tool-form label { display: flex; flex-direction: column; gap: .4rem; font-size: .875rem; font-weight: 600; min-width: 0; }
+.course-tool-form input, .course-tool-form textarea { width: 100%; min-width: 0; border: 1px solid #cbd5e1; border-radius: .6rem; padding: .65rem .75rem; font-weight: 400; }
+.course-tool-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.course-tool-actions { display: flex; justify-content: flex-end; gap: .65rem; flex-wrap: wrap; }
+.course-tool-error { color: #b91c1c; font-size: .875rem; }
+.course-tool-error:empty { display: none; }
+.calendar-action { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 44px; height: 44px; border: 1px solid #cbd5e1; border-radius: .6rem; color: #2563eb; background: white; font-size: 1.5rem; }
+.calendar-action svg { width: 22px; height: 22px; }
+.calendar-dialog { width: min(48rem, calc(100% - 2rem)); }
+.calendar-dialog-head, .calendar-month-nav { display: flex; align-items: center; justify-content: space-between; gap: .75rem; margin-bottom: 1rem; }
+.calendar-month-nav { margin-top: 1rem; }
+.calendar-month-nav h4 { font-weight: 700; }
+.calendar-weekdays, .calendar-month-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: .25rem; }
+.calendar-weekdays { text-align: center; font-size: .75rem; margin-bottom: .5rem; }
+.calendar-month-grid button { display: flex; flex-direction: column; gap: .25rem; align-items: center; min-width: 0; min-height: 64px; padding: .5rem .15rem; border: 1px solid #e2e8f0; border-radius: .5rem; font-size: .875rem; }
+.calendar-month-grid button span { font-size: .65rem; color: #1d4ed8; }
+.calendar-month-grid [aria-current="date"] { border-color: #2563eb; }
+.calendar-month-grid [aria-pressed="true"] { background: #dbeafe; border-color: #2563eb; }
+.calendar-day-details { margin-top: 1rem; font-size: .875rem; }
+.calendar-day-details h4 { font-weight: 700; margin-bottom: .5rem; }
+.calendar-day-details article { padding: .75rem; margin-top: .5rem; border-radius: .5rem; background: #eff6ff; overflow-wrap: anywhere; }
+body.reports-page .report-breakdown-count-col, body.reports-page .report-overview .report-breakdown-count-col { width: 6.5rem; }
+body.reports-page .report-breakdown thead th { white-space: normal; overflow-wrap: normal; }
+
+@media (max-width: 900px) {
+  body .abec-toast-stack { top: auto; bottom: max(16px, env(safe-area-inset-bottom)); }
+  html { scroll-padding-top: 4rem; }
+  body { overflow-x: clip; }
+  body.abec-app, body.student-module, body.settings-desk, body.reports-page { height: auto !important; min-height: 100dvh; overflow-y: auto !important; }
+  body.abec-app:has([role="dialog"]:not(.hidden):not([hidden])),
+  body:has(dialog[open]), body:has(#enroll-modal:not(.hidden)) { overflow-y: hidden !important; }
+  body.abec-app > .flex, body.settings-desk > .flex, .student-frame { height: auto !important; min-height: 100dvh; overflow: visible !important; }
+  body.abec-app .abec-main, body.student-module .abec-main, #main-shell { width: 100%; max-width: 100%; min-width: 0; height: auto !important; min-height: calc(100dvh - 4rem); overflow: visible !important; padding: 1rem; }
+  body.abec-app:not(.sidebar-focus-mode):has(.app-sidebar) .abec-main,
+  body.abec-app:not(.sidebar-focus-mode):has(.app-sidebar) #main-shell { margin-left: 0 !important; padding-top: 4rem !important; }
+  body.sidebar-focus-mode #main-shell { padding-top: 1rem !important; }
+  .mobile-nav-close { display: block; min-height: 44px; margin: .75rem; padding: .5rem .75rem; border: 1px solid #93c5fd66; border-radius: .5rem; color: white; align-self: flex-end; }
+  .mobile-nav-backdrop { position: fixed; inset: 0; z-index: 44; background: #0b1f3a88; }
+  body:not(.sidebar-auto-hidden):not(.sidebar-focus-mode) .mobile-nav-backdrop { display: block; }
+  body .sidebar-hint { top: .5rem; left: .5rem; transform: none !important; writing-mode: horizontal-tb; padding: .6rem .8rem; border-radius: .5rem; min-height: 44px; }
+  body.sidebar-focus-mode .sidebar-hint { display: none !important; }
+  .app-sidebar { max-height: 100dvh; overflow-y: auto; z-index: 60 !important; }
+  .abec-main > *, .abec-main section, .abec-main form, .abec-main .grid > *, [role="dialog"] form { min-width: 0; }
+  .abec-main h2 { overflow-wrap: anywhere; }
+  .abec-main input:not([type="checkbox"]):not([type="radio"]), .abec-main select, .abec-main textarea,
+  [role="dialog"] input:not([type="checkbox"]):not([type="radio"]), [role="dialog"] select, [role="dialog"] textarea,
+  dialog input, dialog textarea, #enroll-modal input:not([type="checkbox"]):not([type="radio"]), #enroll-modal select { font-size: 16px !important; max-width: 100%; min-width: 0; min-height: 44px; }
+  .abec-main button, [role="dialog"] button, dialog button, .student-shell button, #enroll-modal button { min-height: 44px; }
+  .abec-main button[aria-label], [role="dialog"] button[aria-label] { min-width: 44px; }
+  input[type="checkbox"], input[type="radio"] { min-width: 20px; min-height: 20px; }
+  .abec-main .overflow-x-auto, .course-history-scroll { max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; }
+  .abec-main table { font-size: .875rem; }
+  [role="dialog"].fixed { padding: .75rem !important; }
+  [role="dialog"] > .relative { max-width: 100% !important; max-height: calc(100dvh - 1.5rem) !important; overflow-y: auto; }
+  [role="dialog"] .grid-cols-2, [role="dialog"] .grid-cols-3, #enroll-modal .grid-cols-2 { grid-template-columns: minmax(0, 1fr); }
+  #view-overview, #view-overview > div, #view-detail, #view-schedule { height: auto !important; flex: none; overflow: visible !important; }
+  #course-grid, #course-grid.has-extra-courses { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: none; grid-auto-rows: auto; overflow: visible; }
+  #course-grid .course-card { min-height: 220px; gap: 1rem; }
+  #course-grid .course-card > div:first-child { flex-wrap: wrap; }
+  #course-grid .course-card > div:first-child > .min-w-0 { flex: 1 1 100%; }
+  .course-status-row { flex-wrap: wrap; justify-content: flex-end; }
+  .course-add-slot { width: 44px; height: 44px; }
+  .course-students, .course-students-scroll { height: auto !important; max-height: none !important; }
+  .course-students-tools { flex-wrap: wrap; }
+  .course-students-tools > div { min-width: 0; flex: 1 1 12rem; }
+  .schedule-card-grid, .schedule-detail-grid { grid-template-columns: minmax(0, 1fr) !important; }
+  body.schedule-view-open #view-schedule > .space-y-5 > section { overflow: visible; flex: none; }
+  body.schedule-view-open #schedule-card-grid, body.schedule-view-open #schedule-card-grid.has-extra-courses { height: auto; grid-template-rows: none; grid-auto-rows: auto; overflow: visible; gap: 1rem; padding: 1rem; }
+  body.schedule-view-open .schedule-course-card { height: auto; padding: 1rem; gap: .75rem; overflow: visible; }
+  body.schedule-view-open .schedule-card-title { font-size: 1.1rem; line-height: 1.4; }
+  body.schedule-view-open .schedule-card-kicker { font-size: .75rem; }
+  body.schedule-view-open .schedule-card-meta { font-size: .85rem; line-height: 1.5; }
+  body.schedule-view-open .schedule-detail-grid { gap: .65rem; }
+  body.schedule-view-open .schedule-card-section { padding-top: .75rem; border-top: 1px solid #e2e8f0; }
+  body.schedule-view-open .schedule-detail-item span, body.schedule-view-open .schedule-detail-item strong { display: block !important; font-size: .85rem !important; line-height: 1.5 !important; }
+  body.schedule-view-open .schedule-card-kicker, body.schedule-view-open .schedule-card-title, body.schedule-view-open .schedule-card-meta { display: block; }
+  .abec-tool-dialog { width: calc(100% - 1.5rem); max-height: calc(100dvh - 1.5rem); padding: 1rem; }
+  .calendar-month-grid button { min-height: 56px; }
+  .calendar-month-grid button span { font-size: .55rem; }
+  .course-tool-fields { gap: .75rem; }
+  body.reports-page .report-workspace, body.reports-page .report-overview, body.reports-page .report-view { height: auto !important; max-height: none !important; overflow: visible !important; }
+  body.reports-page .report-overview { display: flex; flex-direction: column; }
+  body.reports-page .report-overview > * { width: 100%; max-width: 100%; min-width: 0; }
+  body.reports-page .report-status-chart { min-height: 250px; }
+  body.reports-page .report-status-chart { display: flex; flex-direction: column; gap: .75rem; }
+  body.reports-page .report-overview-chart { height: auto; }
+  body.reports-page .report-status-pie { height: 260px; flex: 0 0 auto; }
+  body.reports-page .report-pie-labels { display: none; }
+  .report-mobile-status-labels { display: grid; gap: .5rem; width: 100%; font-size: .8rem; }
+  .report-mobile-status-labels li { display: flex; align-items: center; gap: .5rem; }
+  .report-mobile-status-labels i { width: .65rem; height: .65rem; border-radius: .2rem; flex-shrink: 0; }
+  body.reports-page .report-overview .report-breakdown-count-col { width: 5.5rem; }
+  body.reports-page .report-overview .report-breakdown-percent-col { width: 4.5rem; }
+  body.reports-page .report-overview .report-breakdown th, body.reports-page .report-overview .report-breakdown td { font-size: .75rem; }
+  body.reports-page .report-breakdown thead th { text-transform: none !important; font-size: .7rem !important; }
+  body.reports-page .report-overview .report-breakdown-name { flex-wrap: nowrap; align-items: center; width: 100%; }
+  body.reports-page .report-overview .report-status-button { flex: 1; width: auto; min-width: 0; }
+  .student-shell-actions { min-width: 0; }
+  #student-notif-panel, #notif-panel { max-width: calc(100vw - 1.5rem); }
+}
+
+@media (max-width: 480px) {
+  body.student-module.settings-page .settings-grid .grid-cols-2 { grid-template-columns: minmax(0, 1fr); }
+  body.student-module.settings-page .settings-grid .col-span-2 { grid-column: auto; }
+}

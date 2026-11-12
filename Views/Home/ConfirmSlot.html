@@ -2,10 +2,12 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
+  <meta name="referrer" content="no-referrer">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Slot Response - ABEC Institute</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="../../wwwroot/css/abec-ui.css?v=20261018ux2" rel="stylesheet"/>
+  <link href="../../wwwroot/css/abec-ui.css?v=20261107batchsdd1" rel="stylesheet"/>
+<link href="../../wwwroot/css/abec-responsive.css?v=20261112features1" rel="stylesheet"/>
 </head>
 <body class="min-h-screen bg-slate-50 flex items-center justify-center p-6 font-sans">
   <div class="max-w-lg w-full bg-white border border-slate-200 rounded-2xl shadow-sm p-8 text-center">
@@ -15,44 +17,7 @@
     <p id="confirm-note" class="hidden text-xs text-slate-500 mb-6"></p>
     <a href="LandingPage.html" class="inline-block bg-[#051630] text-white px-6 py-3 rounded-lg text-sm font-semibold">Back to Home</a>
   </div>
-  <script>
-    (function () {
-      var params = new URLSearchParams(window.location.search);
-      var title = document.getElementById('confirm-title');
-      var el = document.getElementById('confirm-message');
-      var icon = document.getElementById('confirm-icon');
-      var note = document.getElementById('confirm-note');
-      var action = (params.get('action') || 'confirm').toLowerCase();
-      if (params.get('ok') === '1') {
-        var name = params.get('name') || 'Applicant';
-        if (action === 'decline') {
-          title.textContent = 'Slot Declined';
-          el.textContent = 'Thank you, ' + name + '. Your decision to decline the training slot has been recorded.';
-          el.className = 'text-sm text-amber-700 mb-2';
-          note.textContent = 'Your registration is now Rejected. ABEC Institute has been notified and the course slot has been released.';
-          note.classList.remove('hidden');
-          icon.textContent = '–';
-          icon.className = 'mx-auto mb-4 w-14 h-14 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center text-2xl font-bold';
-        } else {
-          title.textContent = 'Slot Confirmed';
-          el.textContent = 'Thank you, ' + name + '! Your training slot has been confirmed successfully.';
-          el.className = 'text-sm text-emerald-700 mb-2';
-          note.textContent = 'You have been added to your selected course slot. Your record is now under Pending Activation — ABEC Institute will activate your account shortly.';
-          note.classList.remove('hidden');
-          icon.textContent = '✓';
-          icon.className = 'mx-auto mb-4 w-14 h-14 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-2xl font-bold';
-        }
-      } else if (params.get('error')) {
-        var err = params.get('error');
-        title.textContent = 'Unable to Process';
-        el.textContent = err === 'missing'
-          ? 'This link is incomplete. Please use the button from your ABEC Institute email.'
-          : decodeURIComponent(err);
-        el.className = 'text-sm text-red-600 mb-6';
-        icon.textContent = '!';
-        icon.className = 'mx-auto mb-4 w-14 h-14 rounded-full bg-red-100 text-red-700 flex items-center justify-center text-2xl font-bold';
-      }
-    })();
-  </script>
+  <script src="../../wwwroot/js/abec-api.js?v=20261112features1"></script>
+  <script src="../../wwwroot/js/abec-slot-response.js?v=20261111registration2"></script>
 </body>
 </html>

@@ -41,7 +41,7 @@ public class StudentAccountController : ControllerBase
             ["Employment status"] = a.EmploymentStatus, ["Telephone"] = a.Telephone,
             ["Fax"] = a.Fax, ["Other contact"] = a.OtherContact,
             ["Province"] = a.Province, ["City or municipality"] = a.CityMunicipality,
-            ["Barangay"] = a.Barangay, ["Street details"] = a.StreetDetails,
+            ["Barangay"] = ABEC_System.Services.AddressFormatting.Barangay(a.Barangay), ["Street details"] = a.StreetDetails,
             ["District"] = a.AddressDistrict, ["Region"] = a.AddressRegion, ["ZIP code"] = a.ZipCode,
             ["Identity document type"] = a.IdentityIdType, ["Identity document number"] = a.IdentityIdNumber,
             ["Previously enrolled in TESDA"] = a.TesdaPreviouslyEnrolled?.ToString(),
@@ -91,6 +91,7 @@ public class StudentAccountController : ControllerBase
         catch (DbUpdateException ex) when (ex.InnerException is MySqlConnector.MySqlException { Number: 1062 }) {
             return Ok(ApiResponse<object>.Fail("Login settings changed or the username is in use. Reload and try again."));
         }
+        await ABEC_System.Services.SessionSecurity.RefreshAsync(HttpContext);
         return Ok(ApiResponse<object>.Ok(new { hasPassword = true, username, passwordLoginEnabled = credentials.PasswordLoginEnabled }, "Login settings saved."));
     }
 }

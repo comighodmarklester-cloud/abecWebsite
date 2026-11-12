@@ -10,10 +10,12 @@ public class DashboardStatsDto
     public int Approved { get; set; }
     public int Rejected { get; set; }
     public int ActiveStudents { get; set; }
+    public int EnrolledStudents { get; set; }
     public int AwaitingActivation { get; set; }
     public int AvailableCourses { get; set; }
     public int PendingDocuments { get; set; }
     public int ReleasedDocuments { get; set; }
+    public int ReadyToReleaseDocuments { get; set; }
     public int UpcomingSchedules { get; set; }
 }
 
@@ -46,6 +48,8 @@ public class ApplicantDto
     public DateTime? ConfirmedAt { get; set; }
     public DateTime? DeclinedAt { get; set; }
     public DateTime? ResponseDeadline { get; set; }
+    public DateTime? ApprovalEmailSentAt { get; set; }
+    public bool CanRetryApprovalEmail { get; set; }
     public string? SlotResponse { get; set; }
     public string? AssignedTrainingDateTime { get; set; }
     public bool IsResponseExpired { get; set; }
@@ -95,6 +99,7 @@ public class ApplicantRegistrationDocumentDto
 
 public class BatchDto
 {
+    public DateTime? CompletedAt { get; set; }
     public int UnreadDocumentNotifications { get; set; }
     public int BatchId { get; set; }
     public string BatchName { get; set; } = string.Empty;
@@ -165,6 +170,9 @@ public class CourseHistoryPageDto
 
 public class StudentDto
 {
+    public string BatchStatus { get; set; } = string.Empty;
+    public DateTime? BatchCompletedAt { get; set; }
+    public bool CanViewTrainingSchedule { get; set; }
     public int StudentId { get; set; }
     public int ApplicantId { get; set; }
     public string FullName { get; set; } = string.Empty;
@@ -258,6 +266,8 @@ public class DocumentRequestDto
 
 public class StudentDocumentCatalogItemDto
 {
+    public string? DownloadUrl { get; set; }
+    public string? RequestBlockedMessage { get; set; }
     public string DocumentType { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public string Status { get; set; } = SystemConstants.DocumentStatuses.NotRequested;
@@ -291,6 +301,7 @@ public class DocumentRequestDashboardDto
 
 public class NotificationDto
 {
+    public int? CourseDocumentId { get; set; }
     public int? RequestId { get; set; }
     public int? BatchId { get; set; }
     public int NotificationId { get; set; }
@@ -416,6 +427,7 @@ public class StudentCourseDocumentDto
 
 public class StudentCourseReleaseDto
 {
+    public IReadOnlyList<StudentDocumentCatalogItemDto> Catalog { get; set; } = Array.Empty<StudentDocumentCatalogItemDto>();
     public CourseReleaseTimelineDto Timeline { get; set; } = new();
     public IReadOnlyList<StudentCourseDocumentDto> Documents { get; set; } = Array.Empty<StudentCourseDocumentDto>();
 }

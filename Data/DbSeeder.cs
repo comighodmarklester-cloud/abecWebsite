@@ -3,8 +3,6 @@ using ABEC_System.Constants;
 using ABEC_System.Models;
 using ABEC_System.Services;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Storage;
 
 namespace ABEC_System.Data;
 
@@ -45,7 +43,8 @@ public static partial class DbSeeder
         await EnsureCourseSlotSchemaAsync(db, cancellationToken);
         await EnsureCourseHistorySchemaAsync(db, cancellationToken);
         await EnsureBatchIntegritySchemaAsync(db, cancellationToken);
-        await StandardizeRegisteredStudentPinsAsync(db, cancellationToken);
+        await SlotOfferDeadlineUpgrade.ApplyAsync(db, cancellationToken);
+        await EnsureMissingStudentPinsAsync(db, cancellationToken);
 
         if (!await db.Courses.AnyAsync(cancellationToken))
         {
@@ -86,66 +85,19 @@ public static partial class DbSeeder
         await EnsureTrainingRoomsAsync(db, cancellationToken);
     }
 
-    private static async Task StandardizeRegisteredStudentPinsAsync(
-        ApplicationDbContext db,
-        CancellationToken cancellationToken)
+    private static async Task EnsureMissingStudentPinsAsync(ApplicationDbContext db, CancellationToken ct)
     {
-        var archivedIds = await db.Archives.AsNoTracking()
-            .Select(a => a.StudentId)
-            .Distinct()
-            .ToListAsync(cancellationToken);
-        var archivedSet = archivedIds.ToHashSet();
-
-        // Registered students are active students; archived students are included explicitly.
-        // Inactive students without an archive row are pending activation and are excluded.
-        var students = await db.Students
-            .Include(s => s.Applicant)
-            .Where(s => s.Batch != null && s.Batch.Status == "Active" && (s.AccountStatus == SystemConstants.AccountStatuses.Active || archivedSet.Contains(s.StudentId)))
-            .OrderBy(s => s.Applicant!.ApplicationDate)
-            .ThenBy(s => s.StudentId)
-            .ToListAsync(cancellationToken);
-
-        var existingIneligiblePins = await db.Students.AsNoTracking()
-            .Where(s => s.AccountStatus != SystemConstants.AccountStatuses.Active && !archivedSet.Contains(s.StudentId))
-            .Select(s => s.SecurityPin)
-            .Where(pin => pin != null && pin != string.Empty)
-            .ToListAsync(cancellationToken);
-        var existingIneligiblePinSet = existingIneligiblePins.ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-        var assignedPins = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var updates = new List<(Student Student, string Pin)>();
+        // Startup must never replace issued credentials with a value derived from personal data.
+        var students = await db.Students.Where(s => s.SecurityPin == null || s.SecurityPin == "").ToListAsync(ct);
         foreach (var student in students)
         {
-            if (!SecurityPinGenerator.TryGenerate(student, out var pin)
-                || !assignedPins.Add(pin)
-                || existingIneligiblePinSet.Contains(pin))
-                continue;
-
-            updates.Add((student, pin));
+            string pin;
+            do { pin = SecurityPinGenerator.Generate(); }
+            while (students.Any(s => s != student && s.SecurityPin == pin)
+                || await db.Students.AnyAsync(s => s.SecurityPin == pin, ct));
+            student.SecurityPin = pin;
         }
-
-        var changed = updates.Where(item => !string.Equals(item.Student.SecurityPin, item.Pin, StringComparison.Ordinal)).ToList();
-        if (changed.Count == 0)
-            return;
-
-        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
-        try
-        {
-            // Clear old unique values first so swaps between eligible students cannot violate the unique index.
-            foreach (var (student, _) in changed)
-                student.SecurityPin = $"TMP{student.StudentId:D8}{Guid.NewGuid():N}"[..20];
-            await db.SaveChangesAsync(cancellationToken);
-
-            foreach (var (student, pin) in changed)
-                student.SecurityPin = pin;
-            await db.SaveChangesAsync(cancellationToken);
-            await transaction.CommitAsync(cancellationToken);
-        }
-        catch
-        {
-            await transaction.RollbackAsync(cancellationToken);
-            throw;
-        }
+        if (students.Count > 0) await db.SaveChangesAsync(ct);
     }
 
     /// <summary>
@@ -650,11 +602,9 @@ public static partial class DbSeeder
         string definition,
         CancellationToken cancellationToken)
     {
+        var sql = SchemaUpgradeSql.AddColumn(table, column, definition);
         if (await ColumnExistsAsync(db, table, column, cancellationToken)) return;
-        // Schema identifiers cannot be SQL parameters. Quote/escape them with the provider;
-        // definition is trusted SQL from the private, code-defined schema upgrades only.
-        var sqlHelper = db.GetService<ISqlGenerationHelper>();
-        var sql = $"ALTER TABLE {sqlHelper.DelimitIdentifier(table)} ADD COLUMN {sqlHelper.DelimitIdentifier(column)} {definition}";
+        // The statement is an immutable, complete SQL literal from the approved catalog.
         await db.Database.ExecuteSqlRawAsync(sql, cancellationToken);
     }
 
@@ -718,9 +668,9 @@ public static partial class DbSeeder
         string column,
         CancellationToken cancellationToken)
     {
+        var sql = SchemaUpgradeSql.DropColumn(table, column);
         if (!await ColumnExistsAsync(db, table, column, cancellationToken)) return;
-        var sqlHelper = db.GetService<ISqlGenerationHelper>();
-        var sql = $"ALTER TABLE {sqlHelper.DelimitIdentifier(table)} DROP COLUMN {sqlHelper.DelimitIdentifier(column)}";
+
         await db.Database.ExecuteSqlRawAsync(sql, cancellationToken);
     }
 

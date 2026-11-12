@@ -1,0 +1,876 @@
+{
+  "recordedAtManila": "2026-11-07T17:01:04.035516+08:00",
+  "scope": "Source/static checks, isolated mocked-client checks, local Release publish, NuGet advisory query. No fresh production inspection, browser rendering, live writes or application startup.",
+  "sourceChecks": {
+    "scope": "Current source; syntax and static-reference checks only. No browser rendering or application startup.",
+    "pages": [
+      {
+        "page": "Views/Admin/AccountActivation.html",
+        "duplicateIds": {},
+        "lang": true,
+        "viewport": true,
+        "images": 1,
+        "imagesWithoutAlt": 0,
+        "externalScripts": [
+          {
+            "src": "https://cdn.tailwindcss.com?plugins=forms,container-queries",
+            "integrity": false
+          }
+        ],
+        "inlineEventHandlers": 24,
+        "inlineScripts": 2
+      },
+      {
+        "page": "Views/Admin/AdminDashboard.html",
+        "duplicateIds": {},
+        "lang": true,
+        "viewport": true,
+        "images": 0,
+        "imagesWithoutAlt": 0,
+        "externalScripts": [
+          {
+            "src": "https://cdn.tailwindcss.com?plugins=forms,container-queries",
+            "integrity": false
+          }
+        ],
+        "inlineEventHandlers": 23,
+        "inlineScripts": 3
+      },
+      {
+        "page": "Views/Admin/ApplicantPage.html",
+        "duplicateIds": {},
+        "lang": true,
+        "viewport": true,
+        "images": 0,
+        "imagesWithoutAlt": 0,
+        "externalScripts": [],
+        "inlineEventHandlers": 0,
+        "inlineScripts": 2
+      },
+      {
+        "page": "Views/Admin/CourseDetail.html",
+        "duplicateIds": {},
+        "lang": true,
+        "viewport": false,
+        "images": 0,
+        "imagesWithoutAlt": 0,
+        "externalScripts": [],
+        "inlineEventHandlers": 0,
+        "inlineScripts": 2
+      },
+      {
+        "page": "Views/Admin/CourseManagement.html",
+        "duplicateIds": {},
+        "lang": true,
+        "viewport": true,
+        "images": 0,
+        "imagesWithoutAlt": 0,
+        "externalScripts": [
+          {
+            "src": "https://cdn.tailwindcss.com?plugins=forms,container-queries",
+            "integrity": false
+          }
+        ],
+        "inlineEventHandlers": 51,
+        "inlineScripts": 2
+      },
+      {
+        "page": "Views/Admin/CourseSchedule.html",
+        "duplicateIds": {},
+        "lang": true,
+        "viewport": true,
+        "images": 0,
+        "imagesWithoutAlt": 0,
+        "externalScripts": [
+          {
+            "src": "https://cdn.tailwindcss.com?plugins=forms,container-queries",
+            "integrity": false
+          }
+        ],
+        "inlineEventHandlers": 14,
+        "inlineScripts": 2
+      },
+      {
+        "page": "Views/Admin/DocumentManagement.html",
+        "duplicateIds": {},
+        "lang": true,
+        "viewport": true,
+        "images": 0,
+        "imagesWithoutAlt": 0,
+        "externalScripts": [
+          {
+            "src": "https://cdn.tailwindcss.com?plugins=forms,container-queries",
+            "integrity": false
+          }
+        ],
+        "inlineEventHandlers": 0,
+        "inlineScripts": 1
+      },
+      {
+        "page": "Views/Admin/Reports.html",
+        "duplicateIds": {},
+        "lang": true,
+        "viewport": true,
+        "images": 0,
+        "imagesWithoutAlt": 0,
+        "externalScripts": [
+          {
+            "src": "https://cdn.tailwindcss.com?plugins=forms,container-queries",
+            "integrity": false
+          }
+        ],
+        "inlineEventHandlers": 0,
+        "inlineScripts": 1
+      },
+      {
+        "page": "Views/Admin/StudentArchive.html",
+        "duplicateIds": {},
+        "lang": true,
+        "viewport": true,
+        "images": 0,
+        "imagesWithoutAlt": 0,
+        "externalScripts": [
+          {
+            "src": "https://cdn.tailwindcss.com?plugins=forms,container-queries",
+            "integrity": false
+          }
+        ],
+        "inlineEventHandlers": 7,
+        "inlineScripts": 2
+      },
+      {
+        "page": "Views/Admin/StudentsApplicants.html",
+        "duplicateIds": {},
+        "lang": true,
+        "viewport": true,
+        "images": 0,
+        "imagesWithoutAlt": 0,
+        "externalScripts": [
+          {
+            "src": "https://cdn.tailwindcss.com?plugins=forms,container-queries",
+            "integrity": false
+          }
+        ],
+        "inlineEventHandlers": 21,
+        "inlineScripts": 2
+      },
+      {
+        "page": "Views/Admin/UserSettings.html",
+        "duplicateIds": {},
+        "lang": true,
+        "viewport": true,
+        "images": 0,
+        "imagesWithoutAlt": 0,
+        "externalScripts": [
+          {
+            "src": "https://cdn.tailwindcss.com?plugins=forms,container-queries",
+            "integrity": false
+          }
+        ],
+        "inlineEventHandlers": 0,
+        "inlineScripts": 1
+      },
+      {
+        "page": "Views/Home/AdminLoginPage.html",
+        "duplicateIds": {},
+        "lang": true,
+        "viewport": true,
+        "images": 2,
+        "imagesWithoutAlt": 0,
+        "externalScripts": [
+          {
+            "src": "https://cdn.tailwindcss.com?plugins=forms,container-queries",
+            "integrity": false
+          }
+        ],
+        "inlineEventHandlers": 1,
+        "inlineScripts": 1
+      },
+      {
+        "page": "Views/Home/ConfirmSlot.html",
+        "duplicateIds": {},
+        "lang": true,
+        "viewport": true,
+        "images": 0,
+        "imagesWithoutAlt": 0,
+        "externalScripts": [
+          {
+            "src": "https://cdn.tailwindcss.com",
+            "integrity": false
+          }
+        ],
+        "inlineEventHandlers": 0,
+        "inlineScripts": 1
+      },
+      {
+        "page": "Views/Home/LandingPage.html",
+        "duplicateIds": {},
+        "lang": true,
+        "viewport": true,
+        "images": 6,
+        "imagesWithoutAlt": 0,
+        "externalScripts": [
+          {
+            "src": "https://cdn.tailwindcss.com?plugins=forms,container-queries",
+            "integrity": false
+          }
+        ],
+        "inlineEventHandlers": 12,
+        "inlineScripts": 7
+      },
+      {
+        "page": "Views/Home/LoginPage.html",
+        "duplicateIds": {},
+        "lang": true,
+        "viewport": true,
+        "images": 2,
+        "imagesWithoutAlt": 0,
+        "externalScripts": [
+          {
+            "src": "https://cdn.tailwindcss.com?plugins=forms,container-queries",
+            "integrity": false
+          }
+        ],
+        "inlineEventHandlers": 2,
+        "inlineScripts": 1
+      },
+      {
+        "page": "Views/Home/SignOutPage.html",
+        "duplicateIds": {},
+        "lang": true,
+        "viewport": true,
+        "images": 0,
+        "imagesWithoutAlt": 0,
+        "externalScripts": [
+          {
+            "src": "https://cdn.tailwindcss.com?plugins=forms,container-queries",
+            "integrity": false
+          }
+        ],
+        "inlineEventHandlers": 1,
+        "inlineScripts": 3
+      },
+      {
+        "page": "Views/Student/ClassSchedule.html",
+        "duplicateIds": {},
+        "lang": true,
+        "viewport": true,
+        "images": 0,
+        "imagesWithoutAlt": 0,
+        "externalScripts": [
+          {
+            "src": "https://cdn.tailwindcss.com?plugins=forms,container-queries",
+            "integrity": false
+          }
+        ],
+        "inlineEventHandlers": 0,
+        "inlineScripts": 1
+      },
+      {
+        "page": "Views/Student/DocumentRequest.html",
+        "duplicateIds": {},
+        "lang": true,
+        "viewport": true,
+        "images": 0,
+        "imagesWithoutAlt": 0,
+        "externalScripts": [
+          {
+            "src": "https://cdn.tailwindcss.com?plugins=forms,container-queries",
+            "integrity": false
+          }
+        ],
+        "inlineEventHandlers": 0,
+        "inlineScripts": 1
+      },
+      {
+        "page": "Views/Student/Notifications.html",
+        "duplicateIds": {},
+        "lang": true,
+        "viewport": false,
+        "images": 0,
+        "imagesWithoutAlt": 0,
+        "externalScripts": [],
+        "inlineEventHandlers": 0,
+        "inlineScripts": 1
+      },
+      {
+        "page": "Views/Student/StudentDashboard.html",
+        "duplicateIds": {},
+        "lang": true,
+        "viewport": true,
+        "images": 0,
+        "imagesWithoutAlt": 0,
+        "externalScripts": [
+          {
+            "src": "https://cdn.tailwindcss.com?plugins=forms,container-queries",
+            "integrity": false
+          }
+        ],
+        "inlineEventHandlers": 0,
+        "inlineScripts": 1
+      },
+      {
+        "page": "Views/Student/UserSettings.html",
+        "duplicateIds": {},
+        "lang": true,
+        "viewport": true,
+        "images": 0,
+        "imagesWithoutAlt": 0,
+        "externalScripts": [
+          {
+            "src": "https://cdn.tailwindcss.com?plugins=forms,container-queries",
+            "integrity": false
+          }
+        ],
+        "inlineEventHandlers": 0,
+        "inlineScripts": 1
+      }
+    ],
+    "javascriptChecks": [
+      {
+        "source": "Views/Admin/AccountActivation.html:10",
+        "passed": true,
+        "error": null
+      },
+      {
+        "source": "Views/Admin/AccountActivation.html:590",
+        "passed": true,
+        "error": null
+      },
+      {
+        "source": "Views/Admin/AdminDashboard.html:12",
+        "passed": true,
+        "error": null
+      },
+      {
+        "source": "Views/Admin/AdminDashboard.html:1315",
+        "passed": true,
+        "error": null
+      },
+      {
+        "source": "Views/Admin/AdminDashboard.html:1328",
+        "passed": true,
+        "error": null
+      },
+      {
+        "source": "Views/Admin/ApplicantPage.html:7",
+        "passed": true,
+        "error": null
+      },
+      {
+        "source": "Views/Admin/ApplicantPage.html:16",
+        "passed": true,
+        "error": null
+      },
+      {
+        "source": "Views/Admin/CourseDetail.html:6",
+        "passed": true,
+        "error": null
+      },
+      {
+        "source": "Views/Admin/CourseDetail.html:16",
+        "passed": true,
+        "error": null
+      },
+      {
+        "source": "Views/Admin/CourseManagement.html:10",
+        "passed": true,
+        "error": null
+      },
+      {
+        "source": "Views/Admin/CourseManagement.html:1188",
+        "passed": true,
+        "error": null
+      },
+      {
+        "source": "Views/Admin/CourseSchedule.html:10",
+        "passed": true,
+        "error": null
+      },
+      {
+        "source": "Views/Admin/CourseSchedule.html:351",
+        "passed": true,
+        "error": null
+      },
+      {
+        "source": "Views/Admin/DocumentManagement.html:10",
+        "passed": true,
+        "error": null
+      },
+      {
+        "source": "Views/Admin/Reports.html:10",
+        "passed": true,
+        "error": null
+      },
+      {
+        "source": "Views/Admin/StudentArchive.html:10",
+        "passed": true,
+        "error": null
+      },
+      {
+        "source": "Views/Admin/StudentArchive.html:405",
+        "passed": true,
+        "error": null
+      },
+      {
+        "source": "Views/Admin/StudentsApplicants.html:10",
+        "passed": true,
+        "error": null
+      },
+      {
+        "source": "Views/Admin/StudentsApplicants.html:735",
+        "passed": true,
+        "error": null
+      },
+      {
+        "source": "Views/Admin/UserSettings.html:10",
+        "passed": true,
+        "error": null
+      },
+      {
+        "source": "Views/Home/AdminLoginPage.html:142",
+        "passed": true,
+        "error": null
+      },
+      {
+        "source": "Views/Home/ConfirmSlot.html:18",
+        "passed": true,
+        "error": null
+      },
+      {
+        "source": "Views/Home/LandingPage.html:745",
+        "passed": true,
+        "error": null
+      },
+      {
+        "source": "Views/Home/LandingPage.html:869",
+        "passed": true,
+        "error": null
+      },
+      {
+        "source": "Views/Home/LandingPage.html:1089",
+        "passed": true,
+        "error": null
+      },
+      {
+        "source": "Views/Home/LandingPage.html:1162",
+        "passed": true,
+        "error": null
+      },
+      {
+        "source": "Views/Home/LandingPage.html:1679",
+        "passed": true,
+        "error": null
+      },
+      {
+        "source": "Views/Home/LandingPage.html:2065",
+        "passed": true,
+        "error": null
+      },
+      {
+        "source": "Views/Home/LandingPage.html:2133",
+        "passed": true,
+        "error": null
+      },
+      {
+        "source": "Views/Home/LoginPage.html:340",
+        "passed": true,
+        "error": null
+      },
+      {
+        "source": "Views/Home/SignOutPage.html:10",
+        "passed": true,
+        "error": null
+      },
+      {
+        "source": "Views/Home/SignOutPage.html:68",
+        "passed": true,
+        "error": null
+      },
+      {
+        "source": "Views/Home/SignOutPage.html:91",
+        "passed": true,
+        "error": null
+      },
+      {
+        "source": "Views/Student/ClassSchedule.html:10",
+        "passed": true,
+        "error": null
+      },
+      {
+        "source": "Views/Student/DocumentRequest.html:10",
+        "passed": true,
+        "error": null
+      },
+      {
+        "source": "Views/Student/Notifications.html:7",
+        "passed": true,
+        "error": null
+      },
+      {
+        "source": "Views/Student/StudentDashboard.html:10",
+        "passed": true,
+        "error": null
+      },
+      {
+        "source": "Views/Student/UserSettings.html:10",
+        "passed": true,
+        "error": null
+      },
+      {
+        "source": "wwwroot/js/abec-activation.js",
+        "passed": true,
+        "error": null
+      },
+      {
+        "source": "wwwroot/js/abec-add-applicant.js",
+        "passed": true,
+        "error": null
+      },
+      {
+        "source": "wwwroot/js/abec-admin-settings.js",
+        "passed": true,
+        "error": null
+      },
+      {
+        "source": "wwwroot/js/abec-admin.js",
+        "passed": true,
+        "error": null
+      },
+      {
+        "source": "wwwroot/js/abec-api.js",
+        "passed": true,
+        "error": null
+      },
+      {
+        "source": "wwwroot/js/abec-applicants.js",
+        "passed": true,
+        "error": null
+      },
+      {
+        "source": "wwwroot/js/abec-archive.js",
+        "passed": true,
+        "error": null
+      },
+      {
+        "source": "wwwroot/js/abec-courses.js",
+        "passed": true,
+        "error": null
+      },
+      {
+        "source": "wwwroot/js/abec-dashboard.js",
+        "passed": true,
+        "error": null
+      },
+      {
+        "source": "wwwroot/js/abec-documents.js",
+        "passed": true,
+        "error": null
+      },
+      {
+        "source": "wwwroot/js/abec-enroll-wizard.js",
+        "passed": true,
+        "error": null
+      },
+      {
+        "source": "wwwroot/js/abec-feedback.js",
+        "passed": true,
+        "error": null
+      },
+      {
+        "source": "wwwroot/js/abec-landing-chrome.js",
+        "passed": true,
+        "error": null
+      },
+      {
+        "source": "wwwroot/js/abec-landing.js",
+        "passed": true,
+        "error": null
+      },
+      {
+        "source": "wwwroot/js/abec-login.js",
+        "passed": true,
+        "error": null
+      },
+      {
+        "source": "wwwroot/js/abec-other-reason.js",
+        "passed": true,
+        "error": null
+      },
+      {
+        "source": "wwwroot/js/abec-profile-details.js",
+        "passed": true,
+        "error": null
+      },
+      {
+        "source": "wwwroot/js/abec-profile-menu.js",
+        "passed": true,
+        "error": null
+      },
+      {
+        "source": "wwwroot/js/abec-reports.js",
+        "passed": true,
+        "error": null
+      },
+      {
+        "source": "wwwroot/js/abec-student-documents.js",
+        "passed": true,
+        "error": null
+      },
+      {
+        "source": "wwwroot/js/abec-student-notifications.js",
+        "passed": true,
+        "error": null
+      },
+      {
+        "source": "wwwroot/js/abec-student-settings.js",
+        "passed": true,
+        "error": null
+      },
+      {
+        "source": "wwwroot/js/abec-student-shell.js",
+        "passed": true,
+        "error": null
+      },
+      {
+        "source": "wwwroot/js/abec-student.js",
+        "passed": true,
+        "error": null
+      },
+      {
+        "source": "wwwroot/js/abec-students-applicants.js",
+        "passed": true,
+        "error": null
+      },
+      {
+        "source": "wwwroot/js/sidebar-auto-hide.js",
+        "passed": true,
+        "error": null
+      },
+      {
+        "source": "wwwroot/js/site.js",
+        "passed": true,
+        "error": null
+      }
+    ],
+    "missingHtmlReferences": [],
+    "missingCssReferences": [
+      {
+        "css": "wwwroot/lib/leaflet/leaflet.css",
+        "reference": "images/layers.png"
+      },
+      {
+        "css": "wwwroot/lib/leaflet/leaflet.css",
+        "reference": "images/layers-2x.png"
+      },
+      {
+        "css": "wwwroot/lib/leaflet/leaflet.css",
+        "reference": "images/marker-icon.png"
+      }
+    ],
+    "externalScriptUsage": {
+      "https://cdn.tailwindcss.com?plugins=forms,container-queries": 17,
+      "https://cdn.tailwindcss.com": 1
+    },
+    "controllers": [
+      {
+        "file": "ActivationController.cs",
+        "httpActions": 8,
+        "authorizeAttributes": 0,
+        "rateLimitAttributes": 0
+      },
+      {
+        "file": "AdminController.cs",
+        "httpActions": 1,
+        "authorizeAttributes": 0,
+        "rateLimitAttributes": 0
+      },
+      {
+        "file": "AdminProfileController.cs",
+        "httpActions": 8,
+        "authorizeAttributes": 0,
+        "rateLimitAttributes": 0
+      },
+      {
+        "file": "ApplicantController.cs",
+        "httpActions": 15,
+        "authorizeAttributes": 0,
+        "rateLimitAttributes": 0
+      },
+      {
+        "file": "ArchiveController.cs",
+        "httpActions": 3,
+        "authorizeAttributes": 0,
+        "rateLimitAttributes": 0
+      },
+      {
+        "file": "AuthController.cs",
+        "httpActions": 4,
+        "authorizeAttributes": 0,
+        "rateLimitAttributes": 1
+      },
+      {
+        "file": "BatchApiController.cs",
+        "httpActions": 9,
+        "authorizeAttributes": 0,
+        "rateLimitAttributes": 0
+      },
+      {
+        "file": "CourseController.cs",
+        "httpActions": 5,
+        "authorizeAttributes": 0,
+        "rateLimitAttributes": 0
+      },
+      {
+        "file": "CourseDocumentController.cs",
+        "httpActions": 6,
+        "authorizeAttributes": 0,
+        "rateLimitAttributes": 0
+      },
+      {
+        "file": "DocumentController.cs",
+        "httpActions": 0,
+        "authorizeAttributes": 0,
+        "rateLimitAttributes": 0
+      },
+      {
+        "file": "DocumentRequestController.cs",
+        "httpActions": 11,
+        "authorizeAttributes": 0,
+        "rateLimitAttributes": 0
+      },
+      {
+        "file": "HomeController.cs",
+        "httpActions": 0,
+        "authorizeAttributes": 0,
+        "rateLimitAttributes": 0
+      },
+      {
+        "file": "LocationController.cs",
+        "httpActions": 3,
+        "authorizeAttributes": 0,
+        "rateLimitAttributes": 0
+      },
+      {
+        "file": "NotificationController.cs",
+        "httpActions": 4,
+        "authorizeAttributes": 0,
+        "rateLimitAttributes": 0
+      },
+      {
+        "file": "ScheduleController.cs",
+        "httpActions": 5,
+        "authorizeAttributes": 0,
+        "rateLimitAttributes": 0
+      },
+      {
+        "file": "SettingsController.cs",
+        "httpActions": 0,
+        "authorizeAttributes": 0,
+        "rateLimitAttributes": 0
+      },
+      {
+        "file": "StudentAccountController.cs",
+        "httpActions": 3,
+        "authorizeAttributes": 1,
+        "rateLimitAttributes": 1
+      },
+      {
+        "file": "StudentApiController.cs",
+        "httpActions": 5,
+        "authorizeAttributes": 0,
+        "rateLimitAttributes": 0
+      },
+      {
+        "file": "StudentController.cs",
+        "httpActions": 0,
+        "authorizeAttributes": 0,
+        "rateLimitAttributes": 0
+      },
+      {
+        "file": "TrainingRoomController.cs",
+        "httpActions": 2,
+        "authorizeAttributes": 0,
+        "rateLimitAttributes": 0
+      }
+    ],
+    "emptyReadme": true,
+    "largestSources": [
+      {
+        "file": "Views/Home/LandingPage.html",
+        "lines": 2163
+      },
+      {
+        "file": "Services/ApplicantService.cs",
+        "lines": 1682
+      },
+      {
+        "file": "wwwroot/js/abec-documents.js",
+        "lines": 1627
+      },
+      {
+        "file": "Views/Admin/CourseManagement.html",
+        "lines": 1546
+      },
+      {
+        "file": "wwwroot/js/abec-courses.js",
+        "lines": 1498
+      },
+      {
+        "file": "Views/Admin/AdminDashboard.html",
+        "lines": 1384
+      },
+      {
+        "file": "wwwroot/js/abec-landing.js",
+        "lines": 1123
+      },
+      {
+        "file": "Views/Admin/StudentsApplicants.html",
+        "lines": 1053
+      },
+      {
+        "file": "Views/Admin/AccountActivation.html",
+        "lines": 1036
+      },
+      {
+        "file": "wwwroot/js/abec-dashboard.js",
+        "lines": 845
+      }
+    ]
+  },
+  "clientChecks": {
+    "scope": "Isolated Node VM with mocked fetch; no real API or database call",
+    "lostResponsePost": {
+      "simulatedServerWrites": 2,
+      "clientReportedSuccess": true
+    },
+    "validationProblemDetails": {
+      "success": false,
+      "message": "",
+      "data": null
+    }
+  },
+  "publish": {
+    "command": "dotnet publish ABEC System.csproj --configuration Release --no-restore --output App_Data/system-audit/publish --nologo --verbosity quiet",
+    "succeeded": true,
+    "diagnosticsEmitted": false,
+    "files": 309,
+    "htmlPages": 21,
+    "checkedSensitivePathsPresent": [],
+    "fullContentSecretScanPerformed": false
+  },
+  "nugetAdvisoryCheck": {
+    "command": "dotnet list ABEC System.csproj package --vulnerable --include-transitive --format json",
+    "completed": true,
+    "reportedVulnerableEntries": 0,
+    "scope": "NuGet advisory results only; not hosted runtime/CDN/native security certification"
+  },
+  "databaseEvidence": "Inherited November 7 database audit; not re-counted in this pass",
+  "notPerformed": [
+    "Fresh Azure database/configuration/storage inspection",
+    "Authenticated browser/keyboard/mobile journeys",
+    "Real enrollment/upload/email submissions",
+    "Exploit/load tests",
+    "Coordinated recovery"
+  ]
+}

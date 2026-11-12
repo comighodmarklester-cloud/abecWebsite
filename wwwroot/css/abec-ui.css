@@ -2755,3 +2755,8 @@ body.student-module.student-desk:not(.class-page):not(.doc-page) .abec-main {
   .student-nav-trigger { width: 100%; justify-content: space-between; }
   .student-nav-menu { right: 0; min-width: 0; width: 100%; }
 }
+
+/* SDD: completed enrollments retain documents; schedules are no longer available. */
+#student-batch-status { margin: 1rem; padding: 1rem; border: 1px solid #bfdbfe; border-radius: .75rem; background: #eff6ff; color: #0b2747; }
+.batch-completed a[href*="ClassSchedule.html"], .batch-completed .student-cal,
+.batch-completed [data-student-training] { display: none !important; }

@@ -9,7 +9,10 @@ namespace ABEC_System.Services;
 public sealed record BatchDocumentSnapshot(BatchDto Batch, bool ReadOnly,
     IReadOnlyList<ApplicantDto> Applicants, IReadOnlyList<StudentDto> Students,
     IReadOnlyList<ApplicantRegistrationDocumentDto> RegistrationDocuments,
-    IReadOnlyList<DocumentRequestDto> Requests, IReadOnlyList<ArchiveDto> Archives);
+    IReadOnlyList<DocumentRequestDto> Requests, IReadOnlyList<ArchiveDto> Archives)
+{
+    public IReadOnlyList<StudentCourseDocumentDto> CourseDocuments { get; init; } = [];
+}
 
 public interface IBatchDocumentService
 {
@@ -18,7 +21,7 @@ public interface IBatchDocumentService
 
 public sealed class BatchDocumentService(IBatchService batches,
     IApplicantService applicants, IActivationService students, IDocumentRequestService requests,
-    IArchiveService archives) : IBatchDocumentService
+    IArchiveService archives, ApplicationDbContext db) : IBatchDocumentService
 {
     public async Task<ApiResponse<BatchDocumentSnapshot>> GetAsync(int batchId, CancellationToken ct)
     {
@@ -31,6 +34,19 @@ public sealed class BatchDocumentService(IBatchService batches,
         var documents = (await applicants.GetAllRegistrationDocumentsAsync(ct, batchId)).Data?.Where(d => applicantIds.Contains(d.ApplicantId)).ToList() ?? [];
         var r = (await requests.GetAllAsync(cancellationToken: ct, batchId: batchId)).Data?.Where(r => studentIds.Contains(r.StudentId)).ToList() ?? [];
         var ar = (await archives.GetAllAsync(cancellationToken: ct, batchId: batchId)).Data?.Where(a => studentIds.Contains(a.StudentId)).ToList() ?? [];
-        return ApiResponse<BatchDocumentSnapshot>.Ok(new(batch, batch.Status != "Active", a, s, documents, r, ar));
+        var courseDocuments = await db.StudentCourseDocuments.AsNoTracking()
+            .Where(d => studentIds.Contains(d.StudentId) && (d.BatchId == batchId || d.BatchId == null)
+                && d.Student != null && d.Student.Applicant != null && d.CourseId == d.Student.Applicant.CourseId)
+            .OrderBy(d => d.CourseDocumentId)
+            .Select(d => new StudentCourseDocumentDto
+            {
+                CourseDocumentId = d.CourseDocumentId, StudentId = d.StudentId,
+                CourseId = d.CourseId, BatchId = batchId, DocumentType = d.DocumentType,
+                PreparationStatus = d.PreparationStatus, FileName = d.FileName,
+                HasFile = d.StoredPath != null && d.StoredPath != "",
+                UploadedAt = d.UploadedAt, ReleasedAt = d.ReleasedAt
+            }).ToListAsync(ct);
+        return ApiResponse<BatchDocumentSnapshot>.Ok(new(batch, batch.Status != "Active", a, s, documents, r, ar)
+        { CourseDocuments = courseDocuments });
     }
 }

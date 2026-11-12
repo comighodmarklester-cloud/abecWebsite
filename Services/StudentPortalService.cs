@@ -72,7 +72,7 @@ public class StudentPortalService : IStudentPortalService
             FullName = student.Applicant?.FullName ?? string.Empty,
             Email = student.Applicant?.Email ?? string.Empty,
             ContactNumber = student.Applicant?.ContactNumber ?? string.Empty,
-            Address = student.Applicant?.Address ?? string.Empty,
+            Address = AddressFormatting.FullAddress(student.Applicant),
             CourseName = student.Applicant?.Course?.CourseName ?? string.Empty,
             CourseId = student.Applicant?.CourseId ?? 0,
             FirstName = student.Applicant?.FirstName ?? string.Empty,
@@ -84,14 +84,17 @@ public class StudentPortalService : IStudentPortalService
             SchoolName = student.Applicant?.SchoolName,
             SchoolAddress = student.Applicant?.SchoolAddress,
             CivilStatus = student.Applicant?.CivilStatus,
-            CourseDuration = CourseProgram.Match(student.Applicant?.Course?.CourseName)?.Summary
+            CourseDuration = CourseProgram.FromCourse(student.Applicant?.Course)?.Summary
                 ?? student.Applicant?.Course?.Duration
                 ?? string.Empty,
-            ProgramSummary = CourseProgram.Match(student.Applicant?.Course?.CourseName)?.Summary
+            ProgramSummary = CourseProgram.FromCourse(student.Applicant?.Course)?.Summary
                 ?? student.Applicant?.Course?.Duration
                 ?? string.Empty,
             BatchId = student.BatchId,
             BatchName = student.Batch?.BatchName ?? string.Empty,
+            BatchStatus = student.Batch?.Status ?? string.Empty,
+            BatchCompletedAt = student.Batch?.CompletedAt,
+            CanViewTrainingSchedule = student.Batch?.Status == "Active",
             BatchStartDate = student.Batch?.StartDate,
             BatchEndDate = student.Batch?.EndDate,
             SecurityPin = student.SecurityPin,
@@ -131,17 +134,19 @@ public class StudentPortalService : IStudentPortalService
     public async Task<ApiResponse<IReadOnlyList<CourseScheduleDto>>> GetScheduleAsync(int studentId, CancellationToken cancellationToken = default)
     {
         var student = await _db.Students.AsNoTracking()
-            .Include(s => s.Applicant)
+            .Include(s => s.Applicant).Include(s => s.Batch)
             .FirstOrDefaultAsync(s => s.StudentId == studentId, cancellationToken);
 
         if (student?.Applicant is null)
             return ApiResponse<IReadOnlyList<CourseScheduleDto>>.Fail("Student not found.");
 
+        if (student.Batch?.Status != "Active") return ApiResponse<IReadOnlyList<CourseScheduleDto>>.Ok(Array.Empty<CourseScheduleDto>());
+
         // Students see the Active/Current schedule for their enrolled course (synced from Course Schedule Management).
         var active = await _db.CourseSchedules.AsNoTracking()
             .Include(s => s.Course)
             .Include(s => s.Batch)
-            .Where(s => s.CourseId == student.Applicant.CourseId
+            .Where(s => s.BatchId == student.BatchId && s.CourseId == student.Applicant.CourseId
                         && s.Status == Constants.SystemConstants.ScheduleStatuses.Active)
             .OrderBy(s => s.ScheduleDate)
             .ThenBy(s => s.StartTime)
@@ -149,6 +154,8 @@ public class StudentPortalService : IStudentPortalService
 
         var mapped = active.Select(s => new CourseScheduleDto
         {
+            TrainingDays = s.TrainingDays,
+            Trainers = ReadTrainerAssignments(s.TrainerAssignments),
             ScheduleId = s.ScheduleId,
             CourseId = s.CourseId,
             CourseName = s.Course?.CourseName ?? string.Empty,
@@ -163,6 +170,13 @@ public class StudentPortalService : IStudentPortalService
         }).ToList();
 
         return ApiResponse<IReadOnlyList<CourseScheduleDto>>.Ok(mapped);
+    }
+
+    private static List<TrainerAssignmentDto> ReadTrainerAssignments(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json)) return new();
+        try { return System.Text.Json.JsonSerializer.Deserialize<List<TrainerAssignmentDto>>(json) ?? new(); }
+        catch (System.Text.Json.JsonException) { return new(); }
     }
 
     public async Task<ApiResponse<IReadOnlyList<AdminActivityDto>>> GetLoginActivityAsync(int studentId, CancellationToken cancellationToken = default)

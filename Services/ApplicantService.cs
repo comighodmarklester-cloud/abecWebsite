@@ -7,6 +7,7 @@ using ABEC_System.Options;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using System.Net;
+using System.Security.Cryptography;
 
 namespace ABEC_System.Services;
 
@@ -17,8 +18,8 @@ public class ApplicantService : IApplicantService
     private readonly IEmailService _email;
     private readonly IPdfService _pdf;
     private readonly IOptionsMonitor<AppSettings> _app;
-    private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly ApplicantRegistrationStorageService _registrationStorage;
+    private readonly bool _development;
 
     public ApplicantService(
         ApplicationDbContext db,
@@ -27,42 +28,50 @@ public class ApplicantService : IApplicantService
         IPdfService pdf,
         IOptionsMonitor<AppSettings> app,
         IHttpContextAccessor httpContextAccessor,
-        ApplicantRegistrationStorageService registrationStorage)
+        ApplicantRegistrationStorageService registrationStorage,
+        IWebHostEnvironment? environment = null)
     {
         _db = db;
         _notifications = notifications;
         _email = email;
         _pdf = pdf;
         _app = app;
-        _httpContextAccessor = httpContextAccessor;
         _registrationStorage = registrationStorage;
+        _development = environment?.IsDevelopment() == true;
     }
 
-    public async Task<ApiResponse<DashboardStatsDto>> GetDashboardStatsAsync(CancellationToken cancellationToken = default)
+    public async Task<ApiResponse<DashboardStatsDto>> GetDashboardStatsAsync(CancellationToken cancellationToken = default, int? batchId = null)
     {
+        batchId = await _db.ResolveReadBatchIdAsync(batchId, cancellationToken);
+        var applicants = _db.Applicants.Where(a => a.BatchId == batchId);
+        var students = _db.Students.Where(s => s.BatchId == batchId);
+        var documents = _db.DocumentRequests.Where(r => r.Student!.BatchId == batchId);
+        var schedules = _db.CourseSchedules.Where(s => s.BatchId == batchId);
         var stats = new DashboardStatsDto
         {
-            TotalApplicants = await _db.Applicants.CountAsync(cancellationToken),
-            Pending = await _db.Applicants.CountAsync(a => a.ApplicationStatus == SystemConstants.ApplicationStatuses.Pending, cancellationToken),
-            Waitlisted = await _db.Applicants.CountAsync(a => a.ApplicationStatus == SystemConstants.ApplicationStatuses.Waitlisted, cancellationToken),
-            Approved = await _db.Applicants.CountAsync(a =>
+            TotalApplicants = await applicants.CountAsync(cancellationToken),
+            Pending = await applicants.CountAsync(a => a.ApplicationStatus == SystemConstants.ApplicationStatuses.Pending, cancellationToken),
+            Waitlisted = await applicants.CountAsync(a => a.ApplicationStatus == SystemConstants.ApplicationStatuses.Waitlisted, cancellationToken),
+            Approved = await applicants.CountAsync(a =>
                 a.ApplicationStatus == SystemConstants.ApplicationStatuses.Approved ||
                 a.ApplicationStatus == SystemConstants.ApplicationStatuses.Confirmed ||
                 a.ApplicationStatus == SystemConstants.ApplicationStatuses.ConfirmedLegacy, cancellationToken),
-            Rejected = await _db.Applicants.CountAsync(a =>
+            Rejected = await applicants.CountAsync(a =>
                 a.ApplicationStatus == SystemConstants.ApplicationStatuses.Rejected
                 || a.ApplicationStatus == SystemConstants.ApplicationStatuses.Declined, cancellationToken),
-            ActiveStudents = await _db.Students.CountAsync(s => s.AccountStatus == SystemConstants.AccountStatuses.Active, cancellationToken),
-            AwaitingActivation = await _db.Students.CountAsync(s => s.AccountStatus != SystemConstants.AccountStatuses.Active, cancellationToken),
+            ActiveStudents = await students.CountAsync(s => s.AccountStatus == SystemConstants.AccountStatuses.Active, cancellationToken),
+            EnrolledStudents = await students.CountAsync(cancellationToken),
+            AwaitingActivation = await students.CountAsync(s => s.AccountStatus != SystemConstants.AccountStatuses.Active, cancellationToken),
             AvailableCourses = await _db.Courses.CountAsync(c => c.Status == SystemConstants.CourseStatuses.Available, cancellationToken),
-            PendingDocuments = await _db.DocumentRequests.CountAsync(r =>
+            PendingDocuments = await documents.CountAsync(r =>
                 r.RequestStatus == SystemConstants.DocumentStatuses.Pending
                 || r.RequestStatus == SystemConstants.DocumentStatuses.Processing
                 || r.RequestStatus == SystemConstants.DocumentStatuses.OnHold
                 || r.RequestStatus == SystemConstants.DocumentStatuses.ReadyForRelease, cancellationToken),
-            ReleasedDocuments = await _db.DocumentRequests.CountAsync(r =>
+            ReleasedDocuments = await documents.CountAsync(r =>
                 r.RequestStatus == SystemConstants.DocumentStatuses.Released, cancellationToken),
-            UpcomingSchedules = await _db.CourseSchedules.CountAsync(s =>
+            ReadyToReleaseDocuments = await documents.CountAsync(r => r.RequestStatus == SystemConstants.DocumentStatuses.ReadyForRelease, cancellationToken),
+            UpcomingSchedules = await schedules.CountAsync(s =>
                 s.Status == SystemConstants.ScheduleStatuses.Active && s.ScheduleDate >= DateTime.Today, cancellationToken)
         };
         return ApiResponse<DashboardStatsDto>.Ok(stats);
@@ -78,7 +87,8 @@ public class ApplicantService : IApplicantService
             .Include(a => a.RegistrationDocuments)
             .AsQueryable();
 
-        if (batchId.HasValue) query = query.Where(a => a.BatchId == batchId);
+        var selectedBatchId = await _db.ResolveReadBatchIdAsync(batchId, cancellationToken);
+        query = query.Where(a => a.BatchId == selectedBatchId);
         if (!string.IsNullOrWhiteSpace(status) && !string.Equals(status, "all", StringComparison.OrdinalIgnoreCase))
         {
             if (string.Equals(status, "approved", StringComparison.OrdinalIgnoreCase))
@@ -190,7 +200,7 @@ public class ApplicantService : IApplicantService
             return ApiResponse<ApplicantDto>.Fail("Contact number must be an 11-digit mobile number starting with 09 (example: 09171234567).");
 
         var street = dto.StreetDetails.Trim();
-        var barangay = dto.Barangay.Trim();
+        var barangay = AddressFormatting.Barangay(dto.Barangay);
         var city = dto.CityMunicipality.Trim();
         var province = dto.Province.Trim();
         if (street.Length == 0 || barangay.Length == 0 || city.Length == 0 || province.Length == 0)
@@ -306,6 +316,8 @@ public class ApplicantService : IApplicantService
 
     public async Task<ApiResponse<ApplicantDto>> EnrollAsync(EnrollApplicantDto dto, CancellationToken cancellationToken = default)
     {
+        await using var registrationTransaction = _db.Database.CurrentTransaction is null
+            ? await _db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, cancellationToken) : null;
         var course = await ResolveCourseAsync(dto.CourseId, dto.CourseName, cancellationToken);
         if (course is null)
             return ApiResponse<ApplicantDto>.Fail("Selected course was not found. Please choose a valid course.");
@@ -364,13 +376,11 @@ public class ApplicantService : IApplicantService
             .FirstOrDefaultAsync(b => b.Status == SystemConstants.BatchStatuses.Active, cancellationToken);
         if (activeBatch is null) return ApiResponse<ApplicantDto>.Fail("No active batch is available for registration.");
         var email = dto.Email.Trim().ToLowerInvariant();
-        var exists = await _db.Applicants.AnyAsync(a => a.BatchId == activeBatch.BatchId && a.Email.ToLower() == email, cancellationToken);
-        if (exists)
-            return ApiResponse<ApplicantDto>.Fail("An application in this batch already uses this email address.");
+        await _db.ValidateContactAsync(new Applicant { BatchId = activeBatch.BatchId, Email = email, ContactNumber = contact }, cancellationToken);
 
         var province = dto.Province.Trim();
         var city = dto.CityMunicipality.Trim();
-        var barangay = dto.Barangay.Trim();
+        var barangay = AddressFormatting.Barangay(dto.Barangay);
         var street = dto.StreetDetails.Trim();
         if (province.Length > 100 || city.Length > 100 || barangay.Length > 150 || street.Length > 255)
             return ApiResponse<ApplicantDto>.Fail("Please check the address fields and try again.");
@@ -481,6 +491,7 @@ public class ApplicantService : IApplicantService
             cancellationToken);
 
         await _db.Entry(applicant).Reference(a => a.Course).LoadAsync(cancellationToken);
+        if (registrationTransaction is not null) await registrationTransaction.CommitAsync(cancellationToken);
         return ApiResponse<ApplicantDto>.Ok(Map(applicant), "Your application has been submitted successfully and is pending ABEC review.");
     }
 
@@ -590,11 +601,14 @@ public class ApplicantService : IApplicantService
         if (normalized is null)
             return ApiResponse<ApplicantDto>.Fail("Invalid application status.");
 
+        await using var workflowLock = await SlotWorkflowLock.AcquireAsync(_db, "applicant:" + id, cancellationToken);
         var applicant = await _db.Applicants.Include(a => a.Course).Include(a => a.Student)
             .FirstOrDefaultAsync(a => a.ApplicantId == id, cancellationToken);
         if (applicant is null)
             return ApiResponse<ApplicantDto>.Fail("Applicant not found.");
 
+        await _db.Entry(applicant).ReloadAsync(cancellationToken);
+        await _db.RequireActiveBatchAsync(applicant.BatchId, cancellationToken);
         await EnsureExpiredIfNeededAsync(applicant, cancellationToken);
 
         var previousStatus = applicant.ApplicationStatus;
@@ -622,7 +636,7 @@ public class ApplicantService : IApplicantService
                 && applicant.ApprovalEmailSentAt.HasValue
                 && !applicant.ConfirmedAt.HasValue
                 && !applicant.DeclinedAt.HasValue
-                && (!applicant.ResponseDeadline.HasValue || DateTime.Now <= applicant.ResponseDeadline.Value);
+                && (!applicant.ResponseDeadline.HasValue || DateTime.Now < applicant.ResponseDeadline.Value);
 
             if (!fromPending && !fromWaitlisted && !canReoffer && !canRetryFailedEmail && alreadyApprovedAwaiting)
             {
@@ -634,26 +648,32 @@ public class ApplicantService : IApplicantService
                 ? ApprovalEmailKind.WaitlistedToApproved
                 : ApprovalEmailKind.PendingToApproved;
 
-            applicant.ApplicationStatus = SystemConstants.ApplicationStatuses.Approved;
-            applicant.ConfirmationToken = Convert.ToHexString(Guid.NewGuid().ToByteArray());
-            applicant.ConfirmedAt = null;
-            applicant.DeclinedAt = null;
-            applicant.SlotResponse = emailKind == ApprovalEmailKind.WaitlistedToApproved
-                ? SystemConstants.SlotResponses.AwaitingFromWaitlist
-                : SystemConstants.SlotResponses.AwaitingResponse;
-            applicant.ResponseDeadline = null;
-            applicant.ApprovalEmailSentAt = null;
-            applicant.AssignedTrainingDateTime = await ResolveTrainingDateTimeAsync(applicant.CourseId, cancellationToken);
+            if (!canRetryFailedEmail || string.IsNullOrEmpty(applicant.ConfirmationToken))
+            {
+                applicant.ApplicationStatus = SystemConstants.ApplicationStatuses.Approved;
+                applicant.ConfirmationToken = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
+                applicant.ConfirmedAt = null;
+                applicant.DeclinedAt = null;
+                applicant.SlotResponse = emailKind == ApprovalEmailKind.WaitlistedToApproved
+                    ? SystemConstants.SlotResponses.AwaitingFromWaitlist
+                    : SystemConstants.SlotResponses.AwaitingResponse;
+                applicant.ApprovalEmailSentAt = null;
+                applicant.ResponseDeadline = DateTime.Now.AddHours(SlotOfferPolicy.ResponseHours);
+                applicant.AssignedTrainingDateTime = await ResolveTrainingDateTimeAsync(applicant.CourseId, applicant.BatchId, cancellationToken);
+            }
+            applicant.ResponseDeadline ??= DateTime.Now.AddHours(SlotOfferPolicy.ResponseHours);
+            applicant.EmailNotificationStatus = "ApprovalSending";
 
             await _db.SaveChangesAsync(cancellationToken);
 
             emailResult = await SendApprovalDecisionEmailAsync(applicant, emailKind, CancellationToken.None);
+            applicant.EmailNotificationStatus = emailResult.Sent ? "ApprovalSent" : "ApprovalFailed";
             if (emailResult.Sent)
             {
                 applicant.ApprovalEmailSentAt = DateTime.Now;
-                applicant.ResponseDeadline = DateTime.Now.AddHours(24);
-                await _db.SaveChangesAsync(cancellationToken);
             }
+            // Persist delivery feedback even if the admin navigated away during SMTP.
+            await _db.SaveChangesAsync(CancellationToken.None);
 
             message = BuildApproveMessage(applicant.Email, emailResult, sentEmail: true);
         }
@@ -685,11 +705,12 @@ public class ApplicantService : IApplicantService
             message = $"Applicant status updated to {normalized}.";
         }
 
-        await _notifications.CreateAsync(
-            "Application Status Updated",
-            $"Your application status is now: {applicant.ApplicationStatus}.",
-            applicantId: applicant.ApplicantId,
-            cancellationToken: cancellationToken);
+        if (!string.Equals(previousStatus, applicant.ApplicationStatus, StringComparison.OrdinalIgnoreCase))
+            await _notifications.CreateAsync(
+                "Application Status Updated",
+                $"Your application status is now: {applicant.ApplicationStatus}.",
+                applicantId: applicant.ApplicantId,
+                cancellationToken: normalized == SystemConstants.ApplicationStatuses.Approved ? CancellationToken.None : cancellationToken);
 
         return ApiResponse<ApplicantDto>.Ok(Map(applicant), message);
     }
@@ -710,172 +731,83 @@ public class ApplicantService : IApplicantService
         return ApiResponse<object>.Ok(new { updated = dto.Ids.Count }, string.Join(" | ", notes));
     }
 
-    public async Task<ApiResponse<ApplicantDto>> ConfirmSlotAsync(string token, CancellationToken cancellationToken = default)
+    public Task<ApiResponse<ApplicantDto>> ConfirmSlotAsync(string token, CancellationToken cancellationToken = default)
+        => RespondToSlotAsync(token, true, cancellationToken);
+
+    public Task<ApiResponse<ApplicantDto>> DeclineSlotAsync(string token, CancellationToken cancellationToken = default)
+        => RespondToSlotAsync(token, false, cancellationToken);
+
+    private async Task<ApiResponse<ApplicantDto>> RespondToSlotAsync(string token, bool confirm, CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(token))
-            return ApiResponse<ApplicantDto>.Fail("Invalid confirmation link.");
+        if (string.IsNullOrWhiteSpace(token) || token.Length > 64)
+            return ApiResponse<ApplicantDto>.Fail("This slot link is invalid.");
+        var id = await _db.Applicants.AsNoTracking().Where(a => a.ConfirmationToken == token)
+            .Select(a => (int?)a.ApplicantId).SingleOrDefaultAsync(ct);
+        if (!id.HasValue) return ApiResponse<ApplicantDto>.Fail("This slot link is invalid or has been replaced by a newer offer.");
 
-        var applicant = await _db.Applicants
-            .Include(a => a.Course)
-            .Include(a => a.Student)
-            .FirstOrDefaultAsync(a => a.ConfirmationToken == token, cancellationToken);
-
-        if (applicant is null)
-            return ApiResponse<ApplicantDto>.Fail("Confirmation link is invalid or has already been used.");
-
-        await EnsureExpiredIfNeededAsync(applicant, cancellationToken);
-
+        await using var workflowLock = await SlotWorkflowLock.AcquireAsync(_db, "applicant:" + id.Value, ct);
+        var applicant = await _db.Applicants.Include(a => a.Course).Include(a => a.Student).SingleAsync(a => a.ApplicantId == id, ct);
+        await _db.Entry(applicant).ReloadAsync(ct);
+        await _db.Entry(applicant).Reference(a => a.Student).LoadAsync(ct);
+        if (!string.Equals(applicant.ConfirmationToken, token, StringComparison.Ordinal))
+            return ApiResponse<ApplicantDto>.Fail("This slot link has been replaced by a newer offer.");
+        // The saved result wins even when the opposite button is submitted later.
         var alreadyConfirmed = SystemConstants.ApplicationStatuses.IsConfirmedSlot(applicant.ApplicationStatus)
-            || string.Equals(applicant.SlotResponse, SystemConstants.SlotResponses.Confirmed, StringComparison.OrdinalIgnoreCase);
+            || applicant.SlotResponse == SystemConstants.SlotResponses.Confirmed || applicant.ConfirmedAt.HasValue;
+        if (alreadyConfirmed && applicant.Student is not null)
+            return ApiResponse<ApplicantDto>.Ok(Map(applicant), "Your slot is already confirmed and awaiting account activation.");
+        if (!alreadyConfirmed && (applicant.SlotResponse == SystemConstants.SlotResponses.Declined || applicant.DeclinedAt.HasValue))
+            return ApiResponse<ApplicantDto>.Ok(Map(applicant), "Your slot rejection has already been recorded.");
+        if (!alreadyConfirmed && (applicant.ApplicationStatus == SystemConstants.ApplicationStatuses.Expired
+            || applicant.SlotResponse == SystemConstants.SlotResponses.Expired
+            || !applicant.ResponseDeadline.HasValue || DateTime.Now >= applicant.ResponseDeadline.Value))
+            return ApiResponse<ApplicantDto>.Fail("This slot offer has expired. Please contact ABEC for a new offer.");
+        if ((!alreadyConfirmed && applicant.ApplicationStatus != SystemConstants.ApplicationStatuses.Approved) || applicant.Student is not null)
+            return ApiResponse<ApplicantDto>.Fail("This slot offer is no longer available.");
 
-        if (alreadyConfirmed)
+        // Finish older saved confirmations that have no pending account yet.
+        // The recorded decision still wins if the reject link is submitted later.
+        confirm = confirm || alreadyConfirmed;
+
+        // Serialize capacity checks for different applicants responding to the same course.
+        await using var courseLock = await SlotWorkflowLock.AcquireAsync(_db, "course:" + applicant.BatchId + ":" + applicant.CourseId, ct);
+        await using var transaction = await _db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, ct);
+        await _db.RequireActiveBatchAsync(applicant.BatchId, ct);
+        if (!alreadyConfirmed && DateTime.Now >= applicant.ResponseDeadline!.Value)
+            return ApiResponse<ApplicantDto>.Fail("This slot offer has expired. Please contact ABEC for a new offer.");
+        if (confirm)
         {
-            // Idempotent: never create a second student/slot enrollment.
-            if (applicant.Student is null)
-            {
-                var retry = await EnrollConfirmedApplicantAsync(applicant, cancellationToken);
-                await _db.Entry(applicant).Reference(a => a.Student).LoadAsync(cancellationToken);
-                if (!retry.Success)
-                {
-                    return ApiResponse<ApplicantDto>.Ok(
-                        Map(applicant),
-                        $"Slot already confirmed. Course enrollment still needs attention: {retry.Message}");
-                }
-            }
-
-            await _db.Entry(applicant).Reference(a => a.Student).LoadAsync(cancellationToken);
-            return ApiResponse<ApplicantDto>.Ok(Map(applicant), "Slot Confirmed. Applicant is already in Pending Activation.");
+            var enrolled = await EnrollConfirmedApplicantAsync(applicant, ct);
+            if (!enrolled.Success)
+                return ApiResponse<ApplicantDto>.Fail(enrolled.Message); // disposal rolls back the entire attempt
+            applicant.ApplicationStatus = SystemConstants.ApplicationStatuses.Confirmed;
+            applicant.SlotResponse = SystemConstants.SlotResponses.Confirmed;
+            applicant.ConfirmedAt ??= DateTime.Now;
+            await _db.SaveChangesAsync(ct);
+            await _notifications.CreateAdminAsync("Applicant Confirmed Slot",
+                $"{applicant.FullName} confirmed their training slot and was added to Pending Activation.", applicant.ApplicantId, ct);
+            await _notifications.CreateAsync("Slot Confirmation Received",
+                "Your training slot is confirmed and your account is pending activation by ABEC.",
+                applicant.Student!.StudentId, applicant.ApplicantId, ct);
         }
-
-        if (applicant.ApplicationStatus == SystemConstants.ApplicationStatuses.Declined
-            || (applicant.ApplicationStatus == SystemConstants.ApplicationStatuses.Rejected && applicant.DeclinedAt.HasValue)
-            || string.Equals(applicant.SlotResponse, SystemConstants.SlotResponses.Declined, StringComparison.OrdinalIgnoreCase))
-            return ApiResponse<ApplicantDto>.Fail("This slot offer was declined and can no longer be confirmed.");
-
-        if (applicant.ApplicationStatus == SystemConstants.ApplicationStatuses.Expired
-            || string.Equals(applicant.SlotResponse, SystemConstants.SlotResponses.Expired, StringComparison.OrdinalIgnoreCase))
-            return ApiResponse<ApplicantDto>.Fail("This confirmation link has expired (24-hour response window). Please contact ABEC Institute.");
-
-        if (applicant.ApplicationStatus != SystemConstants.ApplicationStatuses.Approved)
-            return ApiResponse<ApplicantDto>.Fail("Only approved applicants can confirm a training slot.");
-
-        applicant.ApplicationStatus = SystemConstants.ApplicationStatuses.Confirmed;
-        applicant.SlotResponse = SystemConstants.SlotResponses.Confirmed;
-        applicant.ConfirmedAt = DateTime.Now;
-        applicant.DeclinedAt = null;
-        await _db.SaveChangesAsync(cancellationToken);
-
-        var enroll = await EnrollConfirmedApplicantAsync(applicant, cancellationToken);
-        if (!enroll.Success)
+        else
         {
-            await _notifications.CreateAdminAsync(
-                "Applicant Confirmed Slot",
-                $"{applicant.FullName} confirmed their slot for {applicant.Course?.CourseName ?? "their course"}, but automatic enrollment failed: {enroll.Message}",
-                applicant.ApplicantId,
-                cancellationToken);
-
-            await _notifications.CreateAsync(
-                "Slot Confirmation Received",
-                "Thank you for confirming your training slot. ABEC Institute will complete your course slot assignment shortly.",
-                applicantId: applicant.ApplicantId,
-                cancellationToken: cancellationToken);
-
-            return ApiResponse<ApplicantDto>.Ok(
-                Map(applicant),
-                $"Slot Confirmed. Automatic course enrollment needs attention: {enroll.Message}");
+            applicant.ApplicationStatus = SystemConstants.ApplicationStatuses.Rejected;
+            applicant.SlotResponse = SystemConstants.SlotResponses.Declined;
+            applicant.DeclinedAt = DateTime.Now;
+            // Preserve token, course and batch. The saved applicant is counted under Rejected Slots.
+            await _db.SaveChangesAsync(ct);
+            await _notifications.CreateAdminAsync("Applicant Declined Slot",
+                $"{applicant.FullName} rejected their training slot. The application is under Rejected Slots in Archives.", applicant.ApplicantId, ct);
         }
-
-        await _db.Entry(applicant).Reference(a => a.Student).LoadAsync(cancellationToken);
-
-        await _notifications.CreateAdminAsync(
-            "Applicant Confirmed Slot",
-            $"{applicant.FullName} confirmed their training slot for {applicant.Course?.CourseName ?? "their course"} and was added to Pending Activation.",
-            applicant.ApplicantId,
-            cancellationToken);
-
-        await _notifications.CreateAsync(
-            "Slot Confirmation Received",
-            "Thank you for confirming your training slot. Your registration is now pending account activation by ABEC Institute.",
-            applicantId: applicant.ApplicantId,
-            studentId: applicant.Student?.StudentId,
-            cancellationToken: cancellationToken);
-
-        await NotifyAdminsOfSlotConfirmationAsync(applicant, cancellationToken);
-
-        return ApiResponse<ApplicantDto>.Ok(
-            Map(applicant),
-            "Slot Confirmed. Applicant added to the course slot and moved to Pending Activation.");
-    }
-
-    public async Task<ApiResponse<ApplicantDto>> DeclineSlotAsync(string token, CancellationToken cancellationToken = default)
-    {
-        if (string.IsNullOrWhiteSpace(token))
-            return ApiResponse<ApplicantDto>.Fail("Invalid decline link.");
-
-        var applicant = await _db.Applicants
-            .Include(a => a.Course)
-            .Include(a => a.Student)
-            .FirstOrDefaultAsync(a => a.ConfirmationToken == token, cancellationToken);
-
-        if (applicant is null)
-            return ApiResponse<ApplicantDto>.Fail("Decline link is invalid or has already been used.");
-
-        await EnsureExpiredIfNeededAsync(applicant, cancellationToken);
-
-        if (SystemConstants.ApplicationStatuses.IsConfirmedSlot(applicant.ApplicationStatus)
-            || applicant.Student is not null)
-            return ApiResponse<ApplicantDto>.Fail("This slot was already confirmed and can no longer be declined.");
-
-        if (applicant.ApplicationStatus == SystemConstants.ApplicationStatuses.Declined
-            || (applicant.ApplicationStatus == SystemConstants.ApplicationStatuses.Rejected
-                && string.Equals(applicant.SlotResponse, SystemConstants.SlotResponses.Declined, StringComparison.OrdinalIgnoreCase))
-            || string.Equals(applicant.SlotResponse, SystemConstants.SlotResponses.Declined, StringComparison.OrdinalIgnoreCase))
-            return ApiResponse<ApplicantDto>.Ok(Map(applicant), "Slot offer already declined.");
-
-        if (applicant.ApplicationStatus == SystemConstants.ApplicationStatuses.Expired
-            || string.Equals(applicant.SlotResponse, SystemConstants.SlotResponses.Expired, StringComparison.OrdinalIgnoreCase))
-            return ApiResponse<ApplicantDto>.Fail("This decline link has expired (24-hour response window).");
-
-        if (applicant.ApplicationStatus != SystemConstants.ApplicationStatuses.Approved)
-            return ApiResponse<ApplicantDto>.Fail("Only approved applicants with an active slot offer can decline.");
-
-        // Release any reserved course slot enrollment if present (should be rare before confirm).
-        if (applicant.Student is not null)
-            await ReleaseStudentSlotAsync(applicant, cancellationToken);
-
-        applicant.ApplicationStatus = SystemConstants.ApplicationStatuses.Rejected;
-        applicant.SlotResponse = SystemConstants.SlotResponses.Declined;
-        applicant.DeclinedAt = DateTime.Now;
-        applicant.ConfirmedAt = null;
-        applicant.ConfirmationToken = null;
-        applicant.ResponseDeadline = null;
-        applicant.ApprovalEmailSentAt = null;
-        applicant.AssignedTrainingDateTime = null;
-        await _db.SaveChangesAsync(cancellationToken);
-
-        await _notifications.CreateAdminAsync(
-            "Applicant Declined Slot",
-            $"{applicant.FullName} declined their training slot for {applicant.Course?.CourseName ?? "their course"}. Registration is marked Rejected and the slot was released.",
-            applicant.ApplicantId,
-            cancellationToken);
-
-        var nextWaitlisted = await _db.Applicants.AsNoTracking()
-            .Include(a => a.Course)
-            .Where(a => a.CourseId == applicant.CourseId
-                        && a.ApplicationStatus == SystemConstants.ApplicationStatuses.Waitlisted)
-            .OrderBy(a => a.ApplicationDate)
-            .FirstOrDefaultAsync(cancellationToken);
-
-        if (nextWaitlisted is not null)
-        {
-            await _notifications.CreateAdminAsync(
-                "Waitlisted Applicant Available",
-                $"A slot was released for {applicant.Course?.CourseName}. Next waitlisted applicant: {nextWaitlisted.FullName} ({nextWaitlisted.Email}).",
-                nextWaitlisted.ApplicantId,
-                cancellationToken);
-        }
-
-        return ApiResponse<ApplicantDto>.Ok(Map(applicant), "Training slot declined. Registration status set to Rejected.");
+        await transaction.CommitAsync(ct);
+        await transaction.DisposeAsync();
+        await courseLock.DisposeAsync();
+        await workflowLock.DisposeAsync();
+        if (confirm) await NotifyAdminsOfSlotConfirmationAsync(applicant, CancellationToken.None);
+        return ApiResponse<ApplicantDto>.Ok(Map(applicant), confirm
+            ? "Slot confirmed. Your account is pending activation by ABEC."
+            : "Slot rejected. Your decision has been recorded.");
     }
 
     public async Task<SlotLinkStatusDto> DescribeSlotLinkAsync(string? token, CancellationToken cancellationToken = default)
@@ -885,16 +817,18 @@ public class ApplicantService : IApplicantService
             return new SlotLinkStatusDto
             {
                 State = "missing",
-                Message = "This link is incomplete. Open the Confirm Slot or Decline Slot button in your ABEC email."
+                Message = "This link is incomplete. Open the Confirm Slot or Reject Slot button in your ABEC email."
             };
         }
 
-        var applicant = await _db.Applicants
+        if (token.Length > 64) return new SlotLinkStatusDto { State = "invalid", Message = "This slot link is invalid. Open the original link from your ABEC email." };
+
+        var applicant = await _db.Applicants.AsNoTracking()
             .Include(a => a.Course)
             .Include(a => a.Student)
             .FirstOrDefaultAsync(a => a.ConfirmationToken == token, cancellationToken);
 
-        if (applicant is null)
+        if (applicant is null || !string.Equals(applicant.ConfirmationToken, token, StringComparison.Ordinal))
         {
             return new SlotLinkStatusDto
             {
@@ -903,32 +837,37 @@ public class ApplicantService : IApplicantService
             };
         }
 
-        await EnsureExpiredIfNeededAsync(applicant, cancellationToken);
-
         var status = new SlotLinkStatusDto
         {
             FullName = applicant.FullName,
-            CourseName = applicant.Course?.CourseName ?? string.Empty
+            CourseName = applicant.Course?.CourseName ?? string.Empty,
+            TrainingDateTime = applicant.AssignedTrainingDateTime ?? "To be announced by ABEC Institute",
+            ResponseDeadline = applicant.ResponseDeadline.HasValue ? SlotOfferPolicy.AsOffset(applicant.ResponseDeadline.Value) : null
         };
 
         if (SystemConstants.ApplicationStatuses.IsConfirmedSlot(applicant.ApplicationStatus)
-            || string.Equals(applicant.SlotResponse, SystemConstants.SlotResponses.Confirmed, StringComparison.OrdinalIgnoreCase))
+            || string.Equals(applicant.SlotResponse, SystemConstants.SlotResponses.Confirmed, StringComparison.OrdinalIgnoreCase)
+            || applicant.ConfirmedAt.HasValue)
         {
-            status.State = "confirmed";
-            status.Message = "This training slot was already confirmed.";
+            status.State = applicant.Student is not null ? "confirmed" : "incomplete";
+            status.Message = applicant.Student is not null
+                ? "This training slot was already confirmed."
+                : "Choose Confirm Slot to finish saving your registration for account activation.";
             return status;
         }
 
         if (applicant.ApplicationStatus == SystemConstants.ApplicationStatuses.Declined
             || (applicant.ApplicationStatus == SystemConstants.ApplicationStatuses.Rejected && applicant.DeclinedAt.HasValue)
-            || string.Equals(applicant.SlotResponse, SystemConstants.SlotResponses.Declined, StringComparison.OrdinalIgnoreCase))
+            || string.Equals(applicant.SlotResponse, SystemConstants.SlotResponses.Declined, StringComparison.OrdinalIgnoreCase)
+            || applicant.DeclinedAt.HasValue)
         {
             status.State = "declined";
             status.Message = "This training slot was already declined.";
             return status;
         }
 
-        if (applicant.ApplicationStatus == SystemConstants.ApplicationStatuses.Expired
+        if (!applicant.ResponseDeadline.HasValue || DateTime.Now >= applicant.ResponseDeadline.Value
+            || applicant.ApplicationStatus == SystemConstants.ApplicationStatuses.Expired
             || string.Equals(applicant.SlotResponse, SystemConstants.SlotResponses.Expired, StringComparison.OrdinalIgnoreCase))
         {
             status.State = "expired";
@@ -1054,6 +993,16 @@ public class ApplicantService : IApplicantService
         applicant.AssignedTrainingDateTime = null;
     }
 
+    public async Task ExpireSlotOffersAsync(CancellationToken cancellationToken = default)
+    {
+        var now = DateTime.Now;
+        var offers = await _db.Applicants.Include(a => a.Course)
+            .Where(a => a.Batch != null && a.Batch.Status == "Active" && a.ApplicationStatus == "Approved"
+                && a.ConfirmedAt == null && a.DeclinedAt == null && a.ResponseDeadline <= now)
+            .ToListAsync(cancellationToken);
+        foreach (var offer in offers) await EnsureExpiredIfNeededAsync(offer, cancellationToken);
+    }
+
     private async Task EnsureExpiredIfNeededAsync(Applicant applicant, CancellationToken cancellationToken)
     {
         if (!await _db.Batches.AsNoTracking().AnyAsync(b => b.BatchId == applicant.BatchId && b.Status == "Active", cancellationToken)) return;
@@ -1061,25 +1010,33 @@ public class ApplicantService : IApplicantService
             return;
         if (applicant.ConfirmedAt.HasValue || applicant.DeclinedAt.HasValue)
             return;
-        if (!applicant.ResponseDeadline.HasValue || DateTime.Now <= applicant.ResponseDeadline.Value)
+        if (!applicant.ResponseDeadline.HasValue || DateTime.Now < applicant.ResponseDeadline.Value)
             return;
 
+        // A list request may have read the offer just before a response was saved.
+        // Recheck under the same application lock so expiry cannot replace a final choice.
+        await using var workflowLock = await SlotWorkflowLock.AcquireAsync(_db, "applicant:" + applicant.ApplicantId, cancellationToken);
+        await _db.Entry(applicant).ReloadAsync(cancellationToken);
+        if (applicant.ApplicationStatus != SystemConstants.ApplicationStatuses.Approved
+            || applicant.ConfirmedAt.HasValue || applicant.DeclinedAt.HasValue
+            || !applicant.ResponseDeadline.HasValue || DateTime.Now < applicant.ResponseDeadline.Value)
+            return;
         applicant.ApplicationStatus = SystemConstants.ApplicationStatuses.Expired;
         applicant.SlotResponse = SystemConstants.SlotResponses.Expired;
         await _db.SaveChangesAsync(cancellationToken);
 
         await _notifications.CreateAdminAsync(
             "Applicant Slot Response Expired",
-            $"{applicant.FullName} did not respond within 24 hours. The slot offer for {applicant.Course?.CourseName ?? "their course"} has expired.",
+            $"{applicant.FullName} did not respond within 48 hours. The slot offer for {applicant.Course?.CourseName ?? "their course"} has expired.",
             applicant.ApplicantId,
             cancellationToken);
     }
 
-    private async Task<string> ResolveTrainingDateTimeAsync(int courseId, CancellationToken cancellationToken)
+    private async Task<string> ResolveTrainingDateTimeAsync(int courseId, int? batchId, CancellationToken cancellationToken)
     {
         var now = DateTime.Now;
         var upcoming = await _db.CourseSchedules.AsNoTracking()
-            .Where(s => s.CourseId == courseId)
+            .Where(s => s.CourseId == courseId && s.BatchId == batchId && s.Status == SystemConstants.ScheduleStatuses.Active)
             .OrderBy(s => s.ScheduleDate)
             .ThenBy(s => s.StartTime)
             .ToListAsync(cancellationToken);
@@ -1097,7 +1054,7 @@ public class ApplicantService : IApplicantService
         }
 
         var batch = await _db.Batches.AsNoTracking()
-            .FirstOrDefaultAsync(b => b.Status == SystemConstants.BatchStatuses.Active, cancellationToken);
+            .FirstOrDefaultAsync(b => b.BatchId == batchId, cancellationToken);
         if (batch is not null)
             return $"{batch.StartDate:MMMM dd, yyyy} ({batch.BatchName})";
 
@@ -1114,7 +1071,7 @@ public class ApplicantService : IApplicantService
             var baseUrl = ResolvePublicBaseUrl().TrimEnd('/');
             var token = Uri.EscapeDataString(applicant.ConfirmationToken ?? string.Empty);
             var confirmUrl = $"{baseUrl}/confirm-slot?token={token}";
-            var declineUrl = $"{baseUrl}/decline-slot?token={token}";
+            var declineUrl = $"{baseUrl}/reject-slot?token={token}";
             var name = Html(applicant.FullName);
             var courseName = Html(string.IsNullOrWhiteSpace(applicant.Course?.CourseName)
                 ? "Selected Course"
@@ -1122,6 +1079,8 @@ public class ApplicantService : IApplicantService
             var dateTime = Html(string.IsNullOrWhiteSpace(applicant.AssignedTrainingDateTime)
                 ? "To be announced by ABEC Institute"
                 : applicant.AssignedTrainingDateTime!);
+            var deadline = applicant.ResponseDeadline.HasValue
+                ? Html(SlotOfferPolicy.DisplayTime(SlotOfferPolicy.AsOffset(applicant.ResponseDeadline.Value))) : "Contact ABEC Institute";
 
             string subject;
             string intro;
@@ -1146,10 +1105,11 @@ public class ApplicantService : IApplicantService
 
             var html = $@"
 <html>
+<head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'></head>
 <body style='margin:0;padding:0;background:#f8fafc;font-family:Segoe UI,Arial,sans-serif;color:#0f172a'>
   <table role='presentation' width='100%' cellspacing='0' cellpadding='0' style='padding:24px 12px'>
     <tr><td align='center'>
-      <table role='presentation' width='600' cellspacing='0' cellpadding='0' style='background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden'>
+      <table role='presentation' width='100%' cellspacing='0' cellpadding='0' style='width:100%;max-width:600px;background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden'>
         <tr>
           <td style='background:#0A2540;color:#ffffff;padding:20px 24px'>
             <div style='font-size:12px;letter-spacing:.08em;text-transform:uppercase;opacity:.9'>ABEC Institute</div>
@@ -1164,14 +1124,15 @@ public class ApplicantService : IApplicantService
               Course: {courseName}<br/>
               Date/Time: {dateTime}
             </p>
-            <p style='margin:0 0 18px'>Please confirm your slot within <strong>24 hours</strong> to secure your place in the training.</p>
+            <p style='margin:0 0 18px'>Please confirm your slot within <strong>2 days (48 hours)</strong> to secure your place in the training.</p>
+            <p style='margin:0 0 18px'><strong>Respond by:</strong> {deadline}</p>
             <p style='margin:0 0 12px;text-align:center'>
               <a href='{confirmUrl}' style='background:#0A2540;color:#ffffff;padding:12px 22px;text-decoration:none;border-radius:8px;display:inline-block;font-weight:700;margin:4px'>Confirm Slot</a>
-              <a href='{declineUrl}' style='background:#ffffff;color:#0A2540;padding:12px 22px;text-decoration:none;border-radius:8px;display:inline-block;font-weight:700;margin:4px;border:2px solid #0A2540'>Decline Slot</a>
+              <a href='{declineUrl}' style='background:#ffffff;color:#0A2540;padding:12px 22px;text-decoration:none;border-radius:8px;display:inline-block;font-weight:700;margin:4px;border:2px solid #0A2540'>Reject Slot</a>
             </p>
-            <p style='margin:16px 0 18px;font-size:12px;color:#64748b'>
+            <p style='margin:16px 0 18px;font-size:12px;color:#64748b;overflow-wrap:anywhere;word-break:break-all'>
               Confirm: <a href='{confirmUrl}'>{confirmUrl}</a><br/>
-              Decline: <a href='{declineUrl}'>{declineUrl}</a>
+              Reject: <a href='{declineUrl}'>{declineUrl}</a>
             </p>
 
             <div style='margin:22px 0 0;padding:16px;border:1px solid #e2e8f0;border-radius:10px;background:#f8fafc'>
@@ -1348,67 +1309,7 @@ public class ApplicantService : IApplicantService
         }
     }
 
-    private string ResolvePublicBaseUrl()
-    {
-        // Confirm/Decline email links must work from ANY network (mobile data, other Wi-Fi).
-        // Prefer the configured public URL and never fall back to localhost/LAN when a remote URL is set.
-        var configured = (_app.CurrentValue.PublicBaseUrl ?? string.Empty).Trim().TrimEnd('/');
-
-        if (!string.IsNullOrWhiteSpace(configured) && !IsLoopbackUrl(configured) && IsRemoteReachableUrl(configured))
-            return configured;
-
-        // If admin configured a non-loopback host that is still private LAN, keep it only as a last-resort local option.
-        if (!string.IsNullOrWhiteSpace(configured) && !IsLoopbackUrl(configured))
-            return configured;
-
-        var request = _httpContextAccessor.HttpContext?.Request;
-        if (request is not null
-            && !string.IsNullOrWhiteSpace(request.Host.Value)
-            && !IsLoopbackHost(request.Host.Host)
-            && IsRemoteReachableUrl($"{request.Scheme}://{request.Host.Value}"))
-            return $"{request.Scheme}://{request.Host.Value}";
-
-        // Development fallback only — will not work for applicants outside this machine/LAN.
-        if (!string.IsNullOrWhiteSpace(configured))
-            return configured;
-
-        return "http://localhost:5188";
-    }
-
-    private static bool IsRemoteReachableUrl(string? url)
-    {
-        if (string.IsNullOrWhiteSpace(url) || !Uri.TryCreate(url, UriKind.Absolute, out var uri))
-            return false;
-
-        var host = uri.Host;
-        if (IsLoopbackHost(host))
-            return false;
-
-        if (IPAddress.TryParse(host, out var ip)
-            && ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
-        {
-            var bytes = ip.GetAddressBytes();
-            if (bytes[0] == 10) return false;
-            if (bytes[0] == 172 && bytes[1] >= 16 && bytes[1] <= 31) return false;
-            if (bytes[0] == 192 && bytes[1] == 168) return false;
-        }
-
-        return true;
-    }
-
-    private static bool IsLoopbackUrl(string url)
-    {
-        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
-            return false;
-        return IsLoopbackHost(uri.Host);
-    }
-
-    private static bool IsLoopbackHost(string? host)
-        => string.IsNullOrWhiteSpace(host)
-           || string.Equals(host, "localhost", StringComparison.OrdinalIgnoreCase)
-           || host == "127.0.0.1"
-           || host == "::1"
-           || host == "0.0.0.0";
+    private string ResolvePublicBaseUrl() => PublicAppUrl.Normalize(_app.CurrentValue.PublicBaseUrl, _development);
 
     private static string BuildApproveMessage(string email, EmailSendResult? emailResult, bool sentEmail)
     {
@@ -1424,7 +1325,7 @@ public class ApplicantService : IApplicantService
         if (emailResult.Sent)
             return $"Applicant approved successfully. {emailResult.Message}";
 
-        return $"Applicant approved successfully, but the email notification failed. The approval was saved, but the email was NOT delivered to {email}. {emailResult.Message}";
+        return $"EMAIL_NOT_SENT: Approval was saved, but the email was not delivered to {email}. Open the applicant under Approved and choose Retry approval email. {emailResult.Message}";
     }
 
     private static string Html(string? value) => WebUtility.HtmlEncode(value ?? string.Empty);
@@ -1456,7 +1357,7 @@ public class ApplicantService : IApplicantService
         string pin;
         do
         {
-            pin = $"ABEC{Random.Shared.Next(100000, 999999)}";
+            pin = SecurityPinGenerator.Generate();
         } while (await _db.Students.AnyAsync(s => s.SecurityPin == pin, cancellationToken));
         return pin;
     }
@@ -1521,10 +1422,10 @@ public class ApplicantService : IApplicantService
         Suffix = a.Suffix,
         Email = a.Email,
         ContactNumber = a.ContactNumber,
-        Address = a.Address,
+        Address = AddressFormatting.FullAddress(a),
         Province = a.Province,
         CityMunicipality = a.CityMunicipality,
-        Barangay = a.Barangay,
+        Barangay = AddressFormatting.Barangay(a.Barangay),
         StreetDetails = a.StreetDetails,
         Gender = a.Gender,
         Birthdate = a.Birthdate,
@@ -1540,6 +1441,9 @@ public class ApplicantService : IApplicantService
         ConfirmedAt = a.ConfirmedAt,
         DeclinedAt = a.DeclinedAt,
         ResponseDeadline = a.ResponseDeadline,
+        ApprovalEmailSentAt = a.ApprovalEmailSentAt,
+        CanRetryApprovalEmail = a.ApplicationStatus == SystemConstants.ApplicationStatuses.Approved
+            && !a.ApprovalEmailSentAt.HasValue && !a.ConfirmedAt.HasValue && !a.DeclinedAt.HasValue,
         SlotResponse = a.SlotResponse,
         AssignedTrainingDateTime = a.AssignedTrainingDateTime,
         IsResponseExpired = a.IsResponseExpired,
@@ -1614,7 +1518,7 @@ public class ApplicantService : IApplicantService
         if (string.IsNullOrWhiteSpace(dto.EmploymentStatus) ||
             !SystemConstants.RegistrationChoices.EmploymentStatuses.Contains(dto.EmploymentStatus.Trim(), StringComparer.Ordinal))
             return "Please select an employment status.";
-        if (!IsMeaningful(street) || !IsMeaningful(barangay) || !IsMeaningful(city) || !IsMeaningful(province))
+        if (!IsMeaningful(street) || !IsMeaningful(AddressFormatting.BarangayName(barangay)) || !IsMeaningful(city) || !IsMeaningful(province))
             return "Please complete your residential address.";
         if (!IsMeaningful(dto.AddressDistrict))
             return "Enter your district, or mark it as not applicable.";
@@ -1663,7 +1567,7 @@ public class ApplicantService : IApplicantService
         FullName = s.Applicant?.FullName ?? string.Empty,
         Email = s.Applicant?.Email ?? string.Empty,
         ContactNumber = s.Applicant?.ContactNumber ?? string.Empty,
-        Address = s.Applicant?.Address ?? string.Empty,
+        Address = AddressFormatting.FullAddress(s.Applicant),
         CourseName = s.Applicant?.Course?.CourseName ?? string.Empty,
         CourseId = s.Applicant?.CourseId ?? 0,
         BatchId = s.BatchId,

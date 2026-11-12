@@ -124,6 +124,43 @@ was resolved after the server's networking rules were updated.
 
 ## Deploy the website
 
+### Correct a malformed Azure connection string
+
+The supplied Azure log from November 7 reports
+`ArgumentException: Format of the initialization string does not conform to specification starting at index 47.`
+This is a connection-string syntax error before a database connection can be
+attempted. It does not establish a firewall or password failure.
+
+In **abecwebapp > Settings > Environment variables > App settings**, edit or
+add the setting named exactly `ConnectionStrings__DefaultConnection`. Set its
+value to this single line, replacing `YOUR_DATABASE_PASSWORD` with the actual
+database password privately in Azure:
+
+```text
+Server=abecserver01.mysql.database.azure.com;Port=3306;User ID=abecadmin01;Password=YOUR_DATABASE_PASSWORD;Database=abecdb01;SslMode=Required;
+```
+
+Paste only the value: no PowerShell assignment, no `dotnet` command, and no
+quotes surrounding the entire line. Every `key=value` pair must be separated
+by a semicolon. If a password contains a semicolon or quotation mark, use the
+connection-string builder in the configuration section to escape it correctly.
+Do not paste a password into source files or the QA report.
+
+Select **Apply** in the editor and **Apply** on the Environment variables page.
+Azure restarts the app when its settings change. After it has restarted, open
+`/api/health` and confirm both `ok: true` and `database: true`. Check Log stream
+again if it fails; a subsequent network or authentication error would be a
+separate issue. No new migration or code deployment is required for this setting
+correction; the initial Azure migration is already applied.
+
+The supplied log also shows that email is disabled and `PublicBaseUrl` uses
+localhost. Before testing email delivery, configure `App__PublicBaseUrl` as
+`https://abecwebapp-b7eub3hbgxdnajga.westus3-01.azurewebsites.net` and configure
+SMTP separately through Azure secret settings.
+
+References: [Azure App Service settings](https://learn.microsoft.com/en-us/azure/app-service/configure-common?tabs=portal)
+and [MySqlConnector connection options](https://mysqlconnector.net/connection-options/).
+
 After setting `ConnectionStrings__DefaultConnection` in the web app's Azure
 **Environment variables > App settings**, publish the current source changes:
 

@@ -1,6 +1,9 @@
 using ABEC_System.DTOs;
 using ABEC_System.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
+using ABEC_System.Data;
+using ABEC_System.Services;
 
 namespace ABEC_System.Controllers;
 
@@ -11,6 +14,18 @@ public class CourseDocumentController : ControllerBase
     private readonly ICourseDocumentService _documents;
 
     public CourseDocumentController(ICourseDocumentService documents) => _documents = documents;
+
+    [HttpPost("student/{studentId:int}/prepare")]
+    public async Task<IActionResult> Prepare(int studentId, CancellationToken ct)
+        => Ok(await _documents.PrepareAsync(studentId, ct));
+
+    [HttpGet("student/{studentId:int}/eligibility")]
+    public async Task<IActionResult> Eligibility(int studentId, [FromServices] ApplicationDbContext db, CancellationToken ct)
+        => Ok(ApiResponse<object>.Ok((object?)await new StudentDocumentCatalog(db).GetVerificationAsync(studentId, ct) ?? new { }));
+
+    [HttpPut("student/{studentId:int}/eligibility")]
+    public async Task<IActionResult> VerifyEligibility(int studentId, UpdateDocumentEligibilityDto dto, [FromServices] ApplicationDbContext db, CancellationToken ct)
+        => Ok(await new StudentDocumentCatalog(db).VerifyAsync(studentId, AdminId()!.Value, dto, ct));
 
     [HttpGet("board")]
     public async Task<ActionResult<ApiResponse<CourseReleaseBoardDto>>> GetBoard(
@@ -42,7 +57,8 @@ public class CourseDocumentController : ControllerBase
     [HttpGet("{id:int}/file")]
     public async Task<IActionResult> Download(int id, [FromQuery] int? studentId, [FromQuery] bool inline, CancellationToken cancellationToken)
     {
-        var (stream, contentType, fileName, error) = await _documents.OpenFileAsync(id, studentId, AdminId(), cancellationToken);
+        var owner = User.IsInRole("Admin") ? studentId : int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var (stream, contentType, fileName, error) = await _documents.OpenFileAsync(id, owner, AdminId(), cancellationToken);
         if (stream is null)
             return NotFound(new { success = false, message = error ?? "File not found." });
         if (inline)
@@ -52,7 +68,6 @@ public class CourseDocumentController : ControllerBase
 
     private int? AdminId()
     {
-        if (!Request.Headers.TryGetValue("X-Abec-Admin-Id", out var value)) return null;
-        return int.TryParse(value.ToString(), out var id) && id > 0 ? id : null;
+        return User.IsInRole("Admin") && int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var id) ? id : null;
     }
 }

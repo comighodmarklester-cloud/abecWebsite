@@ -21,7 +21,8 @@
     if (s === 'Declined' || (s === 'Rejected' && (app.declinedAt || app.slotResponse === 'Declined'))) {
       return 'Declined by Applicant';
     }
-    if (s === 'Expired' || app.isResponseExpired) return 'Response Expired (24h)';
+    if (s === 'Expired' || app.isResponseExpired) return 'Response Expired (48h)';
+    if (s === 'Approved' && app.canRetryApprovalEmail) return 'Approved - email not sent';
     if (s === 'Approved' && app.responseDeadline) {
       return 'Approved — Await Response';
     }
@@ -79,6 +80,7 @@
       'data-qualification="' + escapeAttr(app.qualificationType || '') + '" ' +
       'data-region="' + escapeAttr(app.addressRegion || '') + '" ' +
       'data-email-status="' + escapeAttr(app.emailNotificationStatus || '') + '" ' +
+      'data-approval-retry="' + (app.canRetryApprovalEmail ? '1' : '0') + '" ' +
       'data-has-reg-docs="' + (app.hasRegistrationDocuments ? '1' : '0') + '" ' +
       'data-initials="' + escapeAttr(initials) + '" ' +
       'onclick="handleCardClick(this, event)">' +
@@ -138,6 +140,9 @@
     await loadCourseSlots();
 
     var params = new URLSearchParams(window.location.search);
+    if (params.has('status') || params.has('id') || params.has('highlight')) {
+      params = AbecApi.consumePageAction(['status', 'id', 'highlight']);
+    }
     var filterStatus = (params.get('status') || '').toLowerCase();
     if (filterStatus === 'approved' || filterStatus === 'waitlisted' || filterStatus === 'rejected' || filterStatus === 'pending') {
       var btn = document.querySelector('.status-pill[data-status="' + filterStatus + '"]');
@@ -222,8 +227,8 @@
           'data-filled="' + filled + '" data-capacity="' + capacity + '" data-remaining="' + remaining + '" ' +
           'onclick="filterBySlotCourse(this)">' +
           '<p class="text-[15px] font-bold text-abec-navy leading-snug" title="' + escapeAttr(courseLabel(c.courseName)) + '">' + escapeHtml(courseLabel(c.courseName)) + '</p>' +
-          '<p class="slot-available text-sm font-bold mt-1.5 ' + (isFull ? 'text-amber-700' : 'text-abec-blue') + '">' +
-            remaining + ' Available Slot' + (remaining === 1 ? '' : 's') +
+          '<p class="slot-available text-sm font-bold mt-1.5 ' + (isFull ? 'text-amber-700' : 'text-abec-blue') + '" data-tooltip="Available Slots" aria-label="' + filled + '/' + capacity + ' Available Slots">' +
+            filled + '/' + capacity +
           '</p>' +
           '<div class="slot-progress mt-3" aria-hidden="true"><span style="width:' + pct + '%"></span></div>' +
         '</button>'
@@ -355,6 +360,8 @@
       return;
     }
     if (raw === 'expired' || raw === 'declined') {
+      var reofferBtn = document.querySelector('.modal-action-btn[data-action="approve"]');
+      if (reofferBtn) reofferBtn.textContent = 'Approve Applicant';
       document.querySelectorAll('.modal-action-btn').forEach(function (btn) {
         var action = btn.getAttribute('data-action');
         btn.classList.toggle('hidden', ['approve', 'waitlist', 'reject'].indexOf(action) === -1);
@@ -363,6 +370,12 @@
       return;
     }
     if (typeof originalUpdateModalActions === 'function') originalUpdateModalActions(status);
+    var approveBtn = document.querySelector('.modal-action-btn[data-action="approve"]');
+    if (approveBtn) {
+      var retry = raw === 'approved' && card && card.getAttribute('data-approval-retry') === '1';
+      approveBtn.textContent = retry ? 'Retry approval email' : 'Approve Applicant';
+      if (retry) approveBtn.classList.remove('hidden');
+    }
     if ((status === 'approved' || raw === 'approved') && card && card.getAttribute('data-confirmed') !== '1') {
       var addBtn = document.querySelector('.modal-action-btn[data-action="add-slot"]');
       if (addBtn) addBtn.classList.add('hidden');
@@ -382,6 +395,7 @@
     document.querySelectorAll('.modal-action-btn').forEach(function (btn) {
       if (btn.getAttribute('data-action') === 'restore') return;
       btn.addEventListener('click', async function () {
+        if (btn.disabled) return;
         if (!window.activeModalCard) return;
         var id = window.activeModalCard.getAttribute('data-id');
         var action = btn.getAttribute('data-action');
@@ -395,17 +409,21 @@
           var nextStatus = action === 'approve' ? 'approved'
             : action === 'reject' ? 'rejected'
             : 'waitlisted';
-          var promptText = action === 'approve'
+          var retryEmail = action === 'approve' && window.activeModalCard.getAttribute('data-approval-retry') === '1';
+          var promptText = retryEmail ? 'Retry sending the approval email? The saved approval will be kept.' : action === 'approve'
             ? 'Approve this application?'
             : action === 'reject'
               ? 'Reject this application?'
               : 'Move this application to the waitlist?';
           if (!(await window.AbecFeedback.confirm({
-            title: action === 'approve' ? 'Approve application' : action === 'reject' ? 'Reject application' : 'Move to waitlist',
+            title: retryEmail ? 'Retry approval email' : action === 'approve' ? 'Approve application' : action === 'reject' ? 'Reject application' : 'Move to waitlist',
             message: promptText,
-            confirmLabel: 'Continue'
+            confirmLabel: retryEmail ? 'Send email' : 'Continue'
           }))) return;
-          if (!(await updateStatus(id, nextStatus))) return;
+          if (btn.disabled) return;
+          btn.disabled = true;
+          try { if (!(await updateStatus(id, nextStatus))) return; }
+          finally { btn.disabled = false; }
         } else {
           return;
         }

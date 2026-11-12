@@ -6,7 +6,7 @@
 <title>ABEC Training Portal - Student Dashboard</title>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
-<link href="../../wwwroot/css/abec-ui.css?v=20261105icons1" rel="stylesheet"/>
+<link href="../../wwwroot/css/abec-ui.css?v=20261107batchsdd1" rel="stylesheet"/>
 <script>
   tailwind.config = {
     theme: {
@@ -180,6 +180,7 @@
     transform: translateX(-50%) translateY(0);
   }
 </style>
+<link href="../../wwwroot/css/abec-responsive.css?v=20261112features1" rel="stylesheet"/>
 </head>
 <body class="abec-app student-module student-desk bg-surface font-sans text-slate-800">
 <div class="student-frame">
@@ -311,7 +312,7 @@
     </section>
 
     <!-- Upcoming Classes -->
-    <section class="col-span-12 lg:col-span-8 student-classes">
+    <section data-student-training class="col-span-12 lg:col-span-8 student-classes">
       <div class="abec-card abec-card-static overflow-hidden h-full flex flex-col">
         <div class="flex justify-between items-center px-6 py-4 border-b border-slate-100">
           <h3 class="text-lg font-bold text-slate-800">Upcoming Classes</h3>
@@ -453,10 +454,9 @@
   </div>
 </div>
 
-<div id="toast-message" role="status" aria-live="polite"></div>
-<script src="../../wwwroot/js/abec-api.js?v=20261031ux1"></script>
-<script src="../../wwwroot/js/abec-student-shell.js?v=20261029docs1"></script>
-<script src="../../wwwroot/js/abec-student.js?v=20261029train2"></script>
-<script src="../../wwwroot/js/abec-student-notifications.js?v=20261028stu2"></script>
+<script src="../../wwwroot/js/abec-api.js?v=20261112features1"></script>
+<script src="../../wwwroot/js/abec-student-shell.js?v=20261107batchsdd1"></script>
+<script src="../../wwwroot/js/abec-student.js?v=20261112onetime1"></script>
+<script src="../../wwwroot/js/abec-student-notifications.js?v=20261112onetime1"></script>
 </body>
 </html>

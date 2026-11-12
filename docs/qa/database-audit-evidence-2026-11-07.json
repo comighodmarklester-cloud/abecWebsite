@@ -1,0 +1,652 @@
+{
+  "inspectedAtManila": "2026-11-07T16:32:25.2610224+08:00",
+  "scope": "Live local database; read-only repeatable-read transaction. No application startup, DDL, DML, mail or API requests.",
+  "configuration": {
+    "server": "localhost",
+    "database": "abec_system",
+    "user": "root",
+    "sslMode": "None",
+    "passwordConfigured": true
+  },
+  "server": [
+    {
+      "version": "8.0.46",
+      "db": "abec_system",
+      "transaction_read_only": 1,
+      "isolation_level": "REPEATABLE-READ",
+      "global_time_zone": "SYSTEM",
+      "session_time_zone": "SYSTEM",
+      "system_time_zone": "Malay Peninsula Standard Time",
+      "sql_mode": "ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION",
+      "foreign_key_checks": 1,
+      "require_secure_transport": 0,
+      "log_bin": 1,
+      "binlog_retention_seconds": 2592000
+    }
+  ],
+  "tls": [
+    {
+      "Variable_name": "Ssl_cipher",
+      "Value": ""
+    },
+    {
+      "Variable_name": "Ssl_version",
+      "Value": ""
+    }
+  ],
+  "tables": [
+    {
+      "TABLE_NAME": "admin_activity_logs",
+      "ENGINE": "InnoDB",
+      "TABLE_COLLATION": "utf8mb4_unicode_ci",
+      "DATA_LENGTH": 16384,
+      "INDEX_LENGTH": 16384,
+      "exact_rows": 75
+    },
+    {
+      "TABLE_NAME": "admins",
+      "ENGINE": "InnoDB",
+      "TABLE_COLLATION": "utf8mb4_0900_ai_ci",
+      "DATA_LENGTH": 16384,
+      "INDEX_LENGTH": 32768,
+      "exact_rows": 2
+    },
+    {
+      "TABLE_NAME": "applicant_registration_documents",
+      "ENGINE": "InnoDB",
+      "TABLE_COLLATION": "utf8mb4_unicode_ci",
+      "DATA_LENGTH": 16384,
+      "INDEX_LENGTH": 16384,
+      "exact_rows": 31
+    },
+    {
+      "TABLE_NAME": "applicants",
+      "ENGINE": "InnoDB",
+      "TABLE_COLLATION": "utf8mb4_0900_ai_ci",
+      "DATA_LENGTH": 16384,
+      "INDEX_LENGTH": 65536,
+      "exact_rows": 24
+    },
+    {
+      "TABLE_NAME": "archives",
+      "ENGINE": "InnoDB",
+      "TABLE_COLLATION": "utf8mb4_0900_ai_ci",
+      "DATA_LENGTH": 16384,
+      "INDEX_LENGTH": 16384,
+      "exact_rows": 1
+    },
+    {
+      "TABLE_NAME": "batches",
+      "ENGINE": "InnoDB",
+      "TABLE_COLLATION": "utf8mb4_0900_ai_ci",
+      "DATA_LENGTH": 16384,
+      "INDEX_LENGTH": 0,
+      "exact_rows": 3
+    },
+    {
+      "TABLE_NAME": "batchhistory",
+      "ENGINE": "InnoDB",
+      "TABLE_COLLATION": "utf8mb4_0900_ai_ci",
+      "DATA_LENGTH": 16384,
+      "INDEX_LENGTH": 16384,
+      "exact_rows": 34
+    },
+    {
+      "TABLE_NAME": "course_management_history",
+      "ENGINE": "InnoDB",
+      "TABLE_COLLATION": "utf8mb4_0900_ai_ci",
+      "DATA_LENGTH": 16384,
+      "INDEX_LENGTH": 32768,
+      "exact_rows": 15
+    },
+    {
+      "TABLE_NAME": "courses",
+      "ENGINE": "InnoDB",
+      "TABLE_COLLATION": "utf8mb4_0900_ai_ci",
+      "DATA_LENGTH": 16384,
+      "INDEX_LENGTH": 0,
+      "exact_rows": 4
+    },
+    {
+      "TABLE_NAME": "courseschedules",
+      "ENGINE": "InnoDB",
+      "TABLE_COLLATION": "utf8mb4_0900_ai_ci",
+      "DATA_LENGTH": 16384,
+      "INDEX_LENGTH": 32768,
+      "exact_rows": 7
+    },
+    {
+      "TABLE_NAME": "documentrequests",
+      "ENGINE": "InnoDB",
+      "TABLE_COLLATION": "utf8mb4_0900_ai_ci",
+      "DATA_LENGTH": 16384,
+      "INDEX_LENGTH": 16384,
+      "exact_rows": 8
+    },
+    {
+      "TABLE_NAME": "notifications",
+      "ENGINE": "InnoDB",
+      "TABLE_COLLATION": "utf8mb4_0900_ai_ci",
+      "DATA_LENGTH": 65536,
+      "INDEX_LENGTH": 49152,
+      "exact_rows": 199
+    },
+    {
+      "TABLE_NAME": "student_activity_logs",
+      "ENGINE": "InnoDB",
+      "TABLE_COLLATION": "utf8mb4_unicode_ci",
+      "DATA_LENGTH": 16384,
+      "INDEX_LENGTH": 16384,
+      "exact_rows": 7
+    },
+    {
+      "TABLE_NAME": "student_course_documents",
+      "ENGINE": "InnoDB",
+      "TABLE_COLLATION": "utf8mb4_unicode_ci",
+      "DATA_LENGTH": 16384,
+      "INDEX_LENGTH": 16384,
+      "exact_rows": 15
+    },
+    {
+      "TABLE_NAME": "student_login_credentials",
+      "ENGINE": "InnoDB",
+      "TABLE_COLLATION": "utf8mb4_unicode_ci",
+      "DATA_LENGTH": 16384,
+      "INDEX_LENGTH": 16384,
+      "exact_rows": 0
+    },
+    {
+      "TABLE_NAME": "students",
+      "ENGINE": "InnoDB",
+      "TABLE_COLLATION": "utf8mb4_0900_ai_ci",
+      "DATA_LENGTH": 16384,
+      "INDEX_LENGTH": 49152,
+      "exact_rows": 6
+    },
+    {
+      "TABLE_NAME": "trainingrooms",
+      "ENGINE": "InnoDB",
+      "TABLE_COLLATION": "utf8mb4_unicode_ci",
+      "DATA_LENGTH": 16384,
+      "INDEX_LENGTH": 16384,
+      "exact_rows": 10
+    },
+    {
+      "TABLE_NAME": "usersettings",
+      "ENGINE": "InnoDB",
+      "TABLE_COLLATION": "utf8mb4_0900_ai_ci",
+      "DATA_LENGTH": 16384,
+      "INDEX_LENGTH": 16384,
+      "exact_rows": 1
+    }
+  ],
+  "foreignKeys": [
+    {
+      "CONSTRAINT_NAME": "FK_admin_activity_logs_admins",
+      "TABLE_NAME": "admin_activity_logs",
+      "COLUMN_NAME": "admin_id",
+      "REFERENCED_TABLE_NAME": "admins",
+      "REFERENCED_COLUMN_NAME": "admin_id",
+      "DELETE_RULE": "CASCADE",
+      "UPDATE_RULE": "NO ACTION",
+      "orphan_rows": 0
+    },
+    {
+      "CONSTRAINT_NAME": "FK_applicant_registration_documents_applicants",
+      "TABLE_NAME": "applicant_registration_documents",
+      "COLUMN_NAME": "applicant_id",
+      "REFERENCED_TABLE_NAME": "applicants",
+      "REFERENCED_COLUMN_NAME": "applicant_id",
+      "DELETE_RULE": "CASCADE",
+      "UPDATE_RULE": "NO ACTION",
+      "orphan_rows": 0
+    },
+    {
+      "CONSTRAINT_NAME": "fk_applicant_course",
+      "TABLE_NAME": "applicants",
+      "COLUMN_NAME": "course_id",
+      "REFERENCED_TABLE_NAME": "courses",
+      "REFERENCED_COLUMN_NAME": "course_id",
+      "DELETE_RULE": "RESTRICT",
+      "UPDATE_RULE": "CASCADE",
+      "orphan_rows": 0
+    },
+    {
+      "CONSTRAINT_NAME": "FK_applicants_batches_batch_id",
+      "TABLE_NAME": "applicants",
+      "COLUMN_NAME": "batch_id",
+      "REFERENCED_TABLE_NAME": "batches",
+      "REFERENCED_COLUMN_NAME": "batch_id",
+      "DELETE_RULE": "SET NULL",
+      "UPDATE_RULE": "NO ACTION",
+      "orphan_rows": 0
+    },
+    {
+      "CONSTRAINT_NAME": "fk_archive_student",
+      "TABLE_NAME": "archives",
+      "COLUMN_NAME": "student_id",
+      "REFERENCED_TABLE_NAME": "students",
+      "REFERENCED_COLUMN_NAME": "student_id",
+      "DELETE_RULE": "RESTRICT",
+      "UPDATE_RULE": "CASCADE",
+      "orphan_rows": 0
+    },
+    {
+      "CONSTRAINT_NAME": "fk_history_batch",
+      "TABLE_NAME": "batchhistory",
+      "COLUMN_NAME": "batch_id",
+      "REFERENCED_TABLE_NAME": "batches",
+      "REFERENCED_COLUMN_NAME": "batch_id",
+      "DELETE_RULE": "RESTRICT",
+      "UPDATE_RULE": "CASCADE",
+      "orphan_rows": 0
+    },
+    {
+      "CONSTRAINT_NAME": "fk_schedule_batch",
+      "TABLE_NAME": "courseschedules",
+      "COLUMN_NAME": "batch_id",
+      "REFERENCED_TABLE_NAME": "batches",
+      "REFERENCED_COLUMN_NAME": "batch_id",
+      "DELETE_RULE": "RESTRICT",
+      "UPDATE_RULE": "CASCADE",
+      "orphan_rows": 0
+    },
+    {
+      "CONSTRAINT_NAME": "fk_schedule_course",
+      "TABLE_NAME": "courseschedules",
+      "COLUMN_NAME": "course_id",
+      "REFERENCED_TABLE_NAME": "courses",
+      "REFERENCED_COLUMN_NAME": "course_id",
+      "DELETE_RULE": "RESTRICT",
+      "UPDATE_RULE": "CASCADE",
+      "orphan_rows": 0
+    },
+    {
+      "CONSTRAINT_NAME": "fk_request_student",
+      "TABLE_NAME": "documentrequests",
+      "COLUMN_NAME": "student_id",
+      "REFERENCED_TABLE_NAME": "students",
+      "REFERENCED_COLUMN_NAME": "student_id",
+      "DELETE_RULE": "RESTRICT",
+      "UPDATE_RULE": "CASCADE",
+      "orphan_rows": 0
+    },
+    {
+      "CONSTRAINT_NAME": "fk_notification_applicant",
+      "TABLE_NAME": "notifications",
+      "COLUMN_NAME": "applicant_id",
+      "REFERENCED_TABLE_NAME": "applicants",
+      "REFERENCED_COLUMN_NAME": "applicant_id",
+      "DELETE_RULE": "CASCADE",
+      "UPDATE_RULE": "CASCADE",
+      "orphan_rows": 0
+    },
+    {
+      "CONSTRAINT_NAME": "fk_notification_request",
+      "TABLE_NAME": "notifications",
+      "COLUMN_NAME": "request_id",
+      "REFERENCED_TABLE_NAME": "documentrequests",
+      "REFERENCED_COLUMN_NAME": "request_id",
+      "DELETE_RULE": "SET NULL",
+      "UPDATE_RULE": "NO ACTION",
+      "orphan_rows": 0
+    },
+    {
+      "CONSTRAINT_NAME": "fk_notification_student",
+      "TABLE_NAME": "notifications",
+      "COLUMN_NAME": "student_id",
+      "REFERENCED_TABLE_NAME": "students",
+      "REFERENCED_COLUMN_NAME": "student_id",
+      "DELETE_RULE": "CASCADE",
+      "UPDATE_RULE": "CASCADE",
+      "orphan_rows": 0
+    },
+    {
+      "CONSTRAINT_NAME": "fk_student_login_student",
+      "TABLE_NAME": "student_login_credentials",
+      "COLUMN_NAME": "student_id",
+      "REFERENCED_TABLE_NAME": "students",
+      "REFERENCED_COLUMN_NAME": "student_id",
+      "DELETE_RULE": "CASCADE",
+      "UPDATE_RULE": "NO ACTION",
+      "orphan_rows": 0
+    },
+    {
+      "CONSTRAINT_NAME": "fk_student_applicant",
+      "TABLE_NAME": "students",
+      "COLUMN_NAME": "applicant_id",
+      "REFERENCED_TABLE_NAME": "applicants",
+      "REFERENCED_COLUMN_NAME": "applicant_id",
+      "DELETE_RULE": "RESTRICT",
+      "UPDATE_RULE": "CASCADE",
+      "orphan_rows": 0
+    },
+    {
+      "CONSTRAINT_NAME": "fk_student_batch",
+      "TABLE_NAME": "students",
+      "COLUMN_NAME": "batch_id",
+      "REFERENCED_TABLE_NAME": "batches",
+      "REFERENCED_COLUMN_NAME": "batch_id",
+      "DELETE_RULE": "RESTRICT",
+      "UPDATE_RULE": "CASCADE",
+      "orphan_rows": 0
+    },
+    {
+      "CONSTRAINT_NAME": "fk_usersettings_admin",
+      "TABLE_NAME": "usersettings",
+      "COLUMN_NAME": "admin_id",
+      "REFERENCED_TABLE_NAME": "admins",
+      "REFERENCED_COLUMN_NAME": "admin_id",
+      "DELETE_RULE": "CASCADE",
+      "UPDATE_RULE": "CASCADE",
+      "orphan_rows": 0
+    }
+  ],
+  "checks": [],
+  "triggers": [],
+  "migrationHistory": "No EF migrations history table",
+  "batches": [
+    {
+      "batch_id": 1,
+      "status": "Closed",
+      "start_date": "2026-01-01T00:00:00",
+      "end_date": "2026-12-31T00:00:00"
+    },
+    {
+      "batch_id": 4,
+      "status": "Closed",
+      "start_date": "2026-01-01T00:00:00",
+      "end_date": "2026-12-31T00:00:00"
+    },
+    {
+      "batch_id": 5,
+      "status": "Active",
+      "start_date": "2026-11-09T00:00:00",
+      "end_date": "2027-01-09T00:00:00"
+    }
+  ],
+  "applicationStatuses": [
+    {
+      "application_status": "Confirmed Slot",
+      "n": 7
+    },
+    {
+      "application_status": "Approved",
+      "n": 6
+    },
+    {
+      "application_status": "Rejected",
+      "n": 4
+    },
+    {
+      "application_status": "Pending",
+      "n": 3
+    },
+    {
+      "application_status": "Expired",
+      "n": 3
+    },
+    {
+      "application_status": "Waitlisted",
+      "n": 1
+    }
+  ],
+  "studentStatuses": [
+    {
+      "account_status": "Active",
+      "n": 4
+    },
+    {
+      "account_status": "Inactive",
+      "n": 2
+    }
+  ],
+  "requestStatuses": [
+    {
+      "request_status": "Processing",
+      "n": 2
+    },
+    {
+      "request_status": "Released",
+      "n": 3
+    },
+    {
+      "request_status": "On Hold",
+      "n": 2
+    },
+    {
+      "request_status": "Pending",
+      "n": 1
+    }
+  ],
+  "preparationStatuses": [
+    {
+      "preparation_status": "Not Prepared",
+      "n": 15
+    }
+  ],
+  "batchConsistency": [
+    {
+      "unassigned_applicants": 0,
+      "student_applicant_batch_mismatch": 0,
+      "active_batches": 1
+    }
+  ],
+  "normalizedDuplicateContacts": [
+    {
+      "batch_id": 1,
+      "duplicate_groups": 4,
+      "affected_records": 11,
+      "extra_records": 7
+    }
+  ],
+  "normalizedDuplicateEmails": [],
+  "duplicateArchives": [
+    {
+      "duplicate_groups": 0,
+      "affected_records": 0
+    }
+  ],
+  "duplicateActiveSchedules": [],
+  "documentConsistency": [
+    {
+      "batch_mismatch": 0,
+      "course_mismatch": 0,
+      "missing_course": 0,
+      "missing_batch": 0,
+      "negative_size": null
+    }
+  ],
+  "notificationConsistency": [
+    {
+      "mismatched_owner": 0
+    }
+  ],
+  "requestNotificationConsistency": [
+    {
+      "mismatched_request_student": 0
+    }
+  ],
+  "scheduleConsistency": [
+    {
+      "invalid_time_range": 0,
+      "missing_room": 0,
+      "room_name_mismatch": 0,
+      "empty_trainer": 0,
+      "active_schedule_closed_batch": 4,
+      "invalid_trainer_json": 0
+    }
+  ],
+  "missingConstraintOrphans": [
+    {
+      "course_document_student": 0,
+      "student_activity_student": 0,
+      "trainingroom_course": 0
+    }
+  ],
+  "lifecycleConsistency": [
+    {
+      "confirmed_without_student": 1,
+      "released_requests_without_file": 3,
+      "active_with_archive": 0
+    }
+  ],
+  "applicantQuality": [
+    {
+      "empty_or_basic_invalid_email": 0,
+      "noncanonical_phone": 0,
+      "future_birthdate": 0,
+      "age_registration_mismatch": 0,
+      "missing_application_reference": 19,
+      "both_confirmed_declined": 0
+    }
+  ],
+  "credentialQuality": [
+    {
+      "admins_non_bcrypt_prefix": 0,
+      "student_non_bcrypt_prefix": 0,
+      "missing_pin": 0
+    }
+  ],
+  "capacity": [
+    {
+      "course_id": 1,
+      "slot_capacity": 25,
+      "occupied_slots": 0,
+      "active_accounts": null,
+      "inactive_accounts": null
+    },
+    {
+      "course_id": 2,
+      "slot_capacity": 25,
+      "occupied_slots": 0,
+      "active_accounts": null,
+      "inactive_accounts": null
+    },
+    {
+      "course_id": 3,
+      "slot_capacity": 25,
+      "occupied_slots": 0,
+      "active_accounts": null,
+      "inactive_accounts": null
+    },
+    {
+      "course_id": 4,
+      "slot_capacity": 25,
+      "occupied_slots": 0,
+      "active_accounts": null,
+      "inactive_accounts": null
+    }
+  ],
+  "files": [
+    {
+      "category": "registration",
+      "references": 31,
+      "present": 26,
+      "missing": 5,
+      "outsideWorkspace": 0,
+      "sizeMismatch": 0
+    },
+    {
+      "category": "request",
+      "references": 1,
+      "present": 1,
+      "missing": 0,
+      "outsideWorkspace": 0,
+      "sizeMismatch": 0
+    }
+  ],
+  "explainApplicantList": [
+    {
+      "id": 1,
+      "select_type": "SIMPLE",
+      "table": "applicants",
+      "partitions": null,
+      "type": "ref",
+      "possible_keys": "IX_applicants_batch_email,UX_applicants_batch_email",
+      "key": "IX_applicants_batch_email",
+      "key_len": "5",
+      "ref": "const",
+      "rows": 1,
+      "filtered": 10,
+      "Extra": "Using where; Using filesort"
+    }
+  ],
+  "explainStudentNotifications": [
+    {
+      "id": 1,
+      "select_type": "SIMPLE",
+      "table": "notifications",
+      "partitions": null,
+      "type": "ref",
+      "possible_keys": "fk_notification_student",
+      "key": "fk_notification_student",
+      "key_len": "5",
+      "ref": "const",
+      "rows": 13,
+      "filtered": 50,
+      "Extra": "Using where; Using filesort"
+    }
+  ],
+  "explainRequests": [
+    {
+      "id": 1,
+      "select_type": "SIMPLE",
+      "table": "documentrequests",
+      "partitions": null,
+      "type": "ALL",
+      "possible_keys": null,
+      "key": null,
+      "key_len": null,
+      "ref": null,
+      "rows": 7,
+      "filtered": 14.29,
+      "Extra": "Using where; Using filesort"
+    }
+  ],
+  "privileges": {
+    "globalPrivilegeCount": 66,
+    "drop": true,
+    "createUser": true,
+    "file": true,
+    "grantable": true
+  },
+  "azureHistoricalEvidence": {
+    "freshlyInspected": false,
+    "source": "Existing import-result.json; not a new Azure connection",
+    "committedAt": "2026-11-07T15:39:44.9109535+08:00",
+    "sourceRows": 442,
+    "result": {
+      "allImportedValuesVerified": true,
+      "existingNondefaultRowsPreserved": true,
+      "foreignKeysVerified": 19,
+      "activeBatches": 1,
+      "counts": {
+        "__efmigrationshistory": 1,
+        "admin_activity_logs": 77,
+        "admins": 3,
+        "applicant_registration_documents": 31,
+        "applicants": 25,
+        "archives": 1,
+        "batches": 3,
+        "batchhistory": 34,
+        "course_management_history": 15,
+        "courses": 4,
+        "courseschedules": 7,
+        "documentrequests": 8,
+        "notifications": 199,
+        "student_activity_logs": 8,
+        "student_course_documents": 15,
+        "student_login_credentials": 1,
+        "students": 7,
+        "trainingrooms": 10,
+        "usersettings": 2
+      }
+    }
+  },
+  "verification": {
+    "build": "Succeeded; zero errors; two temporary MSB3026 DLL-copy retry warnings",
+    "efModelSnapshot": "No model changes since last migration; not a live schema comparison",
+    "readOnlySqlChecklist": "Passed on local MySQL; 20 result sets; no mutations"
+  }
+}

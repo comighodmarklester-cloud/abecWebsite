@@ -46,23 +46,33 @@ public class EmailConfigService : IEmailConfigService
             Enabled = current.Enabled,
             Host = string.IsNullOrWhiteSpace(current.Host) ? "smtp.gmail.com" : current.Host,
             Port = current.Port <= 0 ? 587 : current.Port,
-            Username = string.IsNullOrWhiteSpace(current.Username) ? "abec.legazpi10@gmail.com" : current.Username,
+            Username = current.Username ?? string.Empty,
             FromName = string.IsNullOrWhiteSpace(current.FromName) ? "ABEC System" : current.FromName,
-            FromAddress = string.IsNullOrWhiteSpace(current.FromAddress) ? "abec.legazpi10@gmail.com" : current.FromAddress,
+            FromAddress = string.IsNullOrWhiteSpace(current.FromAddress) ? current.Username ?? string.Empty : current.FromAddress,
             PasswordConfigured = configured,
-            PasswordHint = configured ? "••••••••••••••••" : "",
             PublicBaseUrl = publicBaseUrl,
-            PublicBaseUrlIsReachableRemotely = IsRemoteReachableUrl(publicBaseUrl)
+            PublicBaseUrlIsReachableRemotely = PublicAppUrl.IsPublicHttps(publicBaseUrl)
         };
     }
 
     public async Task<ApiResponse<SmtpSettingsDto>> SaveSettingsAsync(UpdateSmtpSettingsDto dto, CancellationToken cancellationToken = default)
     {
+        if (!_env.IsDevelopment())
+            return ApiResponse<SmtpSettingsDto>.Fail("Production email settings are managed through deployment secrets. Update the production mail provider, verified ABEC sender and public app URL in the hosting configuration.");
         var username = (dto.Username ?? string.Empty).Trim();
         if (string.IsNullOrWhiteSpace(username))
-            username = "abec.legazpi10@gmail.com";
-        if (!username.Contains('@'))
-            return ApiResponse<SmtpSettingsDto>.Fail("A valid Gmail address is required for SMTP Username.");
+            username = (_emailOptions.CurrentValue.Username ?? string.Empty).Trim();
+        if (username.Any(char.IsControl)
+            || !System.Net.Mail.MailAddress.TryCreate(username, out var mailbox)
+            || !string.Equals(mailbox.Address, username, StringComparison.OrdinalIgnoreCase))
+            return ApiResponse<SmtpSettingsDto>.Fail("A valid email address is required for SMTP Username.");
+        var host = string.IsNullOrWhiteSpace(dto.Host) ? "smtp.gmail.com" : dto.Host.Trim();
+        if (Uri.CheckHostName(host) == UriHostNameType.Unknown || host.Any(char.IsControl))
+            return ApiResponse<SmtpSettingsDto>.Fail("Enter a valid SMTP host name.");
+        if (dto.Port < 0 || dto.Port > 65535)
+            return ApiResponse<SmtpSettingsDto>.Fail("SMTP Port must be between 1 and 65535.");
+        if ((dto.FromName ?? string.Empty).Any(char.IsControl) || dto.FromName?.Length > 150)
+            return ApiResponse<SmtpSettingsDto>.Fail("Enter a sender name of up to 150 characters without control characters.");
 
         var current = _emailOptions.CurrentValue;
         var incomingPassword = (dto.Password ?? string.Empty).Replace(" ", string.Empty).Trim();
@@ -77,21 +87,15 @@ public class EmailConfigService : IEmailConfigService
             || password.Contains("your-16", StringComparison.OrdinalIgnoreCase))
         {
             return ApiResponse<SmtpSettingsDto>.Fail(
-                "Enter a Google App Password (16 characters) for abec.legazpi10@gmail.com. Create one at https://myaccount.google.com/apppasswords");
+                "Enter the mail provider's app password. For Gmail, create a Google App Password at https://myaccount.google.com/apppasswords");
         }
 
         var publicBaseUrl = string.IsNullOrWhiteSpace(dto.PublicBaseUrl)
             ? (_appOptions.CurrentValue.PublicBaseUrl ?? string.Empty).Trim().TrimEnd('/')
             : dto.PublicBaseUrl.Trim().TrimEnd('/');
 
-        Uri? publicUri = null;
-        if (!string.IsNullOrWhiteSpace(publicBaseUrl) && !Uri.TryCreate(publicBaseUrl, UriKind.Absolute, out publicUri))
-            return ApiResponse<SmtpSettingsDto>.Fail("Public Base URL must be a full URL, e.g. https://your-domain.com or https://xxxx.trycloudflare.com");
-
-        if (!string.IsNullOrWhiteSpace(publicBaseUrl)
-            && publicUri is not null
-            && publicUri.Scheme is not ("http" or "https"))
-            return ApiResponse<SmtpSettingsDto>.Fail("Public Base URL must start with http:// or https://");
+        try { publicBaseUrl = PublicAppUrl.Normalize(publicBaseUrl, true); }
+        catch (InvalidOperationException ex) { return ApiResponse<SmtpSettingsDto>.Fail(ex.Message); }
 
         var pickup = string.IsNullOrWhiteSpace(current.PickupDirectory)
             ? "App_Data/email-outbox"
@@ -101,19 +105,20 @@ public class EmailConfigService : IEmailConfigService
         {
             App = new
             {
-                PublicBaseUrl = string.IsNullOrWhiteSpace(publicBaseUrl) ? "http://localhost:5188" : publicBaseUrl
+                PublicBaseUrl = publicBaseUrl
             },
             Email = new
             {
                 Enabled = dto.Enabled,
-                Host = string.IsNullOrWhiteSpace(dto.Host) ? "smtp.gmail.com" : dto.Host.Trim(),
+                Host = host,
                 Port = dto.Port <= 0 ? 587 : dto.Port,
                 UseSsl = true,
                 Username = username,
                 Password = password,
                 FromAddress = username,
                 FromName = string.IsNullOrWhiteSpace(dto.FromName) ? "ABEC System" : dto.FromName.Trim(),
-                PickupDirectory = pickup
+                PickupDirectory = pickup,
+                SaveDevelopmentCopies = current.SaveDevelopmentCopies
             }
         };
 
@@ -129,47 +134,19 @@ public class EmailConfigService : IEmailConfigService
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Could not mirror smtp.local.json to bin output.");
+            _logger.LogWarning("Could not mirror local mail configuration ({ErrorType}).", ex.GetType().Name);
         }
 
         await Task.Delay(250, cancellationToken);
 
-        var remote = IsRemoteReachableUrl(publicBaseUrl);
-        _logger.LogInformation(
-            "SMTP + PublicBaseUrl saved. User={User} PublicBaseUrl={Url} RemoteReachable={Remote}",
-            username, publicBaseUrl, remote);
+        var remote = PublicAppUrl.IsPublicHttps(publicBaseUrl);
+        _logger.LogInformation("Mail configuration saved.");
 
         var message = remote
-            ? "Settings saved. Confirm Slot links will work for applicants on any network."
+            ? "Settings saved. Applicant email links use the configured public HTTPS URL."
             : "Settings saved. Public Base URL is still localhost/LAN — applicants on other networks will not be able to open Confirm Slot. Use a public HTTPS URL (hosted domain or Cloudflare Tunnel).";
 
         return ApiResponse<SmtpSettingsDto>.Ok(GetSettings(), message);
     }
 
-    private static bool IsRemoteReachableUrl(string? url)
-    {
-        if (string.IsNullOrWhiteSpace(url) || !Uri.TryCreate(url, UriKind.Absolute, out var uri))
-            return false;
-
-        var host = uri.Host;
-        if (string.Equals(host, "localhost", StringComparison.OrdinalIgnoreCase)
-            || host == "127.0.0.1"
-            || host == "::1"
-            || host == "0.0.0.0")
-            return false;
-
-        // Private LAN ranges are not reachable from other networks / mobile data.
-        if (System.Net.IPAddress.TryParse(host, out var ip))
-        {
-            var bytes = ip.GetAddressBytes();
-            if (ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork && bytes.Length == 4)
-            {
-                if (bytes[0] == 10) return false;
-                if (bytes[0] == 172 && bytes[1] >= 16 && bytes[1] <= 31) return false;
-                if (bytes[0] == 192 && bytes[1] == 168) return false;
-            }
-        }
-
-        return true;
-    }
 }

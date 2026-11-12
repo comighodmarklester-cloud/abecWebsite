@@ -10,6 +10,10 @@ namespace ABEC_System.Services;
 
 public class ScheduleService : IScheduleService
 {
+    public static bool TrainingRoomAllowed(string? courseName, string? roomName)
+        => !(courseName?.Contains("bookkeep", StringComparison.OrdinalIgnoreCase) == true
+            && System.Text.RegularExpressions.Regex.IsMatch(roomName ?? "", @"\b(?:room|lab)\s*301\b", System.Text.RegularExpressions.RegexOptions.IgnoreCase));
+
     private readonly ApplicationDbContext _db;
     private readonly INotificationService _notifications;
     private readonly CourseHistoryRecorder _history;
@@ -33,7 +37,8 @@ public class ScheduleService : IScheduleService
             .AsQueryable();
 
         if (courseId.HasValue) query = query.Where(s => s.CourseId == courseId.Value);
-        if (batchId.HasValue) query = query.Where(s => s.BatchId == batchId.Value);
+        var selectedBatchId = await _db.ResolveReadBatchIdAsync(batchId, cancellationToken);
+        query = query.Where(s => s.BatchId == selectedBatchId);
 
         if (!string.IsNullOrWhiteSpace(status))
         {
@@ -51,6 +56,9 @@ public class ScheduleService : IScheduleService
 
     public async Task<ApiResponse<CourseScheduleDto>> CreateAsync(CreateScheduleDto dto, CancellationToken cancellationToken = default)
     {
+        await using var transaction = _db.Database.CurrentTransaction is null
+            ? await _db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, cancellationToken) : null;
+        await _db.RequireActiveBatchAsync(dto.BatchId, cancellationToken);
         var earliestDate = DateTime.Now.Date.AddMonths(-3) > new DateTime(DateTime.Now.Year, 1, 1)
             ? DateTime.Now.Date.AddMonths(-3)
             : new DateTime(DateTime.Now.Year, 1, 1);
@@ -69,6 +77,10 @@ public class ScheduleService : IScheduleService
         if (room is null)
             return ApiResponse<CourseScheduleDto>.Fail("Select a registered training room.");
         dto.Room = room.RoomName;
+        var courseName = await _db.Courses.Where(c => c.CourseId == dto.CourseId).Select(c => c.CourseName).SingleOrDefaultAsync(cancellationToken);
+        if (courseName is null) return ApiResponse<CourseScheduleDto>.Fail("Course not found.");
+        if (!TrainingRoomAllowed(courseName, dto.Room))
+            return ApiResponse<CourseScheduleDto>.Fail("Room 301 Computer Lab is not available for Bookkeeping.");
 
         var assignments = NormalizeTrainers(dto.Trainers, dto.Trainer);
         if (assignments.Count == 0)
@@ -82,7 +94,7 @@ public class ScheduleService : IScheduleService
             return ApiResponse<CourseScheduleDto>.Fail(activeGuard.Message);
 
         var conflict = await HasConflictAsync(dto, dto.ReplaceScheduleId, cancellationToken);
-        if (conflict.Success && conflict.Data)
+        if (!conflict.Success || conflict.Data)
             return ApiResponse<CourseScheduleDto>.Fail(conflict.Message ?? "Schedule conflict detected for the selected trainer, room, or time slot.");
 
         var entity = new CourseSchedule
@@ -103,14 +115,14 @@ public class ScheduleService : IScheduleService
         if (string.IsNullOrWhiteSpace(entity.TrainingDays))
             return ApiResponse<CourseScheduleDto>.Fail("Select at least one training day.");
 
-        _db.CourseSchedules.Add(entity);
         CourseSchedule? replaced = null;
         if (dto.ReplaceScheduleId.HasValue && SystemConstants.ScheduleStatuses.IsActive(status))
         {
-            replaced = await _db.CourseSchedules.FirstOrDefaultAsync(s => s.ScheduleId == dto.ReplaceScheduleId.Value && s.CourseId == dto.CourseId && s.Status == SystemConstants.ScheduleStatuses.Active, cancellationToken);
+            replaced = await _db.CourseSchedules.FirstOrDefaultAsync(s => s.ScheduleId == dto.ReplaceScheduleId.Value && s.CourseId == dto.CourseId && s.BatchId == dto.BatchId && s.Status == SystemConstants.ScheduleStatuses.Active, cancellationToken);
             if (replaced is null)
                 return ApiResponse<CourseScheduleDto>.Fail("The active schedule is no longer available to replace. Refresh and try again.");
         }
+        _db.CourseSchedules.Add(entity);
         var createdCourseName = await _db.Courses.AsNoTracking()
             .Where(c => c.CourseId == dto.CourseId)
             .Select(c => c.CourseName)
@@ -129,7 +141,7 @@ public class ScheduleService : IScheduleService
 
         var students = await _db.Students.AsNoTracking()
             .Include(s => s.Applicant)
-            .Where(s => s.Applicant!.CourseId == dto.CourseId)
+            .Where(s => s.Applicant!.CourseId == dto.CourseId && s.BatchId == dto.BatchId)
             .Select(s => s.StudentId)
             .ToListAsync(cancellationToken);
 
@@ -158,6 +170,7 @@ public class ScheduleService : IScheduleService
             }
         }
 
+        if (transaction is not null) await transaction.CommitAsync(cancellationToken);
         return ApiResponse<CourseScheduleDto>.Ok(Map(entity),
             SystemConstants.ScheduleStatuses.IsActive(status)
                 ? "Active schedule saved. Enrolled students can now see it on their dashboard."
@@ -166,6 +179,8 @@ public class ScheduleService : IScheduleService
 
     public async Task<ApiResponse<CourseScheduleDto>> UpdateAsync(int id, UpdateScheduleDto dto, CancellationToken cancellationToken = default)
     {
+        await using var transaction = _db.Database.CurrentTransaction is null
+            ? await _db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, cancellationToken) : null;
         var entity = await _db.CourseSchedules
             .Include(s => s.Course)
             .Include(s => s.Batch)
@@ -173,11 +188,18 @@ public class ScheduleService : IScheduleService
         if (entity is null)
             return ApiResponse<CourseScheduleDto>.Fail("Schedule not found.");
 
+        await _db.RequireActiveBatchAsync(entity.BatchId, cancellationToken);
+        if (dto.BatchId.HasValue && dto.BatchId != entity.BatchId)
+            throw new BatchIntegrityException("An existing schedule cannot be moved to another batch.", "batchId");
+
         var earliestDate = DateTime.Now.Date.AddMonths(-3) > new DateTime(DateTime.Now.Year, 1, 1)
             ? DateTime.Now.Date.AddMonths(-3)
             : new DateTime(DateTime.Now.Year, 1, 1);
         if (dto.ScheduleDate.HasValue && (dto.ScheduleDate.Value.Date < earliestDate || dto.ScheduleDate.Value.Year != DateTime.Now.Year))
             return ApiResponse<CourseScheduleDto>.Fail($"Start date must be between {earliestDate:MMMM d, yyyy} and today.");
+
+        if (!TrainingRoomAllowed(entity.Course?.CourseName, dto.Room ?? entity.Room))
+            return ApiResponse<CourseScheduleDto>.Fail("Room 301 Computer Lab is not available for Bookkeeping.");
 
         var beforeDate = entity.ScheduleDate.Date;
         var beforeStart = entity.StartTime;
@@ -244,7 +266,7 @@ public class ScheduleService : IScheduleService
             Status = entity.Status ?? SystemConstants.ScheduleStatuses.Inactive
         }, id, cancellationToken);
 
-        if (conflictCheck.Success && conflictCheck.Data)
+        if (!conflictCheck.Success || conflictCheck.Data)
             return ApiResponse<CourseScheduleDto>.Fail(conflictCheck.Message ?? "Schedule conflict detected for the selected trainer, room, or time slot.");
 
         var changes = new List<(string Action, string Label, string Previous, string New)>();
@@ -277,7 +299,7 @@ public class ScheduleService : IScheduleService
         {
             var students = await _db.Students.AsNoTracking()
                 .Include(s => s.Applicant)
-                .Where(s => s.Applicant!.CourseId == entity.CourseId)
+                .Where(s => s.Applicant!.CourseId == entity.CourseId && s.BatchId == entity.BatchId)
                 .Select(s => s.StudentId)
                 .ToListAsync(cancellationToken);
 
@@ -292,11 +314,14 @@ public class ScheduleService : IScheduleService
             }
         }
 
+        if (transaction is not null) await transaction.CommitAsync(cancellationToken);
         return ApiResponse<CourseScheduleDto>.Ok(Map(entity), "Schedule updated.");
     }
 
     public async Task<ApiResponse<object>> DeleteAsync(int id, CancellationToken cancellationToken = default)
     {
+        await using var transaction = _db.Database.CurrentTransaction is null
+            ? await _db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, cancellationToken) : null;
         var entity = await _db.CourseSchedules.Include(s => s.Course)
             .FirstOrDefaultAsync(s => s.ScheduleId == id, cancellationToken);
         if (entity is null)
@@ -309,8 +334,10 @@ public class ScheduleService : IScheduleService
             DescribeSchedule(entity.ScheduleDate, entity.StartTime, entity.EndTime, entity.Trainer, entity.Room, entity.Status),
             "Removed",
             cancellationToken);
+        await _db.RequireActiveBatchAsync(entity.BatchId, cancellationToken);
         _db.CourseSchedules.Remove(entity);
         await _db.SaveChangesAsync(cancellationToken);
+        if (transaction is not null) await transaction.CommitAsync(cancellationToken);
         return ApiResponse<object>.Ok(new { deleted = true }, "Schedule deleted.");
     }
 
@@ -323,7 +350,7 @@ public class ScheduleService : IScheduleService
 
         var query = _db.CourseSchedules.AsNoTracking()
             .Include(s => s.Course)
-            .Where(s => s.Status == SystemConstants.ScheduleStatuses.Active
+            .Where(s => s.Status == SystemConstants.ScheduleStatuses.Active && s.Batch!.Status == "Active"
                         && (s.Room == room || (!string.IsNullOrWhiteSpace(trainer) && s.Trainer == trainer)));
 
         if (excludeScheduleId.HasValue)
@@ -348,7 +375,7 @@ public class ScheduleService : IScheduleService
 
         var query = _db.CourseSchedules.AsNoTracking()
             .Include(s => s.Course)
-            .Where(s => s.CourseId == courseId && s.Status == SystemConstants.ScheduleStatuses.Active);
+            .Where(s => s.CourseId == courseId && s.Status == SystemConstants.ScheduleStatuses.Active && s.Batch!.Status == "Active");
 
         if (excludeScheduleId.HasValue)
             query = query.Where(s => s.ScheduleId != excludeScheduleId.Value);

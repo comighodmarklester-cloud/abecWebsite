@@ -133,16 +133,47 @@
     return document.getElementById('main-shell') || document.querySelector('main');
   }
 
+  function syncAdminSelection(sidebar) {
+    if (!sidebar || !sidebar.classList.contains('abec-admin-sidebar')) return;
+    var page = window.location.pathname.split('/').pop().toLowerCase();
+    var parentPages = {
+      'applicantpage.html': 'studentsapplicants.html',
+      'coursedetail.html': 'coursemanagement.html',
+      'courseschedule.html': 'coursemanagement.html',
+      'studentarchive.html': 'reports.html'
+    };
+    var selected = parentPages[page] || page;
+    sidebar.querySelectorAll('a.abec-nav-link, a.abec-footer-link').forEach(function (link) {
+      var href = new URL(link.getAttribute('href'), window.location.href);
+      var match = href.origin === window.location.origin && href.pathname.toLowerCase() ===
+        new URL(selected, window.location.href).pathname.toLowerCase();
+      var navLink = link.classList.contains('abec-nav-link');
+      link.classList.toggle(navLink ? 'abec-nav-link-active' : 'abec-footer-link-active', match);
+      link.classList.remove('active');
+      if (match) link.setAttribute('aria-current', selected === page ? 'page' : 'location');
+      else link.removeAttribute('aria-current');
+    });
+  }
+
   function ensureShellClasses() {
     var sidebar = findSidebar();
     var main = findMain();
     if (sidebar) sidebar.classList.add('app-sidebar');
+    syncAdminSelection(sidebar);
     if (main) main.classList.add('app-main');
     return { sidebar: sidebar, main: main };
   }
 
   function isHidden() {
     return document.body.classList.contains(AUTO_CLASS) || document.body.classList.contains(FOCUS_CLASS);
+  }
+
+  function mobileNavigation() { return window.matchMedia('(max-width: 900px)').matches; }
+
+  function syncMobileNavigation() {
+    var sidebar = findSidebar(), hint = document.querySelector('.sidebar-hint');
+    if (sidebar) sidebar.inert = mobileNavigation() && isHidden();
+    if (hint) hint.setAttribute('aria-expanded', String(!isHidden()));
   }
 
   function canAutoHide() {
@@ -155,6 +186,7 @@
     clearTimeout(state.hideTimer);
     state.hideTimer = null;
     document.body.classList.remove(AUTO_CLASS);
+    syncMobileNavigation();
     state.revealGraceUntil = Date.now() + REVEAL_GRACE_MS;
   }
 
@@ -179,6 +211,7 @@
     state.hideTimer = null;
     state.revealGraceUntil = 0;
     document.body.classList.add(AUTO_CLASS);
+    syncMobileNavigation();
   }
 
   function createBackButton(label) {
@@ -247,6 +280,7 @@
     document.body.classList.add(FOCUS_CLASS);
     document.body.classList.add(AUTO_CLASS);
     document.body.setAttribute('data-abec-shell-active', 'secondary');
+    syncMobileNavigation();
 
     if (options.injectBack !== false && !options.skipInjectedBack) {
       var main = findMain();
@@ -264,7 +298,7 @@
     document.body.removeAttribute('data-abec-shell-active');
     removeInjectedBack();
     // Back to module pages: keep sidebar visible across navigation
-    showSidebar();
+    if (mobileNavigation()) forceHideSidebar(); else showSidebar();
   }
 
   function styleExistingBackButtons() {
@@ -301,8 +335,27 @@
     hint.setAttribute('aria-label', 'Show navigation menu');
     hint.textContent = '‹ Menu';
     document.body.appendChild(hint);
+    var close = document.createElement('button');
+    close.type = 'button'; close.className = 'mobile-nav-close'; close.textContent = 'Close menu';
+    close.addEventListener('click', function () { forceHideSidebar(); hint.focus(); });
+    sidebar.insertBefore(close, sidebar.firstChild);
+    var backdrop = document.createElement('button');
+    backdrop.type = 'button'; backdrop.className = 'mobile-nav-backdrop'; backdrop.setAttribute('aria-label', 'Close navigation');
+    backdrop.addEventListener('click', forceHideSidebar); sidebar.parentElement.appendChild(backdrop);
+    sidebar.addEventListener('keydown', function (event) {
+      if (!mobileNavigation()) return;
+      if (event.key === 'Escape') { forceHideSidebar(); hint.focus(); }
+      if (event.key === 'Tab') {
+        var links = Array.from(sidebar.querySelectorAll('a[href], button')).filter(function (item) { return item.getClientRects().length && !item.disabled; });
+        var first = links[0], last = links[links.length - 1];
+        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+      }
+    });
+    window.addEventListener('resize', syncMobileNavigation);
 
     function armTrigger() {
+      if (mobileNavigation()) return;
       state.hoveringTrigger = true;
       showSidebar();
     }
@@ -331,6 +384,10 @@
     hint.addEventListener('mouseenter', armTrigger);
     hint.addEventListener('mouseleave', disarmTrigger);
     hint.addEventListener('click', function () {
+      if (mobileNavigation()) {
+        if (isHidden()) { showSidebar(); close.focus(); } else forceHideSidebar();
+        return;
+      }
       armTrigger();
     });
 
@@ -342,6 +399,7 @@
     // Touch / no-hover: toggle via Menu hint only.
     if (window.matchMedia && window.matchMedia('(hover: none)').matches) {
       hint.addEventListener('click', function () {
+        if (mobileNavigation()) return;
         if (isHidden()) showSidebar();
         else forceHideSidebar();
       });
@@ -375,7 +433,7 @@
     var isSecondaryPage = initDeclarativeSecondaryPage();
     if (!isSecondaryPage) {
       // Stay visible across page navigation; hide only via hover leaving the sidebar
-      showSidebar();
+      if (mobileNavigation()) forceHideSidebar(); else showSidebar();
     }
   }
 

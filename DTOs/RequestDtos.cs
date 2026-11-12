@@ -2,6 +2,23 @@ using System.ComponentModel.DataAnnotations;
 
 namespace ABEC_System.DTOs;
 
+public sealed class CreateCourseDto
+{
+    [Required, StringLength(150)] public string CourseName { get; set; } = "";
+    [StringLength(4000)] public string? CourseDescription { get; set; }
+    [Range(1, 365)] public int TrainingDays { get; set; }
+    [Range(0, 365)] public int OjtDays { get; set; }
+    [Range(1, 12)] public int HoursPerDay { get; set; } = 8;
+    [Range(1, 500)] public int SlotCapacity { get; set; } = 25;
+}
+
+public sealed class UpdateDocumentEligibilityDto
+{
+    public bool FeesPaid { get; set; }
+    public bool TrainingCompleted { get; set; }
+    public bool AssessmentCompleted { get; set; }
+}
+
 public class ApiResponse<T>
 {
     public bool Success { get; set; }

@@ -18,6 +18,7 @@
     credentialFiles: [],
     identityFile: null,
     submitting: false,
+    submitted: false,
     tesdaAckCurrent: false,
     tesdaAckSameQual: false,
     screening: { status: 'No Potential Conflict', summary: '', requiresAdmin: false }
@@ -34,18 +35,7 @@
   function val(id) { return ($(id) && $(id).value) ? String($(id).value).trim() : ''; }
 
   function showFormMessage(text, kind) {
-    var box = $('enroll-form-message');
-    if (!box) return;
-    if (!text) {
-      box.textContent = '';
-      box.className = 'enroll-form-message';
-      return;
-    }
-    box.textContent = text;
-    box.className = 'enroll-form-message is-visible is-' + (kind || 'info');
-    if (text && window.AbecFeedback && (kind === 'error' || kind === 'success')) {
-      window.AbecFeedback.notify({ type: kind === 'success' ? 'success' : 'error', message: text });
-    }
+    window.AbecFeedback.inline($('enroll-form-message'), text, kind || 'info');
   }
 
   function goToStep(n) {
@@ -465,7 +455,7 @@
         reviewRow('Employment status', getRadio('enroll-employment'))) +
       section('Residential Address', 4,
         reviewRow('Number / street / zone / purok', val('enroll-street')) +
-        reviewRow('Barangay', val('enroll-barangay')) +
+        reviewRow('Barangay', AbecApi.formatBarangay ? AbecApi.formatBarangay(val('enroll-barangay')) : val('enroll-barangay')) +
         reviewRow('District', val('enroll-district')) +
         reviewRow('Municipality / city', val('enroll-city')) +
         reviewRow('Province', val('enroll-province')) +
@@ -543,17 +533,14 @@
     var box = $('enroll-privacy-ack');
     var error = $('enroll-privacy-ack-error');
     var ok = !!(box && box.checked);
-    if (error) {
-      error.textContent = ok ? '' : 'Please acknowledge that you have read and understood the Data Privacy Notice before submitting.';
-      error.classList.toggle('hidden', ok);
-    }
+    window.AbecFeedback.inline(error, '', 'error');
     if (box) box.setAttribute('aria-invalid', ok ? 'false' : 'true');
     if (!ok) showFormMessage('Please acknowledge that you have read and understood the Data Privacy Notice before submitting.', 'error');
     return ok;
   }
 
   async function submitApplication() {
-    if (state.submitting) return;
+    if (state.submitting || state.submitted) return;
     var checks = [
       [validateAssessment, 1],
       [validatePersonal, 2],
@@ -597,7 +584,7 @@
       employmentStatus: getRadio('enroll-employment'),
       province: val('enroll-province'),
       cityMunicipality: val('enroll-city'),
-      barangay: val('enroll-barangay'),
+      barangay: AbecApi.formatBarangay ? AbecApi.formatBarangay(val('enroll-barangay')) : val('enroll-barangay'),
       streetDetails: val('enroll-street'),
       addressDistrict: val('enroll-district'),
       addressRegion: regionOption ? regionOption.text : '',
@@ -638,19 +625,21 @@
     else if (btn) { btn.disabled = true; btn.textContent = 'Loading...'; }
     var result;
     try {
-      result = await AbecApi.postForm('/api/applicants/enroll/files', formData);
+      result = await AbecApi.postForm('/api/applicants/enroll/files', formData, { showLoader: false });
     } catch (err) {
       result = { success: false, message: 'Unable to submit your application. Please try again.' };
-    }
-    state.submitting = false;
-    if (!result || !result.success) {
+    } finally {
+      state.submitting = false;
       if (window.AbecFeedback) window.AbecFeedback.buttonBusy(btn, false);
       else if (btn) { btn.disabled = false; btn.textContent = 'Submit Application'; }
+    }
+    if (!result || !result.success) {
       showFormMessage((result && result.message) || 'Unable to submit your application. Please try again.', 'error');
       return;
     }
+    state.submitted = true;
     showFormMessage(result.message || 'Your application has been submitted.', 'success');
-    if (btn) btn.textContent = 'Submitted';
+    if (btn) { btn.disabled = true; btn.textContent = 'Submitted'; }
     if (typeof window.AbecEnrollWizard.onSubmitted === 'function') window.AbecEnrollWizard.onSubmitted(result);
     setTimeout(function () {
       resetWizard();
@@ -663,6 +652,7 @@
     state.credentialFiles = [];
     state.identityFile = null;
     state.submitting = false;
+    state.submitted = false;
     state.tesdaAckCurrent = false;
     state.tesdaAckSameQual = false;
     var form = $('enroll-wizard-form');
@@ -786,7 +776,10 @@
       }
     });
 
-    $('enroll-wizard-submit')?.addEventListener('click', submitApplication);
+    $('enroll-wizard-form').addEventListener('submit', function (event) {
+      event.preventDefault();
+      return submitApplication();
+    });
     $('enroll-privacy-open')?.addEventListener('click', function () { setPrivacyOpen(true); });
     $('enroll-privacy-ack')?.addEventListener('change', function () {
       if ($('enroll-privacy-ack').checked) validatePrivacy();

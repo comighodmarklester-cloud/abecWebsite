@@ -8,10 +8,7 @@
   function setFieldError(inputId, errorId, message) {
     var input = document.getElementById(inputId);
     var error = document.getElementById(errorId);
-    if (error) {
-      error.textContent = message || '';
-      error.classList.toggle('is-visible', !!message);
-    }
+    window.AbecFeedback.inline(error, message, 'error');
     if (input) {
       input.classList.toggle('is-invalid', !!message);
       input.setAttribute('aria-invalid', message ? 'true' : 'false');
@@ -19,10 +16,7 @@
   }
 
   function setFormError(message) {
-    var box = document.getElementById('admin-login-error');
-    if (!box) return;
-    box.textContent = message || '';
-    box.classList.toggle('is-visible', !!message);
+    window.AbecFeedback.inline(document.getElementById('admin-login-error'), message, 'error');
   }
 
   function clearAdminLoginErrors() {

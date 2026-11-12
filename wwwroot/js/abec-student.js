@@ -126,6 +126,7 @@
   }
 
   function applySidebar(profile, session) {
+    if (window.AbecStudentBatch) window.AbecStudentBatch.apply(profile);
     var name = profile.fullName || session.displayName || 'Student';
     setText('[data-bind="student-name"]', name);
     var nameEl = document.getElementById('sidebar-name');
@@ -510,6 +511,7 @@
     var params = new URLSearchParams(window.location.search);
     var targetDate = params.get('highlightDate');
     if (!targetDate) return;
+    AbecApi.consumePageAction(['highlightDate']);
     var targetKey = toDateKey(targetDate);
     var target = classSchedules.find(function (s) { return toDateKey(s.scheduleDate) === targetKey; });
     if (!target) return;
@@ -556,6 +558,7 @@
     var profileRes = await AbecApi.get('/api/student/' + session.userId + '/profile');
     var profile = (profileRes.success && profileRes.data) ? profileRes.data : { fullName: session.displayName };
     applySidebar(profile, session);
+    if (profile.batchStatus === 'Completed' || profile.batchStatus === 'Closed') return;
 
     var scheduleRes = await AbecApi.get('/api/student/' + session.userId + '/schedule');
     if (!scheduleRes.success) {
@@ -625,6 +628,7 @@
   function applyStudentNotificationTarget() {
     var params = new URLSearchParams(window.location.search);
     if (params.get('highlight') !== 'status') return;
+    AbecApi.consumePageAction(['highlight'], '#header-status-chip');
     var target = document.getElementById('header-status-chip');
     if (!target) return;
     target.classList.add('abec-notification-highlight');

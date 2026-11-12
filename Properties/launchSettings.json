@@ -17,7 +17,8 @@
       "applicationUrl": "http://localhost:5188",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
-        "ASPNETCORE_URLS": "http://localhost:5188"
+        "ASPNETCORE_URLS": "http://localhost:5188",
+        "App__PublicBaseUrl": "http://localhost:5188"
       }
     },
     "https": {
@@ -28,7 +29,8 @@
       "applicationUrl": "https://localhost:7162;http://localhost:5188",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
-        "ASPNETCORE_URLS": "https://localhost:7162;http://localhost:5188"
+        "ASPNETCORE_URLS": "https://localhost:7162;http://localhost:5188",
+        "App__PublicBaseUrl": "https://localhost:7162"
       }
     },
     "IIS Express": {
@@ -36,7 +38,8 @@
       "launchBrowser": true,
       "launchUrl": "Views/Home/LandingPage.html",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "App__PublicBaseUrl": "http://localhost:8227"
       }
     }
   }

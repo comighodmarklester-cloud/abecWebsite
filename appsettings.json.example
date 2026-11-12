@@ -3,7 +3,7 @@
     "DefaultConnection": ""
   },
   "App": {
-    "PublicBaseUrl": "http://localhost:5188"
+    "PublicBaseUrl": "https://abecwebapp-b7eub3hbgxdnajga.westus3-01.azurewebsites.net"
   },
   "Email": {
     "Enabled": false,
@@ -14,7 +14,8 @@
     "Password": "",
     "FromAddress": "",
     "FromName": "ABEC System",
-    "PickupDirectory": "App_Data/email-outbox"
+    "PickupDirectory": "App_Data/email-outbox",
+    "SaveDevelopmentCopies": false
   },
   "Logging": {
     "LogLevel": {
@@ -23,5 +24,5 @@
       "Microsoft.EntityFrameworkCore": "Warning"
     }
   },
-  "AllowedHosts": "localhost"
+  "AllowedHosts": "abecwebapp-b7eub3hbgxdnajga.westus3-01.azurewebsites.net;localhost;127.0.0.1"
 }

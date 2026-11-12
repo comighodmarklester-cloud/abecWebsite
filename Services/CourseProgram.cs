@@ -16,12 +16,19 @@ public static class CourseProgram
 
     public static CourseProgramInfo? Match(string? courseName)
     {
-        var name = (courseName ?? string.Empty).ToLowerInvariant();
-        if (name.Contains("bookkeep")) return Bookkeeping;
-        if (name.Contains("customer")) return CustomerService;
-        if (name.Contains("electronic")) return Electronics;
-        if (name.Contains("computer") && name.Contains("servic")) return ComputerSystems;
+        var name = System.Text.RegularExpressions.Regex.Replace(courseName ?? "", @"\s*NC\s*II\b", "", System.Text.RegularExpressions.RegexOptions.IgnoreCase).Trim().ToLowerInvariant();
+        if (name == "bookkeeping") return Bookkeeping;
+        if (name is "customer service" or "customer services") return CustomerService;
+        if (name is "electronic products assembly and servicing" or "electronic product assembly and servicing") return Electronics;
+        if (name is "computer systems servicing" or "computer system servicing") return ComputerSystems;
         return null;
+    }
+
+    public static CourseProgramInfo? FromCourse(ABEC_System.Models.Course? course)
+    {
+        if (course is null) return null;
+        if (course.TrainingDays < 1) return Match(course.CourseName);
+        return new(course.HoursPerDay, course.TotalHours, course.TrainingDays, course.OjtDays, course.Duration);
     }
 
     public static TrainingRequestGate RequestGate(DateTime? batchStart, CourseProgramInfo? program, DateTime today)

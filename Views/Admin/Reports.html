@@ -6,7 +6,9 @@
 <title>Report - ABEC Admin</title>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
-<link href="../../wwwroot/css/abec-ui.css?v=20261105icons1" rel="stylesheet"/>
+<link href="../../wwwroot/css/abec-ui.css?v=20261107batchsdd1" rel="stylesheet"/>
+<link href="../../wwwroot/css/abec-admin-sidebar.css?v=20261108sharedsidebar1" rel="stylesheet"/>
+<link href="../../wwwroot/css/abec-reports.css?v=20261112overviewreadable1" rel="stylesheet"/>
 <script>
   tailwind.config = {
     theme: {
@@ -33,25 +35,8 @@
   .report-head .abec-header-actions { margin-left: auto; align-self: center; }
   .report-head h2 { margin: 0; color: #2563EB; }
   .report-head p { margin: 0.25rem 0 0; max-width: 42rem; color: #475569; font-size: 0.82rem; line-height: 1.4; }
-  .report-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 0.45rem; margin-bottom: 0.45rem; }
-  .report-filters label { display: flex; align-items: center; gap: 0.35rem; color: #334155; font-size: 0.75rem; font-weight: 700; }
-  .report-filters label[hidden] { display: none; }
-  .report-filters select, .report-filters input {
-    height: 2.35rem; border: 1px solid #d7e3f4; border-radius: 0.65rem; background: #fff; color: #0f2744;
-    font-size: 0.82rem; padding: 0 0.7rem;
-  }
-  .report-clear {
-    height: 2.35rem; padding: 0.4rem 0.7rem; border: 1px solid #0B2747; border-radius: 0.6rem;
-    background: #fff; color: #0B2747; font-size: 0.75rem; font-weight: 700; cursor: pointer;
-  }
-  .report-clear:hover { background: #0B2747; color: #fff; }
   .report-period-note { margin: 0 0 0.8rem; color: #475569; font-size: 0.75rem; }
   .report-section-bar { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap; }
-  .report-archive-btn {
-    height: 2.35rem; padding: 0.4rem 0.85rem; border-radius: 0.6rem; background: #0B2747; color: #fff;
-    font-size: 0.75rem; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center;
-  }
-  .report-archive-btn:hover { background: #12345c; }
   .report-demo-toggle { display: inline-flex; border: 1px solid #d7e3f4; border-radius: 999px; overflow: hidden; background: #fff; margin-bottom: 0.55rem; }
   .report-demo-toggle button { height: 2.15rem; padding: 0 0.9rem; border: 0; background: transparent; color: #334155; font-size: 0.75rem; font-weight: 700; cursor: pointer; }
   .report-demo-toggle button.is-active { background: #0B2747; color: #fff; }
@@ -135,10 +120,11 @@
     .report-bar-row { grid-template-columns: 1fr; }
   }
 </style>
+<link href="../../wwwroot/css/abec-responsive.css?v=20261112statusvisible1" rel="stylesheet"/>
 </head>
 <body class="abec-app reports-page bg-surface font-sans text-slate-800">
 <div class="flex min-h-screen">
-<aside class="abec-sidebar" data-purpose="main-sidebar">
+<aside class="abec-sidebar abec-admin-sidebar" data-purpose="main-sidebar">
 <div class="p-6 flex items-center gap-3">
 <div class="abec-brand-lockup abec-sidebar-brand">
 <div class="abec-brand-mark">
@@ -196,6 +182,7 @@
 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
   Dashboard
 </a>
+
 <a class="abec-nav-link" href="StudentsApplicants.html">
 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
   Students &amp; Applicants
@@ -212,7 +199,11 @@
 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
   Document Management
 </a>
-<a class="abec-nav-link abec-nav-link-active" href="Reports.html">
+<a class="abec-nav-link" href="BatchManagement.html">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2" stroke-width="2"/><path d="M16 3v4M8 3v4M3 11h18M8 15h3M8 18h6" stroke-linecap="round" stroke-width="2"/></svg>
+  Batch Management
+</a>
+<a class="abec-nav-link abec-nav-link-active" href="Reports.html" aria-current="page">
 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M8 17V10M12 17V7M16 17v-4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
   Report
 </a>
@@ -241,30 +232,54 @@
 <main class="abec-main">
   <header class="report-head" data-purpose="page-header">
     <div>
-      <h2 class="text-2xl md:text-3xl font-bold text-abec-blue">Report</h2>
-      <p>A current picture of applicants, enrollment, courses, documents, demographics, and archived students.</p>
+      <h2 class="text-2xl md:text-3xl font-bold text-abec-blue">Reports</h2>
+      <p>Follow each batch from application through enrollment and archives.</p>
     </div>
     <div class="abec-header-actions flex items-center shrink-0 relative z-40"></div>
   </header>
-  <div class="report-filters">
-    <label>Period
-      <select id="report-period" aria-label="Reporting period">
-        <option value="all">All time</option>
-        <option value="month">This month</option>
-        <option value="year">This year</option>
-        <option value="custom">Custom range</option>
-      </select>
-    </label>
-    <label id="report-from-wrap" hidden>From <input id="report-from" type="date" aria-label="Report start date"></label>
-    <label id="report-to-wrap" hidden>To <input id="report-to" type="date" aria-label="Report end date"></label>
-    <button type="button" class="report-clear" id="report-clear">Clear Filters</button>
+  <div class="report-toolbar">
+    <nav class="report-view-nav" aria-label="Report views">
+      <button type="button" class="report-overview-action" data-report-open="overview" aria-controls="report-overview" aria-pressed="true">Overview</button>
+      <button type="button" class="report-overview-action" data-report-open="courses" aria-controls="report-root" aria-pressed="false">Course Statistics</button>
+      <button type="button" class="report-overview-action" data-report-open="archives" aria-controls="report-root" aria-pressed="false">Archives</button>
+      <button type="button" class="report-overview-action" data-report-open="demographics" aria-controls="report-root" aria-pressed="false">Applicant Profile Statistics</button>
+    </nav>
+    <div class="report-export-actions">
+      <div class="report-batch-picker" id="report-batch-picker">
+        <label for="report-batch">Batches</label>
+        <div class="report-batch-actions">
+          <select id="report-batch" aria-label="Report batch" aria-describedby="report-batch-note"><option value="">Loading batches…</option></select>
+        </div>
+        <p class="report-period-note" id="report-batch-note" role="status"></p>
+      </div>
+      <button type="button" id="report-download" class="report-download-button" aria-label="Download report for selected filters as PDF" title="Download Report (PDF)" aria-busy="false" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M4 16v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
   </div>
-  <p class="report-period-note" id="report-period-note"></p>
-  <div id="report-root"></div>
+  <div class="report-workspace">
+  <section class="report-overview" id="report-overview" aria-label="Batch status overview" aria-busy="true">
+    <div class="report-overview-legend">
+      <h3>Status Breakdown</h3>
+      <div id="report-status-legend"></div>
+      <span class="report-population-total" id="report-population-total">Loading</span>
+    </div>
+    <div class="report-overview-chart" aria-labelledby="report-status-title">
+      <h3 id="report-status-title" class="report-chart-title">Applicant and Student Status Distribution</h3>
+      <div id="report-status-chart" class="report-status-chart"><p class="report-empty">Loading batch report…</p></div>
+    </div>
+      <article class="report-overview-summary" id="report-status-explanation" aria-labelledby="report-status-heading">
+        <h3 id="report-status-heading">What the Graph Shows</h3>
+        <p id="report-status-summary" role="status" aria-live="polite" aria-atomic="true">Loading the selected batch’s status summary.</p>
+        <span class="sr-only">Hover or focus a category to preview its explanation. Select it to keep the explanation visible. Select it again, click outside the chart, or press Escape to clear the selection.</span>
+      </article>
+  </section>
+  <div id="report-root" hidden></div>
+  </div>
 </main>
 </div>
-<script src="../../wwwroot/js/sidebar-auto-hide.js"></script>
-<script src="../../wwwroot/js/abec-api.js?v=20261031ux1"></script>
-<script src="../../wwwroot/js/abec-admin.js?v=20261105icons1"></script>
-<script src="../../wwwroot/js/abec-reports.js?v=20261030report4"></script>
+<script src="../../wwwroot/js/sidebar-auto-hide.js?v=20261112features1"></script>
+<script src="../../wwwroot/js/abec-api.js?v=20261112features1"></script>
+<script src="../../wwwroot/js/abec-admin.js?v=20261108nobatchbanner1"></script>
+<script src="../../wwwroot/js/abec-reports.js?v=20261112security1"></script>
 </body>

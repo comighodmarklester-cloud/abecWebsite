@@ -81,6 +81,8 @@ public class LocationService : ILocationService
             return ApiResponse<IReadOnlyList<LocationOptionDto>>.Fail("Province is required.");
 
         var normalized = provinceCode.Trim();
+        if (!ValidLocationCode(normalized))
+            return ApiResponse<IReadOnlyList<LocationOptionDto>>.Fail("Select a valid province.");
         var cacheKey = $"psgc:ph:cities:v1:{normalized}";
         var list = await _cache.GetOrCreateAsync(cacheKey, async entry =>
         {
@@ -118,6 +120,8 @@ public class LocationService : ILocationService
             return ApiResponse<IReadOnlyList<LocationOptionDto>>.Fail("City/Municipality is required.");
 
         var normalized = cityCode.Trim();
+        if (!ValidLocationCode(normalized))
+            return ApiResponse<IReadOnlyList<LocationOptionDto>>.Fail("Select a valid city or municipality.");
         var cacheKey = $"psgc:ph:barangays:v1:{normalized}";
         var list = await _cache.GetOrCreateAsync(cacheKey, async entry =>
         {
@@ -137,6 +141,9 @@ public class LocationService : ILocationService
 
         return ApiResponse<IReadOnlyList<LocationOptionDto>>.Ok(result);
     }
+
+    private static bool ValidLocationCode(string value) =>
+        value.Length is 9 or 10 && value.All(c => c is >= '0' and <= '9');
 
     private async Task<List<PsgcNamedItem>?> ReadBarangaysAsync(string cityCode, CancellationToken cancellationToken)
     {
@@ -180,6 +187,8 @@ public class LocationService : ILocationService
 
         if (isCity)
             name = FormatCityName(name);
+
+        if (isBarangay) return AddressFormatting.Barangay(name);
 
         // Normalize abbreviated barangay prefix used in some PSGC exports.
         if (name.StartsWith("Bgy.", StringComparison.OrdinalIgnoreCase))
@@ -258,7 +267,7 @@ public class LocationService : ILocationService
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to read local PSGC file {Path}", relativeWebRootPath);
+            _logger.LogWarning("Failed to read local location data ({ErrorType}).", ex.GetType().Name);
             return default;
         }
     }
@@ -275,7 +284,7 @@ public class LocationService : ILocationService
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to fetch PSGC data from {Url}", url);
+            _logger.LogWarning("Failed to fetch location data ({ErrorType}).", ex.GetType().Name);
             return default;
         }
     }

@@ -13,16 +13,17 @@ public class ActivationController : ControllerBase
     public ActivationController(IActivationService activationService) => _activationService = activationService;
 
     [HttpGet("summary")]
-    public async Task<ActionResult<ApiResponse<ActivationSummaryDto>>> Summary(CancellationToken cancellationToken)
-        => Ok(await _activationService.GetSummaryAsync(cancellationToken));
+    public async Task<ActionResult<ApiResponse<ActivationSummaryDto>>> Summary([FromQuery] int? batchId, CancellationToken cancellationToken)
+        => Ok(await _activationService.GetSummaryAsync(cancellationToken, batchId));
 
     [HttpGet]
     public async Task<ActionResult<ApiResponse<IReadOnlyList<StudentDto>>>> GetAll(
         [FromQuery] string? status,
         [FromQuery] int? courseId,
         [FromQuery] string? search,
+        [FromQuery] int? batchId,
         CancellationToken cancellationToken)
-        => Ok(await _activationService.GetAccountsAsync(status, courseId, search, cancellationToken));
+        => Ok(await _activationService.GetAccountsAsync(status, courseId, search, cancellationToken, batchId));
 
     [HttpPost("{id:int}/generate-pin")]
     public async Task<ActionResult<ApiResponse<StudentDto>>> GeneratePin(int id, CancellationToken cancellationToken)

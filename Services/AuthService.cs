@@ -25,6 +25,8 @@ public class AuthService : IAuthService
             return ApiResponse<AuthResultDto>.Fail("Please enter your username.");
         if (string.IsNullOrWhiteSpace(dto.Password))
             return ApiResponse<AuthResultDto>.Fail("Please enter your password.");
+        if (System.Text.Encoding.UTF8.GetByteCount(dto.Password) > 72)
+            return ApiResponse<AuthResultDto>.Fail("Incorrect username or password. Please try again.");
         if (username.Length < 3 || username.Length > 50 ||
             !System.Text.RegularExpressions.Regex.IsMatch(username, @"^[A-Za-z0-9._-]+$"))
             return ApiResponse<AuthResultDto>.Fail("Please enter a valid username.");
@@ -34,6 +36,12 @@ public class AuthService : IAuthService
 
         if (admin is null || !VerifyPassword(dto.Password, admin.Password))
             return ApiResponse<AuthResultDto>.Fail("Incorrect username or password. Please try again.");
+        if (!admin.Password.StartsWith("$2", StringComparison.Ordinal))
+        {
+            admin.Password = HashPassword(dto.Password);
+            var legacySetting = await _db.UserSettings.FirstOrDefaultAsync(s => s.AdminId == admin.AdminId, cancellationToken);
+            if (legacySetting is not null) legacySetting.Password = admin.Password;
+        }
 
         await LogActivityAsync(
             admin.AdminId,
@@ -105,7 +113,7 @@ public class AuthService : IAuthService
 
     public async Task<ApiResponse<AuthResultDto>> RegisterStudentAsync(StudentRegisterDto dto, CancellationToken cancellationToken = default)
     {
-        // Accounts are created by ABEC only. Register form validates PIN and activates.
+        // Legacy registration may sign in an existing active account. Only admins activate accounts.
         if (dto.Password != dto.ConfirmPassword)
             return ApiResponse<AuthResultDto>.Fail("Password and confirm password do not match.");
 
@@ -116,6 +124,8 @@ public class AuthService : IAuthService
 
         if (student?.Applicant is null)
             return ApiResponse<AuthResultDto>.Fail("No student account matches this security PIN. Contact the registrar.");
+        if (student.AccountStatus != SystemConstants.AccountStatuses.Active)
+            return ApiResponse<AuthResultDto>.Fail("Student account is not active. Please contact the registrar.");
 
         if (!string.IsNullOrWhiteSpace(dto.Email) &&
             !string.Equals(student.Applicant.Email, dto.Email.Trim(), StringComparison.OrdinalIgnoreCase))
@@ -124,16 +134,13 @@ public class AuthService : IAuthService
         if (await _db.StudentLoginCredentials.AnyAsync(c => c.StudentId == student.StudentId && c.PasswordLoginEnabled, cancellationToken))
             return ApiResponse<AuthResultDto>.Fail("This account uses username and password login. Sign in with your configured credentials.");
 
-        student.AccountStatus = SystemConstants.AccountStatuses.Active;
-        await _db.SaveChangesAsync(cancellationToken);
-
         return ApiResponse<AuthResultDto>.Ok(new AuthResultDto
         {
             UserId = student.StudentId,
             Role = "Student",
             DisplayName = student.Applicant.FullName,
             EmailOrUsername = student.Applicant.Email
-        }, "Student account activated successfully.");
+        }, "Student sign-in successful.");
     }
 
     private async Task LogActivityAsync(
@@ -168,10 +175,16 @@ public class AuthService : IAuthService
 
     private static bool VerifyPassword(string plain, string stored)
     {
-        if (string.IsNullOrWhiteSpace(stored)) return false;
+        if (string.IsNullOrWhiteSpace(stored) || string.IsNullOrEmpty(plain)
+            || System.Text.Encoding.UTF8.GetByteCount(plain) > 72) return false;
         if (stored.StartsWith("$2", StringComparison.Ordinal))
-            return BCrypt.Net.BCrypt.Verify(plain, stored);
-        return string.Equals(plain, stored, StringComparison.Ordinal);
+        {
+            try { return BCrypt.Net.BCrypt.Verify(plain, stored); }
+            catch (BCrypt.Net.SaltParseException) { return false; }
+        }
+        return System.Security.Cryptography.CryptographicOperations.FixedTimeEquals(
+            System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(plain)),
+            System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(stored)));
     }
 
     public static string HashPassword(string plain) => BCrypt.Net.BCrypt.HashPassword(plain);

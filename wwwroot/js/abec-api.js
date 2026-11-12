@@ -1,9 +1,9 @@
 /* ABEC shared API client — preserves existing UI, wires backend calls. */
 (function () {
   if (window.AbecFeedback) return;
-  var feedbackSrc = '/wwwroot/js/abec-feedback.js?v=20261031ux1';
+  var feedbackSrc = '/wwwroot/js/abec-feedback.js?v=20261111registration1';
   var current = document.currentScript;
-  if (current && current.src) feedbackSrc = current.src.replace(/abec-api\.js[^#]*/, 'abec-feedback.js?v=20261031ux1');
+  if (current && current.src) feedbackSrc = current.src.replace(/abec-api\.js[^#]*/, 'abec-feedback.js?v=20261111registration1');
   document.write('<script src="' + feedbackSrc + '"><\/script>');
 })();
 (function (window) {
@@ -34,6 +34,15 @@
 
   function unreachableMessage() {
     return 'The ABEC server could not be reached. Check your connection and try again.';
+  }
+
+  function reportLoad(result, method) {
+    // Write actions present their outcome in the owning workflow. Failed reads
+    // also need visible feedback, including those rendered as unavailable tables.
+    if ((!method || method === 'GET') && !result.success && result.message && window.AbecFeedback) {
+      window.AbecFeedback.notify({ type: 'error', message: result.message });
+    }
+    return result;
   }
 
   var pendingLoads = 0;
@@ -76,6 +85,24 @@
     page: function (path) {
       if (window.location.protocol === 'file:') return APP_ORIGIN + path;
       return path;
+    },
+
+    // Consume URL actions without navigating or adding a browser history entry.
+    // Callers keep the returned parameters for this opening only.
+    consumePageAction: function (keys, targetHash) {
+      var params = new URLSearchParams(window.location.search);
+      var query = new URLSearchParams(window.location.search);
+      var changed = false;
+      keys.forEach(function (key) {
+        if (query.has(key)) { query.delete(key); changed = true; }
+      });
+      var hash = window.location.hash;
+      if (targetHash && hash === targetHash) { hash = ''; changed = true; }
+      if (changed) {
+        var search = query.toString();
+        window.history.replaceState(window.history.state, '', window.location.pathname + (search ? '?' + search : '') + hash);
+      }
+      return params;
     },
 
     requireRole: function (role, redirectUrl) {
@@ -129,7 +156,7 @@
           });
           var payload = await response.json().catch(function () { return null; });
           if (!payload) {
-            return {
+            return reportLoad({
               success: false,
               message: response.ok
                 ? 'Unexpected server response.'
@@ -137,9 +164,9 @@
                   ? 'The request could not be saved from this page. Open the ABEC site and try again.'
                   : ('Request failed (' + response.status + ').')),
               data: null
-            };
+            }, options.method);
           }
-          return this.normalize(payload);
+          return reportLoad(this.normalize(payload), options.method);
         } catch (err) {
           lastError = err;
           if (attempt === attempts) break;
@@ -149,22 +176,22 @@
           trackLoadEnd();
         }
       }
-      return {
+      return reportLoad({
         success: false,
         message: unreachableMessage(),
         data: null,
         cause: lastError ? String(lastError.message || lastError) : ''
-      };
+      }, options.method);
     },
 
     get: function (path) { return this.request(path); },
     post: function (path, body) { return this.request(path, { method: 'POST', body: body }); },
 
-    postForm: async function (path, formData) {
+    postForm: async function (path, formData, options) {
       var attempts = 4;
       var delay = 400;
       for (var attempt = 1; attempt <= attempts; attempt++) {
-        trackLoadStart();
+        if (!options || options.showLoader !== false) trackLoadStart();
         try {
           var response = await fetch(this.baseUrl + path, {
             method: 'POST',
@@ -196,7 +223,7 @@
           await sleep(delay);
           delay = Math.min(delay + 500, 2000);
         } finally {
-          trackLoadEnd();
+          if (!options || options.showLoader !== false) trackLoadEnd();
         }
       }
     },
@@ -218,6 +245,15 @@
     displayCourseName: function (name) {
       var text = String(name == null ? '' : name).replace(/\s*NC\s*II\b/gi, ' ').replace(/\s{2,}/g, ' ').trim();
       return text;
+    },
+
+    barangayName: function (value) {
+      return String(value || '').trim().replace(/^(?:(?:barangay|brgy|bgy)(?:\.\s*|\s+|$))+/i, '').trim();
+    },
+
+    formatBarangay: function (value) {
+      var name = this.barangayName(value);
+      return name ? 'Brgy. ' + name : '';
     }
   };
 

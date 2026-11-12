@@ -6,6 +6,10 @@ namespace ABEC_System.Models;
 [Table("notifications")]
 public class Notification
 {
+    [Column("batch_id")]
+    public int? BatchId { get; set; }
+    [Column("course_document_id")]
+    public int? CourseDocumentId { get; set; }
     [Column("request_id")]
     public int? RequestId { get; set; }
     [Key]

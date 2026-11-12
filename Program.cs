@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.Antiforgery;
 using System.Threading.RateLimiting;
 using ABEC_System.Constants;
 using ABEC_System.Data;
@@ -10,6 +11,9 @@ using Microsoft.AspNetCore.Http.Features;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
 var builder = WebApplication.CreateBuilder(args);
+// Hosting information logs include query strings, including emailed bearer tokens.
+// Keep safe application error references without recording full request URLs.
+builder.Logging.AddFilter("Microsoft.AspNetCore.Hosting.Diagnostics", LogLevel.Warning);
 
 const long registrationRequestBodyLimit = SystemConstants.RegistrationUploadLimits.MaxRegistrationRequestBytes;
 
@@ -21,35 +25,47 @@ builder.WebHost.ConfigureKestrel(options =>
 builder.Services.Configure<FormOptions>(options =>
 {
     options.MultipartBodyLengthLimit = registrationRequestBodyLimit;
-    options.ValueLengthLimit = int.MaxValue;
-    options.MultipartHeadersLengthLimit = int.MaxValue;
+    options.ValueLengthLimit = 1024 * 1024;
+    options.MultipartHeadersLengthLimit = 16 * 1024;
 });
 
 // Optional local SMTP overrides (gitignored). Re-apply user-secrets + env afterward so a
 // real App Password from secure configuration always wins over any local placeholder.
-builder.Configuration.AddJsonFile("smtp.local.json", optional: true, reloadOnChange: true);
 if (builder.Environment.IsDevelopment())
+{
+    builder.Configuration.AddJsonFile("smtp.local.json", optional: true, reloadOnChange: true);
     builder.Configuration.AddUserSecrets(typeof(Program).Assembly, optional: true);
+}
 builder.Configuration.AddEnvironmentVariables();
 
-builder.Services.AddControllersWithViews(options => options.Filters.Add<BatchWriteFilter>())
+builder.Services.AddControllersWithViews(options => { options.Filters.Add<BatchAccessFilter>(); options.Filters.Add<BatchContextFilter>(); options.Filters.Add<BatchWriteFilter>(); })
     .AddJsonOptions(options =>
     {
         // Keep ñ/Ñ and other Unicode letters readable in JSON (not \u00f1 escapes).
         options.JsonSerializerOptions.Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping;
     });
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddScoped<SessionSecurity>();
 builder.Services.AddAuthentication("StudentSession").AddCookie("StudentSession", options =>
 {
     options.Cookie.Name = "abec-student-session";
     options.Cookie.HttpOnly = true;
     options.Cookie.SameSite = SameSiteMode.Strict;
+    options.Cookie.SecurePolicy = builder.Environment.IsDevelopment() ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.Always;
     options.ExpireTimeSpan = TimeSpan.FromHours(8);
     options.SlidingExpiration = true;
+    options.EventsType = typeof(SessionSecurity);
     options.Events.OnRedirectToLogin = context => { context.Response.StatusCode = 401; return Task.CompletedTask; };
     options.Events.OnRedirectToAccessDenied = context => { context.Response.StatusCode = 403; return Task.CompletedTask; };
 });
 builder.Services.AddAuthorization();
+builder.Services.AddAntiforgery(options =>
+{
+    options.Cookie.Name = SlotActionPage.VerificationCookieName;
+    options.Cookie.HttpOnly = true;
+    options.Cookie.SameSite = SameSiteMode.Strict;
+    options.Cookie.SecurePolicy = builder.Environment.IsDevelopment() ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.Always;
+});
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = 429;
@@ -59,7 +75,19 @@ builder.Services.AddRateLimiter(options =>
 });
 
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection(EmailSettings.SectionName));
-builder.Services.Configure<AppSettings>(builder.Configuration.GetSection(AppSettings.SectionName));
+builder.Services.AddOptions<AppSettings>()
+    .Bind(builder.Configuration.GetSection(AppSettings.SectionName))
+    .PostConfigure(settings =>
+    {
+        PublicAppUrl.ApplyProductionDefaults(settings, builder.Environment.IsDevelopment());
+        settings.PublicBaseUrl = PublicAppUrl.Normalize(settings.PublicBaseUrl, builder.Environment.IsDevelopment());
+    })
+    .Validate(settings =>
+    {
+        try { PublicAppUrl.Normalize(settings.PublicBaseUrl, builder.Environment.IsDevelopment()); return true; }
+        catch (InvalidOperationException) { return false; }
+    }, "Configure App__PublicBaseUrl with the public HTTPS website origin for applicant email links.")
+    .ValidateOnStart();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("Connection string 'DefaultConnection' is missing.");
@@ -72,7 +100,7 @@ try
 catch (Exception ex)
 {
     Console.Error.WriteLine("ABEC could not connect to MySQL during startup. The website will still start. Database features stay unavailable until MySQL is running on localhost:3306.");
-    Console.Error.WriteLine(ex.GetType().Name + ": " + ex.Message);
+    Console.Error.WriteLine("Startup database error type: " + ex.GetType().Name);
     serverVersion = ServerVersion.Parse("8.0.36-mysql");
 }
 
@@ -91,6 +119,7 @@ builder.Services.AddScoped<IEmailConfigService, EmailConfigService>();
 builder.Services.AddScoped<IPdfService, PdfService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IApplicantService, ApplicantService>();
+builder.Services.AddHostedService<SlotOfferExpiryWorker>();
 builder.Services.AddScoped<ApplicantRegistrationStorageService>();
 builder.Services.AddScoped<IBatchService, BatchService>();
 builder.Services.AddScoped<IBatchDocumentService, BatchDocumentService>();
@@ -110,18 +139,15 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AbecCors", policy =>
         policy
-            .WithOrigins(
-                "http://127.0.0.1:5500",
-                "http://localhost:5500",
-                "http://127.0.0.1:5188",
-                "http://localhost:5188",
-                "https://localhost:7162")
+            .WithOrigins(builder.Environment.IsDevelopment() ? RequestSecurityMiddleware.DevelopmentOrigins.ToArray()
+                : Array.Empty<string>())
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials());
 });
 
 var app = builder.Build();
+app.UseMiddleware<RequestSecurityMiddleware>();
 
 try
 {
@@ -132,14 +158,7 @@ try
         && !emailOpts.Password.Contains("YOUR_", StringComparison.OrdinalIgnoreCase)
         && !emailOpts.Password.Contains("APP_PASSWORD", StringComparison.OrdinalIgnoreCase);
     startupLog.LogInformation(
-        "Email SMTP: Enabled={Enabled} Host={Host}:{Port} From={FromName} <{FromAddress}> User={User} AppPasswordConfigured={PasswordSet}",
-        emailOpts.Enabled,
-        emailOpts.Host,
-        emailOpts.Port,
-        emailOpts.FromName,
-        emailOpts.FromAddress,
-        emailOpts.Username,
-        passwordSet);
+        "Email SMTP: Enabled={Enabled} AppPasswordConfigured={PasswordSet}", emailOpts.Enabled, passwordSet);
 
     var appOpts = app.Services.GetRequiredService<Microsoft.Extensions.Options.IOptions<ABEC_System.Options.AppSettings>>().Value;
     startupLog.LogInformation("PublicBaseUrl for applicant email links: {PublicBaseUrl}", appOpts.PublicBaseUrl);
@@ -156,7 +175,7 @@ try
 catch (Exception ex)
 {
     var logger = app.Services.GetRequiredService<ILoggerFactory>().CreateLogger("Startup");
-    logger.LogWarning(ex, "Database seeding skipped or failed. Ensure MySQL is running.");
+    logger.LogWarning("Database seeding skipped or failed ({ErrorType}). Check database availability and schema.", ex.GetType().Name);
 }
 
 var listensOnHttps = (app.Configuration["ASPNETCORE_URLS"] ?? "")
@@ -182,12 +201,17 @@ app.Use(async (context, next) =>
     catch (BatchIntegrityException ex)
     {
         context.Response.StatusCode = StatusCodes.Status409Conflict;
-        await context.Response.WriteAsJsonAsync(new { success = false, message = ex.Message });
+        await context.Response.WriteAsJsonAsync(new { success = false, message = ex.Message, field = ex.Field });
     }
     catch (Microsoft.EntityFrameworkCore.DbUpdateException ex) when (ex.InnerException is MySqlConnector.MySqlException { Number: 1062 })
     {
         context.Response.StatusCode = StatusCodes.Status409Conflict;
-        await context.Response.WriteAsJsonAsync(new { success = false, message = "A record in this batch already uses that email or contact number, or another unique identifier is already in use." });
+        var detail = ex.InnerException!.Message;
+        var field = detail.Contains("contact", StringComparison.OrdinalIgnoreCase) ? "contactNumber"
+            : detail.Contains("email", StringComparison.OrdinalIgnoreCase) ? "email" : null;
+        await context.Response.WriteAsJsonAsync(new { success = false, field, message = field == "contactNumber"
+            ? "Another registration in this batch already uses this contact number."
+            : field == "email" ? "Another registration in this batch already uses this email address." : "This identifier is already in use." });
     }
     catch (Exception ex)
     {
@@ -195,17 +219,33 @@ app.Use(async (context, next) =>
             throw;
 
         var log = context.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("ApiErrors");
-        log.LogError(ex, "API {Method} {Path} failed", context.Request.Method, context.Request.Path);
+        var errorReference = Guid.NewGuid().ToString("N");
+        log.LogError("API request failed ({ErrorType}); reference {ErrorReference}", ex.GetType().Name, errorReference);
         context.Response.StatusCode = StatusCodes.Status500InternalServerError;
         var databaseDown = IsDatabaseFailure(ex);
         await context.Response.WriteAsJsonAsync(new
         {
             success = false,
             message = databaseDown
-                ? "The ABEC database is not available. Start MySQL on localhost port 3306, then refresh this page."
-                : "The server could not complete this request."
+                ? "The ABEC database is temporarily unavailable. Please try again later. Reference: " + errorReference
+                : "The server could not complete this request. Reference: " + errorReference
         });
     }
+});
+
+app.UseAuthentication();
+app.Use(async (context, next) =>
+{
+    if (context.Request.Path.Equals("/Views/Student/ClassSchedule.html", StringComparison.OrdinalIgnoreCase))
+    {
+        var user = context.User;
+        if (!user.IsInRole("Student") || !int.TryParse(user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out var studentId))
+        { context.Response.StatusCode = 401; return; }
+        var db = context.RequestServices.GetRequiredService<ApplicationDbContext>();
+        if (!await db.Students.AnyAsync(s => s.StudentId == studentId && s.AccountStatus == "Active" && s.Batch!.Status == "Active", context.RequestAborted))
+        { context.Response.Redirect("/Views/Student/StudentDashboard.html"); return; }
+    }
+    await next();
 });
 
 // Existing HTML uses ../../wwwroot/... relative asset paths.
@@ -236,7 +276,6 @@ app.UseStaticFiles(new StaticFileOptions
 app.UseRouting();
 app.UseCors("AbecCors");
 app.UseRateLimiter();
-app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
@@ -265,26 +304,41 @@ app.MapGet("/api/health", async (ApplicationDbContext db, CancellationToken canc
         databaseMessage = database ? null : "MySQL is not accepting connections on localhost:3306."
     });
 });
-app.MapGet("/confirm-slot", async (string? token, IApplicantService applicants, CancellationToken ct) =>
-    Results.Content(await SlotPageAsync("confirm", token, applicants, ct), "text/html; charset=utf-8"));
+app.Use(async (context, next) =>
+{
+    if (context.Request.Path is var path && (path == "/confirm-slot" || path == "/reject-slot" || path == "/decline-slot"))
+    {
+        context.Response.Headers.CacheControl = "no-store";
+        context.Response.Headers["Referrer-Policy"] = "no-referrer";
+        context.Response.Headers["X-Robots-Tag"] = "noindex, nofollow";
+    }
+    await next();
+});
+app.MapGet("/confirm-slot", async (string? token, IApplicantService applicants, HttpContext context, IAntiforgery antiforgery, CancellationToken ct) =>
+    Results.Content(await SlotPageAsync("confirm", token, applicants, context, antiforgery, ct), "text/html; charset=utf-8"));
 
 app.MapPost("/confirm-slot", async (HttpRequest request, IApplicantService applicants, CancellationToken ct) =>
     Results.Content(await SlotPostAsync(true, request, applicants, ct), "text/html; charset=utf-8"));
 
-app.MapGet("/decline-slot", async (string? token, IApplicantService applicants, CancellationToken ct) =>
-    Results.Content(await SlotPageAsync("decline", token, applicants, ct), "text/html; charset=utf-8"));
+app.MapGet("/decline-slot", async (string? token, IApplicantService applicants, HttpContext context, IAntiforgery antiforgery, CancellationToken ct) =>
+    Results.Content(await SlotPageAsync("decline", token, applicants, context, antiforgery, ct), "text/html; charset=utf-8"));
 
 app.MapPost("/decline-slot", async (HttpRequest request, IApplicantService applicants, CancellationToken ct) =>
     Results.Content(await SlotPostAsync(false, request, applicants, ct), "text/html; charset=utf-8"));
 
+app.MapGet("/reject-slot", async (string? token, IApplicantService applicants, HttpContext context, IAntiforgery antiforgery, CancellationToken ct) =>
+    Results.Content(await SlotPageAsync("decline", token, applicants, context, antiforgery, ct), "text/html; charset=utf-8"));
+app.MapPost("/reject-slot", async (HttpRequest request, IApplicantService applicants, CancellationToken ct) =>
+    Results.Content(await SlotPostAsync(false, request, applicants, ct), "text/html; charset=utf-8"));
+
 app.Run();
 
-static async Task<string> SlotPageAsync(string action, string? token, IApplicantService applicants, CancellationToken ct)
+static async Task<string> SlotPageAsync(string action, string? token, IApplicantService applicants, HttpContext context, IAntiforgery antiforgery, CancellationToken ct)
 {
     try
     {
         var status = await applicants.DescribeSlotLinkAsync(token, ct);
-        return SlotActionPage.Intent(action, token, status);
+        return SlotActionPage.Intent(action, token, status, antiforgery.GetAndStoreTokens(context));
     }
     catch (Exception)
     {
@@ -307,7 +361,8 @@ static async Task<string> SlotPostAsync(bool confirm, HttpRequest request, IAppl
         if (!result.Success)
             return SlotActionPage.Failed(result.Message);
 
-        return SlotActionPage.Done(confirm, result.Data?.FullName);
+        return SlotActionPage.Done(result.Data?.IsSlotConfirmed == true, result.Data?.FullName,
+            result.Message.Contains("already", StringComparison.OrdinalIgnoreCase));
     }
     catch (Exception)
     {

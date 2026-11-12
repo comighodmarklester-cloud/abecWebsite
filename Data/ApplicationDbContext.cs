@@ -25,15 +25,28 @@ public partial class ApplicationDbContext : DbContext
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<StudentLoginCredential> StudentLoginCredentials => Set<StudentLoginCredential>();
     public DbSet<Student> Students => Set<Student>();
+    public DbSet<StudentDocumentEligibility> StudentDocumentEligibilities => Set<StudentDocumentEligibility>();
     public DbSet<UserSetting> UserSettings => Set<UserSetting>();
     public DbSet<ApplicantRegistrationDocument> ApplicantRegistrationDocuments => Set<ApplicantRegistrationDocument>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+        modelBuilder.Entity<StudentDocumentEligibility>(e =>
+        {
+            e.Property(x => x.StudentId).ValueGeneratedNever();
+            e.HasOne<Student>().WithOne().HasForeignKey<StudentDocumentEligibility>(x => x.StudentId).OnDelete(DeleteBehavior.Restrict);
+        });
+        modelBuilder.Entity<Notification>().HasOne<Batch>().WithMany().HasForeignKey(n => n.BatchId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<Notification>().HasOne<StudentCourseDocument>().WithMany().HasForeignKey(n => n.CourseDocumentId).OnDelete(DeleteBehavior.SetNull);
         modelBuilder.Entity<Notification>().HasOne<DocumentRequest>().WithMany()
             .HasForeignKey(n => n.RequestId).OnDelete(DeleteBehavior.SetNull);
 
+        modelBuilder.Entity<Batch>(e =>
+        {
+            e.Property<int?>("ActiveSlotKey").HasColumnName("active_slot_key").HasComputedColumnSql("CASE WHEN status = 'Active' THEN 1 ELSE NULL END", stored: true);
+            e.HasIndex("ActiveSlotKey").IsUnique().HasDatabaseName("ux_batch_active_slot");
+        });
         modelBuilder.Entity<Admin>(e =>
         {
             e.HasIndex(x => x.Username).IsUnique();
@@ -61,6 +74,12 @@ public partial class ApplicationDbContext : DbContext
                 .HasForeignKey(x => x.BatchId)
                 .OnDelete(DeleteBehavior.SetNull);
             e.Property(x => x.ApplicationDate).HasDefaultValueSql("CURRENT_TIMESTAMP(6)");
+            e.Property<bool>("LegacyContactConflict").HasColumnName("legacy_contact_conflict").HasDefaultValue(false);
+            e.Property<string>("BatchContactKey").HasColumnName("batch_contact_key").HasMaxLength(20).HasComputedColumnSql("CASE WHEN legacy_contact_conflict=1 THEN NULL ELSE CASE WHEN LENGTH(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(TRIM(contact_number), '+', ''), ' ', ''), '-', ''), '(', ''), ')', ''))=12 AND LEFT(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(TRIM(contact_number), '+', ''), ' ', ''), '-', ''), '(', ''), ')', ''),2)='63' THEN CONCAT('0',SUBSTRING(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(TRIM(contact_number), '+', ''), ' ', ''), '-', ''), '(', ''), ')', ''),3)) ELSE REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(TRIM(contact_number), '+', ''), ' ', ''), '-', ''), '(', ''), ')', '') END END", stored: true);
+            e.Property<string>("BatchEmailKey").HasColumnName("batch_email_key").HasMaxLength(100).HasComputedColumnSql("LOWER(TRIM(email))", stored: true);
+            e.HasIndex("BatchId", "BatchContactKey").IsUnique().HasDatabaseName("ux_batch_contact_key");
+            e.HasIndex("BatchId", "BatchEmailKey").IsUnique().HasDatabaseName("ux_batch_email_key");
+
             e.Property(x => x.ApplicationStatus).HasConversion<string>();
             e.HasIndex(x => x.ConfirmationToken).IsUnique();
             e.Property(x => x.ConfirmationToken).HasMaxLength(64);

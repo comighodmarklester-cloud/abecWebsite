@@ -388,28 +388,11 @@
   }
 
   function editMessage(text, kind) {
-    var el = document.getElementById('profile-edit-message');
-    if (!el) return;
-    el.textContent = text || '';
-    el.className = 'profile-edit-message' + (text ? ' is-' + (kind || 'error') : '');
+    window.AbecFeedback.inline(document.getElementById('profile-edit-message'), text, kind || 'error');
   }
 
   function pageMessage(text, kind) {
-    var el = document.getElementById('records-message');
-    if (!el) return;
-    if (!text) {
-      el.className = 'records-message hidden';
-      el.textContent = '';
-      return;
-    }
-    el.className = 'records-message ' + (kind || 'info');
-    el.textContent = text;
-    if (window.AbecFeedback) {
-      window.AbecFeedback.notify({
-        type: kind === 'ok' || kind === 'success' ? 'success' : (kind === 'error' ? 'error' : 'info'),
-        message: text
-      });
-    }
+    window.AbecFeedback.inline(document.getElementById('records-message'), text, kind || 'info');
   }
 
   function readEditor(form) {

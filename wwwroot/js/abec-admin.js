@@ -43,7 +43,7 @@
   }
 
   function placeRecordsPanel() {
-    if (!document.body.classList.contains('records-page') && !document.body.classList.contains('activation-page') && !document.body.classList.contains('documents-page')) return;
+    if (!document.body.classList.contains('records-page') && !document.body.classList.contains('activation-page') && !document.body.classList.contains('documents-page') && !document.body.classList.contains('batch-management-page')) return;
     var panel = document.getElementById('abec-bell-panel');
     var btn = document.getElementById('abec-bell-btn');
     if (!panel || !btn || panel.classList.contains('hidden')) return;
@@ -144,6 +144,10 @@
     document.getElementById('abec-refresh-btn').addEventListener('click', function () {
       if (typeof window.abecReportsRefresh === 'function') {
         window.abecReportsRefresh();
+        return;
+      }
+      if (window.AbecBatches && typeof window.AbecBatches.refresh === 'function') {
+        window.AbecBatches.refresh();
         return;
       }
       if (window.AbecDashboard && typeof window.AbecDashboard.refresh === 'function') {
@@ -269,10 +273,28 @@
   }
 
   window.abecReloadAdminNotifications = loadAdminNotifications;
+  window.AbecBatchChanges = {
+    publish: function () {
+      try { localStorage.setItem('abec-active-batch-revision', String(Date.now())); } catch (_) {}
+    }
+  };
+  var knownActiveBatch;
+  async function checkActiveBatchChange() {
+    if (!/\/(AdminDashboard|BatchManagement|StudentsApplicants|AccountActivation|StudentArchive|Reports|CourseManagement|CourseSchedule|DocumentManagement)\.html$/i.test(location.pathname) || document.hidden) return;
+    var result = await AbecApi.get('/api/batches/active');
+    if (!result.success) return;
+    var current = result.data ? result.data.batchId : 0;
+    if (knownActiveBatch !== undefined && knownActiveBatch !== current) { location.reload(); return; }
+    knownActiveBatch = current;
+  }
+  window.addEventListener('storage', function (event) {
+    if (event.key === 'abec-active-batch-revision') checkActiveBatchChange();
+  });
+  window.addEventListener('focus', checkActiveBatchChange);
 
   function mountProfileMenu() {
     if (!window.AbecProfileMenu) return;
-    if (document.body && document.body.classList.contains('reports-page')) return;
+    if (document.body && (document.body.classList.contains('reports-page') || document.body.classList.contains('batch-management-page'))) return;
     AbecProfileMenu.mountAdmin();
   }
 
@@ -305,7 +327,9 @@
       AbecApi.requireRole('Admin');
       keepSidebarAccount();
       loadAdminNotifications();
+      checkActiveBatchChange();
       setInterval(loadAdminNotifications, 30000);
+      setInterval(checkActiveBatchChange, 30000);
       loadProfileMenuScript(mountProfileMenu);
     }
   });

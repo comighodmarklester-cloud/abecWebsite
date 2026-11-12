@@ -39,7 +39,8 @@ public class DocumentRequestService : IDocumentRequestService
     public async Task<ApiResponse<IReadOnlyList<DocumentRequestDto>>> GetAllAsync(string? status = null, CancellationToken cancellationToken = default, int? batchId = null)
     {
         var query = BaseQuery();
-        if (batchId.HasValue) query = query.Where(r => r.Student!.BatchId == batchId);
+        var selectedBatchId = await _db.ResolveReadBatchIdAsync(batchId, cancellationToken);
+        query = query.Where(r => r.Student!.BatchId == selectedBatchId);
         if (!string.IsNullOrWhiteSpace(status) && !string.Equals(status, "all", StringComparison.OrdinalIgnoreCase))
         {
             var normalized = NormalizeStatus(status);
@@ -85,58 +86,13 @@ public class DocumentRequestService : IDocumentRequestService
         if (!studentExists)
             return ApiResponse<IReadOnlyList<StudentDocumentCatalogItemDto>>.Fail("Student not found.");
 
-        var requests = await BaseQuery()
-            .Where(r => r.StudentId == studentId)
-            .OrderByDescending(r => r.RequestDate)
-            .ToListAsync(cancellationToken);
-        var releasedDocuments = await _db.StudentCourseDocuments.AsNoTracking()
-            .Where(d => d.StudentId == studentId && d.PreparationStatus == SystemConstants.CourseDocumentStatuses.Released)
-            .Select(d => d.DocumentType)
-            .ToListAsync(cancellationToken);
-
-        var catalog = SystemConstants.DocumentStatuses.PostCourseCredentials.Select(docType =>
-        {
-            var latest = requests.FirstOrDefault(r =>
-                string.Equals(CanonicalDocumentType(r.DocumentType), docType, StringComparison.OrdinalIgnoreCase));
-
-            var courseReleased = releasedDocuments.Any(type => SystemConstants.DocumentStatuses.SameCourseDocument(type, docType));
-            if (latest is null)
-            {
-                return new StudentDocumentCatalogItemDto
-                {
-                    DocumentType = docType,
-                    Description = DocumentDescriptions.GetValueOrDefault(docType, "Document provided by ABEC"),
-                    Status = SystemConstants.DocumentStatuses.NotRequested,
-                    CanRequest = !courseReleased
-                };
-            }
-
-            var status = NormalizeStatus(latest.RequestStatus) ?? latest.RequestStatus;
-            var requestOpen = status is SystemConstants.DocumentStatuses.Pending
-                or SystemConstants.DocumentStatuses.Processing
-                or SystemConstants.DocumentStatuses.OnHold
-                or SystemConstants.DocumentStatuses.ReadyForRelease;
-            return new StudentDocumentCatalogItemDto
-            {
-                DocumentType = docType,
-                Description = DocumentDescriptions.GetValueOrDefault(docType, "Document provided by ABEC"),
-                Status = status,
-                RequestId = latest.RequestId,
-                Reason = latest.Reason,
-                SpecificReason = latest.SpecificReason,
-                HoldReason = latest.HoldReason,
-                RequestDate = latest.RequestDate,
-                ReleaseDate = latest.ReleaseDate,
-                CanRequest = !courseReleased && !requestOpen && (status is SystemConstants.DocumentStatuses.Released or SystemConstants.DocumentStatuses.Rejected)
-            };
-        }).ToList();
-
-        return ApiResponse<IReadOnlyList<StudentDocumentCatalogItemDto>>.Ok(catalog);
+        return ApiResponse<IReadOnlyList<StudentDocumentCatalogItemDto>>.Ok(await new StudentDocumentCatalog(_db).GetAsync(studentId, cancellationToken));
     }
 
-    public async Task<ApiResponse<DocumentRequestDashboardDto>> GetDashboardAsync(CancellationToken cancellationToken = default)
+    public async Task<ApiResponse<DocumentRequestDashboardDto>> GetDashboardAsync(CancellationToken cancellationToken = default, int? batchId = null)
     {
-        var all = await BaseQuery().ToListAsync(cancellationToken);
+        batchId = await _db.ResolveReadBatchIdAsync(batchId, cancellationToken);
+        var all = await BaseQuery().Where(r => r.Student!.BatchId == batchId).ToListAsync(cancellationToken);
         var abecRequests = all
             .Select(Map)
             .Where(r => IsAbecProvidedDocument(r.DocumentType))
@@ -193,33 +149,10 @@ public class DocumentRequestService : IDocumentRequestService
                 "Only ABEC-provided documents can be requested: National Certificate (TESDA), Payment Receipt, and Certificate of Completion.");
         }
 
-        var enrolled = await _db.Students.AsNoTracking()
-            .Include(s => s.Applicant).ThenInclude(a => a!.Course)
-            .Include(s => s.Batch)
-            .FirstOrDefaultAsync(s => s.StudentId == studentId, cancellationToken);
-        var program = CourseProgram.Match(enrolled?.Applicant?.Course?.CourseName);
-        var gate = CourseProgram.RequestGate(enrolled?.Batch?.StartDate, program, DateTime.Today);
-        if (!gate.Open)
-            return ApiResponse<DocumentRequestDto>.Fail(gate.Message);
-
-        var releasedTypes = await _db.StudentCourseDocuments.AsNoTracking()
-            .Where(d => d.StudentId == studentId
-                && d.PreparationStatus == SystemConstants.CourseDocumentStatuses.Released)
-            .Select(d => d.DocumentType)
-            .ToListAsync(cancellationToken);
-        var alreadyReleased = releasedTypes.Any(type => SystemConstants.DocumentStatuses.SameCourseDocument(type, documentType));
-        if (alreadyReleased)
-            return ApiResponse<DocumentRequestDto>.Fail("This document has already been released and cannot be requested again.");
-
-        var activeRows = await _db.DocumentRequests
-            .Where(r => r.StudentId == studentId
-                && r.RequestStatus != SystemConstants.DocumentStatuses.Released
-                && r.RequestStatus != SystemConstants.DocumentStatuses.Rejected)
-            .ToListAsync(cancellationToken);
-
-        if (activeRows.Any(r => string.Equals(CanonicalDocumentType(r.DocumentType), documentType, StringComparison.OrdinalIgnoreCase)))
-            return ApiResponse<DocumentRequestDto>.Fail("You already have an active request for this document.");
-
+        var eligibility = (await new StudentDocumentCatalog(_db).GetAsync(studentId, cancellationToken))
+            .Single(d => SystemConstants.DocumentStatuses.SameCourseDocument(d.DocumentType, documentType));
+        if (!eligibility.CanRequest)
+            return ApiResponse<DocumentRequestDto>.Fail(eligibility.RequestBlockedMessage ?? "This document cannot be requested.");
         var reason = string.IsNullOrWhiteSpace(dto.Reason) ? "Document request" : dto.Reason.Trim();
         var specific = (dto.SpecificReason ?? string.Empty).Trim();
         if (string.Equals(reason, "Other", StringComparison.OrdinalIgnoreCase))
@@ -282,7 +215,7 @@ public class DocumentRequestService : IDocumentRequestService
         if (entity is null)
             return ApiResponse<DocumentRequestDto>.Fail("Document request not found.");
 
-        await _db.RequireActiveBatchAsync(await _db.Students.Where(s => s.StudentId == entity.StudentId).Select(s => (int?)s.BatchId).SingleAsync(cancellationToken), cancellationToken);
+        await _db.RequireDocumentWriteAsync(entity.StudentId, cancellationToken);
         var current = NormalizeStatus(entity.RequestStatus) ?? entity.RequestStatus;
         if (string.Equals(current, normalized, StringComparison.OrdinalIgnoreCase))
             return ApiResponse<DocumentRequestDto>.Ok(Map(entity), "This request is already " + normalized + ".");
@@ -306,6 +239,9 @@ public class DocumentRequestService : IDocumentRequestService
         entity.ReleaseDate = normalized == SystemConstants.DocumentStatuses.Released ? DateTime.Now : null;
 
         await _db.SaveChangesAsync(cancellationToken);
+
+        await _notifications.CreateAdminAsync("Document Request Updated", $"Request #{entity.RequestId}: {entity.DocumentType} is {normalized}.",
+            cancellationToken: cancellationToken, requestId: entity.RequestId);
 
         var (title, message) = normalized switch
         {
@@ -365,7 +301,7 @@ public class DocumentRequestService : IDocumentRequestService
         if (entity is null)
             return ApiResponse<DocumentRequestDto>.Fail("Document request not found.");
 
-        await _db.RequireActiveBatchAsync(await _db.Students.Where(s => s.StudentId == entity.StudentId).Select(s => (int?)s.BatchId).SingleAsync(cancellationToken), cancellationToken);
+        await _db.RequireDocumentWriteAsync(entity.StudentId, cancellationToken);
         var current = NormalizeStatus(entity.RequestStatus) ?? entity.RequestStatus;
         if (current is not (SystemConstants.DocumentStatuses.Pending or SystemConstants.DocumentStatuses.Processing))
             return ApiResponse<DocumentRequestDto>.Fail("A file can be uploaded only while the request is Pending or Processing.");
@@ -376,11 +312,7 @@ public class DocumentRequestService : IDocumentRequestService
 
         var dir = Path.Combine(ReleaseRoot, entity.RequestId.ToString());
         Directory.CreateDirectory(dir);
-        if (!string.IsNullOrWhiteSpace(entity.ReleaseStoredPath))
-        {
-            var previous = Path.Combine(ReleaseRoot, entity.ReleaseStoredPath.Replace('/', Path.DirectorySeparatorChar));
-            if (File.Exists(previous)) File.Delete(previous);
-        }
+        // Previous objects are retained; replacement never destroys an existing released file.
 
         var safeOriginal = Path.GetFileName(file.FileName);
         var ext = Path.GetExtension(safeOriginal).ToLowerInvariant();
@@ -401,6 +333,8 @@ public class DocumentRequestService : IDocumentRequestService
         entity.ReleaseSizeBytes = file.Length;
         entity.ReleaseUploadedAt = DateTime.Now;
         await _db.SaveChangesAsync(cancellationToken);
+        await _notifications.CreateAdminAsync("Document File Uploaded", $"Release file uploaded for request #{entity.RequestId}.",
+            cancellationToken: cancellationToken, requestId: entity.RequestId);
         return ApiResponse<DocumentRequestDto>.Ok(Map(entity), "Document file uploaded.");
     }
 
@@ -410,7 +344,8 @@ public class DocumentRequestService : IDocumentRequestService
         if (entity is null)
             return ApiResponse<DocumentRequestDto>.Fail("Document request not found.");
 
-        await _db.RequireActiveBatchAsync(await _db.Students.Where(s => s.StudentId == entity.StudentId).Select(s => (int?)s.BatchId).SingleAsync(cancellationToken), cancellationToken);
+        await _db.RequireDocumentWriteAsync(entity.StudentId, cancellationToken);
+        if (entity.RequestStatus == "Released") return ApiResponse<DocumentRequestDto>.Fail("Released files must be preserved.");
         var current = NormalizeStatus(entity.RequestStatus) ?? entity.RequestStatus;
         if (current is not (SystemConstants.DocumentStatuses.Pending or SystemConstants.DocumentStatuses.Processing))
             return ApiResponse<DocumentRequestDto>.Fail("A file can be removed only while the request is Pending or Processing.");
@@ -439,13 +374,9 @@ public class DocumentRequestService : IDocumentRequestService
         if (entity is null || string.IsNullOrWhiteSpace(entity.ReleaseStoredPath))
             return (null, null, null, "No file is stored for this request.");
 
-        var root = Path.GetFullPath(ReleaseRoot);
-        var fullPath = Path.GetFullPath(Path.Combine(root, entity.ReleaseStoredPath.Replace('/', Path.DirectorySeparatorChar)));
-        if (!fullPath.StartsWith(root + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase) || !File.Exists(fullPath))
-            return (null, null, null, "The stored file is missing.");
-
-        var stream = new FileStream(fullPath, FileMode.Open, FileAccess.Read, FileShare.Read);
-        return (stream, entity.ReleaseContentType, entity.ReleaseFileName, null);
+        var (stream, contentType) = await UploadedDocument.OpenAsync(ReleaseRoot, entity.ReleaseStoredPath, cancellationToken);
+        return stream is null ? (null, null, null, "The stored file is missing or has an unsupported type.")
+            : (stream, contentType, Path.GetFileName(entity.ReleaseFileName), null);
     }
 
     public async Task<ApiResponse<object>> BulkUpdateStatusAsync(BulkStatusDto dto, CancellationToken cancellationToken = default)
@@ -455,9 +386,12 @@ public class DocumentRequestService : IDocumentRequestService
             return ApiResponse<object>.Fail("Invalid document request status.");
 
         var requests = await _db.DocumentRequests.Where(r => dto.Ids.Contains(r.RequestId)).ToListAsync(cancellationToken);
-        var updated = 0;
+        if (normalized == SystemConstants.DocumentStatuses.Released && requests.Any(r => string.IsNullOrWhiteSpace(r.ReleaseStoredPath)))
+            return ApiResponse<object>.Fail("Every released request must have its own uploaded file.");
+        var changed = new List<DocumentRequest>();
         foreach (var request in requests)
         {
+            await _db.RequireDocumentWriteAsync(request.StudentId, cancellationToken);
             var current = NormalizeStatus(request.RequestStatus) ?? request.RequestStatus;
             if (!IsTransitionAllowed(current, normalized))
                 continue;
@@ -467,11 +401,17 @@ public class DocumentRequestService : IDocumentRequestService
             request.DocumentType = CanonicalDocumentType(request.DocumentType);
             request.RequestStatus = normalized;
             request.ReleaseDate = normalized == SystemConstants.DocumentStatuses.Released ? DateTime.Now : null;
-            updated++;
+            changed.Add(request);
         }
 
         await _db.SaveChangesAsync(cancellationToken);
-        return ApiResponse<object>.Ok(new { updated }, "Bulk document status update completed.");
+        foreach (var request in changed)
+        {
+            await _notifications.CreateAdminAsync("Document Request Updated", $"Request #{request.RequestId}: {request.DocumentType} is {normalized}.",
+                cancellationToken: cancellationToken, requestId: request.RequestId);
+            await _notifications.CreateAsync("Document Status Updated", $"Your {request.DocumentType} request is now: {normalized}.", studentId: request.StudentId, cancellationToken: cancellationToken);
+        }
+        return ApiResponse<object>.Ok(new { updated = changed.Count }, "Bulk document status update completed.");
     }
 
     private IQueryable<DocumentRequest> BaseQuery()
@@ -506,14 +446,8 @@ public class DocumentRequestService : IDocumentRequestService
         var ext = Path.GetExtension(Path.GetFileName(file.FileName)).ToLowerInvariant();
         if (!SystemConstants.RegistrationUploadLimits.AllowedExtensions.Contains(ext))
             return "Allowed file types: PDF, JPG, JPEG, PNG.";
-        var header = new byte[8];
         await using var stream = file.OpenReadStream();
-        var read = await stream.ReadAsync(header.AsMemory(0, 8), cancellationToken);
-        var valid = ext == ".pdf"
-            ? read >= 4 && header[0] == (byte)'%' && header[1] == (byte)'P' && header[2] == (byte)'D' && header[3] == (byte)'F'
-            : ext is ".jpg" or ".jpeg"
-                ? read >= 3 && header[0] == 0xFF && header[1] == 0xD8 && header[2] == 0xFF
-                : read >= 8 && header[0] == 0x89 && header[1] == 0x50 && header[2] == 0x4E && header[3] == 0x47;
+        var valid = await UploadedDocument.HasSignatureAsync(stream, UploadedDocument.ContentType("file" + ext), cancellationToken);
         return valid ? null : "The uploaded file does not match its file type.";
     }
 

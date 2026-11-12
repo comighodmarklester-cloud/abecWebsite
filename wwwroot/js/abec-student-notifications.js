@@ -7,7 +7,6 @@
   var LEGACY_STORAGE_KEY = 'abec-student-archived-notifications';
   try { localStorage.removeItem(LEGACY_STORAGE_KEY); } catch (e) { /* ignore */ }
 
-  var toastTimer = null;
   var currentFilter = 'all';
   var wired = false;
 
@@ -78,12 +77,7 @@
   }
 
   function showToast(message) {
-    var toastEl = document.getElementById('toast-message');
-    if (!toastEl) return;
-    toastEl.textContent = message;
-    toastEl.classList.add('is-visible');
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(function () { toastEl.classList.remove('is-visible'); }, 3200);
+    window.AbecFeedback.notify({ message: message });
   }
 
   function syncInboxEmpty() {
@@ -801,6 +795,9 @@
     wireUi();
     refreshBadgeOnly();
     setInterval(refreshBadgeOnly, 30000);
-    if (window.location.hash === '#notifications') openPopup();
+    if (window.location.hash === '#notifications') {
+      AbecApi.consumePageAction([], '#notifications');
+      openPopup();
+    }
   });
 })();

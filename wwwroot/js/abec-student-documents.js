@@ -179,16 +179,8 @@
     return status === 'Pending' || status === 'Processing' || status === 'On Hold';
   }
 
-  function requestsAreOpen() {
-    var timeline = coursePack && coursePack.timeline;
-    return !!(timeline && timeline.requestsOpen);
-  }
-
   function eligibleDocumentTypes() {
-    if (!requestsAreOpen()) return [];
-    return (coursePack && coursePack.documents || []).filter(function (doc) {
-      return prepLabel(doc.preparationStatus) !== 'Released' && !requestIsActive(latestRequest(doc.documentType));
-    }).map(function (doc) { return doc.documentType; });
+    return (coursePack && coursePack.catalog || []).filter(function (doc) { return doc.canRequest; }).map(function (doc) { return doc.documentType; });
   }
 
   function renderReleaseBoard() {
@@ -206,9 +198,7 @@
     if (timeline.programSummary) lines.push('<p class="mt-1">Course program: ' + esc(timeline.programSummary) + '</p>');
     if (timeline.batchName) lines.push('<p class="mt-1">Batch: ' + esc(timeline.batchName) + '</p>');
     lines.push('<p class="mt-1">' + esc(timeline.studentReleaseMessage || 'The release date has not yet been determined.') + '</p>');
-    if (!timeline.requestsOpen) {
-      lines.push('<p class="mt-2 font-semibold text-amber-800">Document requests will become available after you complete your training.</p>');
-    }
+    lines.push('<p class="mt-2">Each document has its own eligibility rule. Individual payment and completion must be verified by the registrar.</p>');
     if (timeline.trainingCompletionDisplay) lines.push('<p class="mt-1">Training completion: ' + esc(timeline.trainingCompletionDisplay) + '</p>');
     if (timeline.assessmentDisplay) lines.push('<p class="mt-1">Assessment date: ' + esc(timeline.assessmentDisplay) + '</p>');
     host.innerHTML = lines.join('');
@@ -217,7 +207,11 @@
   function renderCatalog() {
     var host = document.getElementById('credentials-grid');
     if (!host) return;
-    var documents = (coursePack && coursePack.documents) || [];
+    var existing = coursePack && coursePack.documents || [];
+    var documents = (coursePack && coursePack.catalog || []).map(function (item) {
+      var stored = existing.find(function (d) { return sameDocument(d.documentType, item.documentType); }) || {};
+      return Object.assign({}, stored, item, { preparationStatus: item.status === 'Released' ? 'Released' : stored.preparationStatus || 'Not Prepared' });
+    });
     if (!documents.length) {
       host.innerHTML = '<div class="rounded-xl border border-slate-200 px-4 py-8 text-center text-sm text-slate-500 md:col-span-2">Course documents could not be loaded.</div>';
       return;
@@ -229,18 +223,17 @@
       var requestStatus = request ? normalizeStatus(request.requestStatus) : '';
       var released = prep === 'Released';
       var active = requestIsActive(request);
-      var canRequest = requestsAreOpen() && !released && !active;
+      var canRequest = doc.canRequest;
       var action = '';
       if (canRequest) {
         action = '<button type="button" class="doc-request-btn mt-3 w-full bg-abec-navy hover:bg-[#1A4B7A] text-white text-xs font-bold px-3 py-2.5 rounded-md transition-colors" data-doc-type="' + esc(doc.documentType) + '">' +
           (requestStatus === 'Rejected' ? 'Request Again' : 'Request Document') + '</button>';
       } else if (released) {
-        action = doc.hasFile
-          ? '<div class="mt-3 flex gap-2"><a class="inline-flex flex-1 items-center justify-center rounded-md bg-abec-navy px-3 py-2.5 text-xs font-bold text-white" href="/api/course-documents/' + encodeURIComponent(doc.courseDocumentId) + '/file?studentId=' + encodeURIComponent(currentStudentId) + '&inline=true" target="_blank" rel="noopener">View</a>' +
-            '<a class="inline-flex flex-1 items-center justify-center rounded-md border border-abec-navy px-3 py-2.5 text-xs font-bold text-abec-navy" href="/api/course-documents/' + encodeURIComponent(doc.courseDocumentId) + '/file?studentId=' + encodeURIComponent(currentStudentId) + '">Download</a></div>'
-          : '<p class="mt-3 text-[11px] text-slate-500">This document has been released.</p>';
+        action = doc.downloadUrl
+          ? '<div class="mt-3 flex gap-2"><a class="doc-link" href="' + esc(doc.downloadUrl) + '?inline=true" target="_blank" rel="noopener">View</a><a class="doc-link" href="' + esc(doc.downloadUrl) + '">Download</a></div>'
+          : '<p class="mt-3 text-xs">Released. Contact the registrar if a soft copy is unavailable.</p>';
       } else {
-        action = '<p class="mt-3 text-[11px] text-slate-500">Your request is open. Status updates when ABEC processes it.</p>';
+        action = '<p class="mt-3 text-xs text-slate-600">' + esc(doc.requestBlockedMessage || 'Not currently eligible.') + '</p>';
       }
       var requestBlock = '';
       if (request && !released && requestStatus !== 'Released') {
@@ -359,6 +352,7 @@
   function applyNotificationTarget() {
     if (notificationTargetApplied) return;
     var params = new URLSearchParams(window.location.search);
+    if (params.has('requestType')) params = AbecApi.consumePageAction(['requestType']);
     var requestType = (params.get('requestType') || '').trim().toLowerCase();
     if (!requestType) return;
     var row = Array.from(document.querySelectorAll('#request-tracking-list [data-document-type]')).find(function (el) {
@@ -394,17 +388,16 @@
   function populateDocumentSelect(selected) {
     var select = document.getElementById('req-document');
     if (!select) return;
-    var eligible = eligibleDocumentTypes();
-    var options = DOC_OPTIONS.filter(function (d) { return eligible.indexOf(d.value) >= 0; });
-    if (!options.length) options = DOC_OPTIONS.filter(function (d) { return d.value === selected; });
-    select.innerHTML = options.map(function (d) {
-      return '<option value="' + esc(d.value) + '"' + (d.value === selected ? ' selected' : '') + '>' + esc(d.label) + '</option>';
-    }).join('');
+    select.innerHTML = '<option value="' + esc(selected) + '">' + esc(selected) + '</option>';
+    select.disabled = true;
+    var title = document.getElementById('new-request-title');
+    if (title) title.textContent = 'Request ' + selected;
+
   }
 
   function openModal(docType) {
     var modal = document.getElementById('new-request-modal');
-    if (!modal) return;
+    if (!modal || eligibleDocumentTypes().indexOf(docType) < 0) return;
     populateDocumentSelect(docType || DOC_OPTIONS[0].value);
     var purposeEl = document.getElementById('req-purpose');
     var purposeOtherEl = document.getElementById('req-purpose-other');
@@ -515,7 +508,7 @@
     };
     if (specificReason) payload.specificReason = specificReason;
 
-    var result = await AbecApi.post('/api/document-requests/student/' + session.userId, payload);
+    var result = await AbecApi.request('/api/document-requests/student/' + session.userId, { method: 'POST', body: payload, attempts: 1 });
 
     alert(result.message || (result.success ? 'Request submitted. Status is now Pending.' : 'Unable to submit request.'));
     if (result.success) {

@@ -7,21 +7,7 @@
   var refreshMessage = '';
 
   function pageMessage(text, kind) {
-    var el = document.getElementById('records-message');
-    if (!el) return;
-    if (!text) {
-      el.className = 'records-message hidden';
-      el.textContent = '';
-      return;
-    }
-    el.className = 'records-message ' + (kind || 'info');
-    el.textContent = text;
-    if (window.AbecFeedback) {
-      window.AbecFeedback.notify({
-        type: kind === 'ok' || kind === 'success' ? 'success' : (kind === 'error' ? 'error' : 'info'),
-        message: text
-      });
-    }
+    window.AbecFeedback.inline(document.getElementById('records-message'), text, kind || 'info');
   }
 
   function loadScript(src) {
@@ -105,7 +91,7 @@
   }
 
   async function mountRegistration() {
-    var response = await fetch((window.AbecApi && AbecApi.page) ? AbecApi.page('/Views/Home/LandingPage.html') : '/Views/Home/LandingPage.html', { cache: 'no-store' });
+    var response = await fetch('../Home/LandingPage.html', { cache: 'no-store', redirect: 'error' });
     if (!response.ok) throw new Error('The registration form could not be loaded.');
     var html = await response.text();
     var parsed = new DOMParser().parseFromString(html, 'text/html');
@@ -118,8 +104,7 @@
     }
     var modal = parsed.getElementById('enroll-modal');
     var confirm = parsed.getElementById('enroll-close-confirm');
-    var sourceScript = parsed.querySelector('script[data-purpose="enroll-modal"]');
-    if (!modal || !confirm || !sourceScript) throw new Error('The registration form could not be loaded.');
+    if (!modal || !confirm) throw new Error('The registration form could not be loaded.');
 
     var host = document.createElement('div');
     host.id = 'admin-registration-host';
@@ -133,9 +118,7 @@
     if (formTitle) formTitle.textContent = 'Add New Applicant';
     styleCloseButtons();
 
-    var script = document.createElement('script');
-    script.textContent = sourceScript.textContent || '';
-    document.body.appendChild(script);
+    await loadScript('../../wwwroot/js/abec-enroll-modal.js?v=20261112security1');
 
     var originalRequestClose = window.requestCloseEnrollModal;
     window.requestCloseEnrollModal = function () {
@@ -159,8 +142,8 @@
         .then(function () { pageMessage(message, 'ok'); });
     };
 
-    await loadScript('../../wwwroot/js/abec-landing.js?v=20261019add1');
-    await loadScript('../../wwwroot/js/abec-enroll-wizard.js?v=20261031ux1');
+    await loadScript('../../wwwroot/js/abec-landing.js?v=20261112security1');
+    await loadScript('../../wwwroot/js/abec-enroll-wizard.js?v=20261112features1');
     if (window.AbecEnrollWizard) {
       window.AbecEnrollWizard.onSubmitted = function (result) {
         refreshAfterClose = true;

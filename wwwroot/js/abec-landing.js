@@ -54,6 +54,7 @@
 
   function formatBarangayName(name) {
     name = repairMojibake(String(name || '').trim());
+    if (AbecApi.formatBarangay) return AbecApi.formatBarangay(name);
     if (!name) return name;
     if (/^Bgy\./i.test(name)) name = 'Brgy.' + name.slice(4);
     else if (/^Bgy\s/i.test(name)) name = 'Brgy. ' + name.slice(4);
@@ -142,10 +143,8 @@
     var input = document.getElementById(inputId);
     var error = document.getElementById(errorId);
     if (input) input.classList.toggle('enroll-input-error', !!message);
-    if (error) {
-      error.textContent = message || '';
-      error.classList.toggle('is-visible', !!message);
-    }
+    if (input) input.setAttribute('aria-invalid', message ? 'true' : 'false');
+    window.AbecFeedback.inline(error, message, 'error');
   }
 
   function clearErrors() {
@@ -323,13 +322,20 @@
 
   function fillSelect(selectEl, options, placeholder, selectedCode) {
     if (!selectEl) return;
-    var html = '<option value="" ' + (selectedCode ? '' : 'selected ') + 'disabled>' + placeholder + '</option>';
+    selectEl.replaceChildren();
+    var prompt = document.createElement('option');
+    prompt.value = '';
+    prompt.textContent = placeholder;
+    prompt.disabled = true;
+    prompt.selected = !selectedCode;
+    selectEl.appendChild(prompt);
     options.forEach(function (item) {
-      var selected = selectedCode && item.code === selectedCode ? ' selected' : '';
-      html += '<option value="' + String(item.code).replace(/"/g, '&quot;') + '"' + selected + '>' +
-        String(item.name).replace(/</g, '&lt;') + '</option>';
+      var option = document.createElement('option');
+      option.value = String(item.code);
+      option.textContent = String(item.name);
+      option.selected = !!selectedCode && item.code === selectedCode;
+      selectEl.appendChild(option);
     });
-    selectEl.innerHTML = html;
   }
 
   function findOptionByCode(list, code) {
@@ -572,6 +578,11 @@
   }
 
   function wireAddressFields() {
+    var barangayInput = document.getElementById('enroll-barangay');
+    if (barangayInput) barangayInput.addEventListener('input', function () {
+      barangayInput.value = barangayInput.value.replace(/^\s*(?:(?:barangay|brgy|bgy)(?:\.\s*|\s+|$))+/i, '');
+      addressState.barangay = barangayInput.value;
+    });
     bindAddressInput('enroll-province', 'province');
     bindAddressInput('enroll-city', 'city');
     bindAddressInput('enroll-barangay', 'barangay');
@@ -626,7 +637,7 @@
     readAddressInputs();
     var parts = [
       addressValue(addressState.street),
-      addressValue(addressState.barangay),
+      AbecApi.formatBarangay ? AbecApi.formatBarangay(addressValue(addressState.barangay)) : addressValue(addressState.barangay),
       addressValue(addressState.district),
       addressValue(addressState.city),
       addressValue(addressState.province),
@@ -767,10 +778,22 @@
     }
 
     if (contactInput) {
+      var contactTypingError = '';
+      function clearContactError() {
+        window.AbecFeedback.dismissInline(document.getElementById('enroll-contact-error'));
+        setError('enroll-contact', 'enroll-contact-error', '');
+      }
+
+      form.addEventListener('reset', function () {
+        contactTypingError = '';
+        clearContactError();
+      });
+
       if (!contactInput.value) contactInput.value = '+63';
       syncContactPrefixStyle(contactInput);
 
       contactInput.addEventListener('focus', function () {
+        clearContactError();
         if (isContactPrefixOnly(contactInput.value)) {
           contactInput.value = '+63';
           syncContactPrefixStyle(contactInput);
@@ -787,13 +810,8 @@
         contactInput.value = next;
         syncContactPrefixStyle(contactInput);
 
-        if (/[A-Za-z]/.test(before)) {
-          setError('enroll-contact', 'enroll-contact-error', 'Numbers only. Letters are not allowed.');
-        } else if (!isContactPrefixOnly(next)) {
-          setError('enroll-contact', 'enroll-contact-error', validateContact(next));
-        } else {
-          setError('enroll-contact', 'enroll-contact-error', '');
-        }
+        contactTypingError = /[A-Za-z]/.test(before) ? 'Numbers only. Letters are not allowed.' : '';
+        clearContactError();
       });
 
       contactInput.addEventListener('keydown', function (e) {
@@ -802,22 +820,18 @@
           e.preventDefault();
           contactInput.value = formatContact(e.key);
           syncContactPrefixStyle(contactInput);
-          setError('enroll-contact', 'enroll-contact-error', '');
+          contactTypingError = '';
+          clearContactError();
           return;
         }
       });
 
       contactInput.addEventListener('blur', function () {
         var next = formatContact(contactInput.value);
-        if (isContactPrefixOnly(next)) {
-          contactInput.value = '+63';
-          syncContactPrefixStyle(contactInput);
-          setError('enroll-contact', 'enroll-contact-error', '');
-          return;
-        }
         contactInput.value = next;
         syncContactPrefixStyle(contactInput);
-        setError('enroll-contact', 'enroll-contact-error', validateContact(next));
+        var error = validateContact(next);
+        setError('enroll-contact', 'enroll-contact-error', error ? (contactTypingError || error) : '');
       });
     }
 
@@ -927,11 +941,11 @@
   }
 
   function courseDetailKey(courseName) {
-    var name = String(courseName || '').toLowerCase();
-    if (name.indexOf('bookkeep') >= 0) return 'bookkeeping';
-    if (name.indexOf('customer') >= 0) return 'customer';
-    if (name.indexOf('electronic') >= 0) return 'electronic';
-    if (name.indexOf('computer') >= 0) return 'computer';
+    var name = String(courseName || '').replace(/\s*NC\s*II\b/gi, '').trim().toLowerCase();
+    if (name === 'bookkeeping') return 'bookkeeping';
+    if (/^customer services?$/.test(name)) return 'customer';
+    if (/^electronic products? assembly and servicing$/.test(name)) return 'electronic';
+    if (/^computer systems? servicing$/.test(name)) return 'computer';
     return '';
   }
 
@@ -948,7 +962,20 @@
       if (!Array.isArray(rows)) return;
       rows.forEach(function (course) {
         var key = courseDetailKey(course.courseName || course.CourseName);
-        if (!key) return;
+        if (!key) {
+          var grid = document.querySelector('#courses .grid');
+          if (!grid || grid.querySelector('[data-public-course-id="' + Number(course.courseId) + '"]')) return;
+          var card = document.createElement('article');
+          card.className = 'abec-card abec-new-public-course';
+          card.setAttribute('data-public-course-id', String(course.courseId));
+          var title = document.createElement('h3'); title.textContent = course.courseName;
+          var description = document.createElement('p'); description.textContent = course.courseDescription || '';
+          var duration = document.createElement('p'); duration.textContent = course.programSummary || course.duration;
+          var hours = document.createElement('p'); hours.textContent = course.totalHours + ' total training hours';
+          card.appendChild(title); card.appendChild(description); card.appendChild(duration); card.appendChild(hours);
+          grid.appendChild(card);
+          return;
+        }
         var total = Number(course.totalHours || course.TotalHours || 0);
         var days = Number(course.trainingDays || course.TrainingDays || 0);
         var ojt = Number(course.ojtDays || course.OjtDays || 0);

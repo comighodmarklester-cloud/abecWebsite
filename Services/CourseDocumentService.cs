@@ -36,17 +36,14 @@ public class CourseDocumentService : ICourseDocumentService
         if (course is null)
             return ApiResponse<CourseReleaseBoardDto>.Fail("Course not found.");
 
-        var archivedIds = await _db.Archives.AsNoTracking()
-            .Select(a => a.StudentId)
-            .ToListAsync(cancellationToken);
-        var archived = archivedIds.ToHashSet();
+        var selectedBatchId = await _db.ResolveReadBatchIdAsync(batchId, cancellationToken);
 
         var students = await _db.Students.AsNoTracking()
             .Include(s => s.Applicant)
             .Include(s => s.Batch)
             .Where(s => s.Applicant != null && s.Applicant.CourseId == courseId)
             .ToListAsync(cancellationToken);
-        students = students.Where(s => !archived.Contains(s.StudentId)).ToList();
+        // Archived enrollment records retain document access and batch ownership.
 
         var batchIds = students.Select(s => s.BatchId).Distinct().ToList();
         var scheduleBatchIds = await _db.CourseSchedules.AsNoTracking()
@@ -56,7 +53,7 @@ public class CourseDocumentService : ICourseDocumentService
             .ToListAsync(cancellationToken);
         var allBatchIds = batchIds.Concat(scheduleBatchIds).Distinct().ToList();
         var batches = await _db.Batches.AsNoTracking()
-            .Where(b => allBatchIds.Contains(b.BatchId))
+            .Where(b => allBatchIds.Contains(b.BatchId) || b.BatchId == selectedBatchId)
             .ToListAsync(cancellationToken);
 
         var options = batches
@@ -70,20 +67,9 @@ public class CourseDocumentService : ICourseDocumentService
             .ThenBy(b => b.BatchName)
             .ToList();
 
-        Batch? selected = null;
-        if (batchId is > 0)
-            selected = batches.FirstOrDefault(b => b.BatchId == batchId);
-        if (batchId is > 0 && selected is null)
-            selected = await _db.Batches.AsNoTracking().FirstOrDefaultAsync(b => b.BatchId == batchId, cancellationToken);
-        if (batchId is > 0 && selected is null) return ApiResponse<CourseReleaseBoardDto>.Fail("Batch not found.");
-        selected ??= batches
-            .OrderByDescending(b => students.Count(s => s.BatchId == b.BatchId))
-            .ThenByDescending(b => b.StartDate)
-            .FirstOrDefault();
-
-        var inBatch = selected is null
-            ? students
-            : students.Where(s => s.BatchId == selected.BatchId).ToList();
+        var selected = batches.FirstOrDefault(b => b.BatchId == selectedBatchId);
+        if (batchId.HasValue && selected is null) return ApiResponse<CourseReleaseBoardDto>.Fail("Batch not found.");
+        var inBatch = students.Where(s => s.BatchId == selectedBatchId).ToList();
 
         var studentIds = inBatch.Select(s => s.StudentId).ToList();
         var documents = await _db.StudentCourseDocuments.AsNoTracking()
@@ -156,16 +142,24 @@ public class CourseDocumentService : ICourseDocumentService
         if (student?.Applicant is null)
             return ApiResponse<StudentCourseReleaseDto>.Fail("Student not found.");
 
-        var rows = student.Batch?.Status == "Active"
-            ? await EnsureDocumentsAsync(student, cancellationToken)
-            : await _db.StudentCourseDocuments.AsNoTracking().Where(d => d.StudentId == studentId).ToListAsync(cancellationToken);
+        var rows = await _db.StudentCourseDocuments.AsNoTracking().Where(d => d.StudentId == studentId).ToListAsync(cancellationToken);
         var timeline = BuildTimeline(student.Applicant.Course, student.Batch);
         var pack = new StudentCourseReleaseDto
         {
+            Catalog = await new StudentDocumentCatalog(_db).GetAsync(studentId, cancellationToken),
             Timeline = timeline,
             Documents = rows.Select(row => MapDocument(row, timeline)).ToList()
         };
         return ApiResponse<StudentCourseReleaseDto>.Ok(pack);
+    }
+
+    public async Task<ApiResponse<StudentCourseReleaseDto>> PrepareAsync(int studentId, CancellationToken ct = default)
+    {
+        if (!_db.DocumentAdministration) return ApiResponse<StudentCourseReleaseDto>.Fail("Administrator permission is required.");
+        var student = await _db.Students.Include(s => s.Applicant).Include(s => s.Batch).SingleOrDefaultAsync(s => s.StudentId == studentId, ct);
+        if (student?.Applicant is null) return ApiResponse<StudentCourseReleaseDto>.Fail("Student not found.");
+        await EnsureDocumentsAsync(student, ct);
+        return await GetStudentReleaseAsync(studentId, ct);
     }
 
     public async Task<ApiResponse<StudentCourseDocumentDto>> UploadAsync(
@@ -188,14 +182,14 @@ public class CourseDocumentService : ICourseDocumentService
         if (entity.PreparationStatus == SystemConstants.CourseDocumentStatuses.Released)
             return ApiResponse<StudentCourseDocumentDto>.Fail("This document has already been released and its file can no longer be replaced.");
 
-        await _db.RequireActiveBatchAsync(entity.BatchId, cancellationToken);
+        await _db.RequireDocumentWriteAsync(entity.StudentId, cancellationToken);
         var validation = await ValidateFileAsync(file, cancellationToken);
         if (validation is not null)
             return ApiResponse<StudentCourseDocumentDto>.Fail(validation);
 
         var dir = Path.Combine(StorageRoot, entity.StudentId.ToString(), entity.CourseDocumentId.ToString());
         Directory.CreateDirectory(dir);
-        DeleteStoredFile(entity.StoredPath);
+        // Preserve the previous object if the new upload or database save fails.
 
         var safeOriginal = Path.GetFileName(file.FileName);
         var ext = Path.GetExtension(safeOriginal).ToLowerInvariant();
@@ -213,6 +207,8 @@ public class CourseDocumentService : ICourseDocumentService
         entity.CourseId = entity.Student?.Applicant?.CourseId ?? entity.CourseId;
         entity.BatchId = entity.Student?.BatchId ?? entity.BatchId;
         await _db.SaveChangesAsync(cancellationToken);
+        await _notifications.CreateAdminAsync("Course Document Prepared", $"{entity.DocumentType} prepared for student {entity.StudentId}.",
+            cancellationToken: cancellationToken, courseDocumentId: entity.CourseDocumentId);
 
         var timeline = BuildTimeline(entity.Student?.Applicant?.Course, entity.Student?.Batch);
         return ApiResponse<StudentCourseDocumentDto>.Ok(MapDocument(entity, timeline), "Document uploaded. It is ready for release.");
@@ -275,6 +271,8 @@ public class CourseDocumentService : ICourseDocumentService
             // The release itself is already stored.
         }
 
+        await _notifications.CreateAdminAsync("Course Document Released", $"{entity.DocumentType} released for student {entity.StudentId}.",
+            cancellationToken: cancellationToken, courseDocumentId: entity.CourseDocumentId);
         var timeline = BuildTimeline(entity.Student?.Applicant?.Course, entity.Student?.Batch);
         return ApiResponse<StudentCourseDocumentDto>.Ok(MapDocument(entity, timeline), "Document released.");
     }
@@ -335,13 +333,9 @@ public class CourseDocumentService : ICourseDocumentService
         if (studentId is > 0 && studentId != entity.StudentId)
             return (null, null, null, "You can only open your own released documents.");
 
-        var root = Path.GetFullPath(StorageRoot);
-        var fullPath = Path.GetFullPath(Path.Combine(root, entity.StoredPath.Replace('/', Path.DirectorySeparatorChar)));
-        if (!fullPath.StartsWith(root + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase) || !File.Exists(fullPath))
-            return (null, null, null, "The stored file is missing.");
-
-        var stream = new FileStream(fullPath, FileMode.Open, FileAccess.Read, FileShare.Read);
-        return (stream, entity.ContentType, entity.FileName, null);
+        var (stream, contentType) = await UploadedDocument.OpenAsync(StorageRoot, entity.StoredPath, cancellationToken);
+        return stream is null ? (null, null, null, "The stored file is missing or has an unsupported type.")
+            : (stream, contentType, Path.GetFileName(entity.FileName), null);
     }
 
     private async Task<List<StudentCourseDocument>> EnsureDocumentsAsync(Student student, CancellationToken cancellationToken)
@@ -407,7 +401,7 @@ public class CourseDocumentService : ICourseDocumentService
         var window = ReleaseDeadline.Compute(start, end, null);
         var assessment = batch?.AssessmentDate;
         var releaseDisplay = LongDate(window.ReleaseDeadline);
-        var program = CourseProgram.Match(course?.CourseName);
+        var program = CourseProgram.FromCourse(course);
         var gate = CourseProgram.RequestGate(start, program, DateTime.Today);
         var incomplete = window.Message ?? "The training schedule is incomplete, so a release deadline cannot be calculated.";
         return new CourseReleaseTimelineDto
@@ -495,14 +489,8 @@ public class CourseDocumentService : ICourseDocumentService
         var ext = Path.GetExtension(Path.GetFileName(file.FileName)).ToLowerInvariant();
         if (!SystemConstants.RegistrationUploadLimits.AllowedExtensions.Contains(ext))
             return "Allowed file types: PDF, JPG, JPEG, PNG.";
-        var header = new byte[8];
         await using var stream = file.OpenReadStream();
-        var read = await stream.ReadAsync(header.AsMemory(0, 8), cancellationToken);
-        var valid = ext == ".pdf"
-            ? read >= 4 && header[0] == (byte)'%' && header[1] == (byte)'P' && header[2] == (byte)'D' && header[3] == (byte)'F'
-            : ext is ".jpg" or ".jpeg"
-                ? read >= 3 && header[0] == 0xFF && header[1] == 0xD8 && header[2] == 0xFF
-                : read >= 8 && header[0] == 0x89 && header[1] == 0x50 && header[2] == 0x4E && header[3] == 0x47;
+        var valid = await UploadedDocument.HasSignatureAsync(stream, UploadedDocument.ContentType("file" + ext), cancellationToken);
         return valid ? null : "The uploaded file does not match its file type.";
     }
 

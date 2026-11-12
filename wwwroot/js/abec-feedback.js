@@ -4,14 +4,14 @@
   if (window.AbecFeedback) return;
 
   var STYLE = ''
-    + '.abec-toast-stack{position:fixed;top:16px;right:16px;z-index:10050;display:flex;flex-direction:column;gap:10px;width:min(380px,calc(100vw - 32px));pointer-events:none}'
+    + '.abec-toast-stack{position:fixed;top:max(16px,env(safe-area-inset-top));right:max(16px,env(safe-area-inset-right));z-index:10100;display:flex;flex-direction:column;gap:10px;width:min(380px,calc(100vw - 32px));pointer-events:none}'
     + '.abec-toast{pointer-events:auto;display:flex;gap:12px;align-items:flex-start;background:#fff;border:1px solid #DCE6F1;border-left:4px solid #2563EB;border-radius:14px;box-shadow:0 10px 30px rgba(11,31,58,.16);padding:14px 14px 14px 12px;font-family:inherit;color:#172B4D;animation:abec-toast-in .28s ease}'
     + '.abec-toast.is-leaving{animation:abec-toast-out .22s ease forwards}'
     + '.abec-toast.is-success{border-left-color:#059669}.abec-toast.is-error{border-left-color:#DC2626}.abec-toast.is-warning{border-left-color:#D97706}.abec-toast.is-info{border-left-color:#2563EB}'
     + '.abec-toast-icon{width:28px;height:28px;border-radius:999px;display:flex;align-items:center;justify-content:center;flex:0 0 auto}'
     + '.abec-toast.is-success .abec-toast-icon{background:#ECFDF5;color:#059669}.abec-toast.is-error .abec-toast-icon{background:#FEF2F2;color:#DC2626}'
     + '.abec-toast.is-warning .abec-toast-icon{background:#FFFBEB;color:#D97706}.abec-toast.is-info .abec-toast-icon{background:#EFF6FF;color:#2563EB}'
-    + '.abec-toast-copy{min-width:0;flex:1}.abec-toast-title{font-size:14px;font-weight:700;line-height:1.3}.abec-toast-text{margin-top:3px;font-size:13px;line-height:1.45;color:#475569}'
+    + '.abec-toast-copy{min-width:0;flex:1;overflow-wrap:anywhere}.abec-toast-title{font-size:14px;font-weight:700;line-height:1.3}.abec-toast-text{margin-top:3px;font-size:13px;line-height:1.45;color:#475569;white-space:pre-line}'
     + '.abec-toast-close{border:0;background:transparent;color:#64748B;font-size:18px;line-height:1;cursor:pointer;padding:0 2px}'
     + '.abec-load-pill{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:10040;display:none;align-items:center;gap:8px;background:#0B1F3A;color:#fff;border-radius:999px;padding:8px 14px;font-size:13px;font-weight:600;box-shadow:0 8px 24px rgba(11,31,58,.25)}'
     + '.abec-load-pill.is-on{display:inline-flex}'
@@ -28,7 +28,8 @@
     + '.abec-confirm-actions button{border-radius:10px;padding:10px 14px;font-size:13px;font-weight:700;cursor:pointer}'
     + '.abec-confirm-cancel{background:#fff;color:#0B1F3A;border:1px solid #0B1F3A}.abec-confirm-ok{background:#0B1F3A;color:#fff;border:1px solid #0B1F3A}'
     + '.abec-inline-load{display:inline-flex;align-items:center;gap:8px}'
-    + '@media (max-width:640px){.abec-toast-stack{top:10px;right:10px;left:10px;width:auto}}';
+    + '@media (max-width:640px){.abec-toast-stack{top:max(10px,env(safe-area-inset-top));right:max(10px,env(safe-area-inset-right));width:min(380px,calc(100vw - 20px))}}'
+    + '@media (prefers-reduced-motion:reduce){.abec-toast,.abec-toast.is-leaving{animation:none}}';
 
   var style = document.createElement('style');
   style.setAttribute('data-abec-feedback', '1');
@@ -37,6 +38,7 @@
 
   var stack = document.createElement('div');
   stack.className = 'abec-toast-stack';
+  stack.setAttribute('aria-label', 'System messages');
   stack.setAttribute('aria-live', 'polite');
   var pill = document.createElement('div');
   pill.className = 'abec-load-pill';
@@ -66,43 +68,43 @@
 
   function present(raw) {
     var text = cleanText(raw);
-    if (/another record already uses this email/i.test(text)) {
-      return { type: 'error', title: 'Email Already in Use', message: 'Another record already uses this email address.' };
-    }
-    if (/approved successfully/i.test(text) && /email/i.test(text) && /sent/i.test(text)) {
-      return { type: 'success', title: 'Applicant Approved Successfully', message: 'The applicant has been approved. An approval email notification has been sent successfully.' };
-    }
-    if (/approved successfully/i.test(text)) {
-      return { type: 'success', title: 'Applicant Approved Successfully', message: text };
-    }
-    if (/rejected/i.test(text) && /success/i.test(text)) {
-      return { type: 'success', title: 'Applicant Updated', message: text };
-    }
     var type = 'info';
-    var title = 'Notice';
-    if (/unable|failed|invalid|error|cannot|could not|already uses|not found|required|please /i.test(text)) {
+    if (/^(EMAIL_NOT_SENT|NOTIFY_FAILED):/i.test(text) || /(?:saved|approved|updated|released|submitted|completed)[\s\S]*\bbut\b[\s\S]*(?:fail|not |could not)/i.test(text)) {
+      type = 'warning';
+    } else if (/unable|failed|invalid|error|cannot|could not|already uses|already.*(?:use|taken|registered)|not found|required|please |do not match|not active|not available|no active batch|only available/i.test(text)) {
       type = 'error';
-      title = 'Unable to Complete';
     } else if (/warning|expire|careful/i.test(text)) {
       type = 'warning';
-      title = 'Please Review';
     } else if (/success|saved|submitted|updated|confirmed|restored|archived|sent|completed/i.test(text)) {
       type = 'success';
-      title = 'Completed';
     }
-    return { type: type, title: title, message: text || 'The request finished.' };
+    return { type: type, message: text };
   }
 
+  var titles = { success: 'Success', error: 'Unable to Complete', warning: 'Please Review', info: 'Information' };
+  var activeToasts = new Map();
+  var pendingToasts = [];
+  function showPending() {
+    while (stack.children.length < 3 && pendingToasts.length) {
+      var toast = pendingToasts.shift();
+      stack.appendChild(toast);
+      toast._timer = setTimeout((function (item) { return function () { dismiss(item); }; })(toast), 5000);
+    }
+  }
   function notify(options) {
     mount();
+    if (typeof options === 'string') options = { message: options };
     options = options || {};
-    var shaped = options.message && options.title ? options : present(options.message || options.title || '');
+    var message = cleanText(options.message || '');
+    if (!message) return;
+    var shaped = present(message);
     var type = options.type || shaped.type || 'info';
+    type = type === 'ok' ? 'success' : type === 'warn' ? 'warning' : type;
+    if (shaped.type === 'warning') type = 'warning';
     if (['success', 'error', 'warning', 'info'].indexOf(type) < 0) type = 'info';
-    var title = options.title || shaped.title || 'Notice';
-    var message = cleanText(options.message || shaped.message || '');
-    if (!message && !title) return;
-    while (stack.children.length >= 3) dismiss(stack.firstChild);
+    var title = options.title || titles[type];
+    var key = type + ':' + message;
+    if (activeToasts.has(key)) return activeToasts.get(key);
     var toast = document.createElement('div');
     toast.className = 'abec-toast is-' + type;
     toast.setAttribute('role', type === 'error' ? 'alert' : 'status');
@@ -112,18 +114,47 @@
     toast.querySelector('.abec-toast-title').textContent = title;
     toast.querySelector('.abec-toast-text').textContent = message;
     toast.querySelector('.abec-toast-close').addEventListener('click', function () { dismiss(toast); });
-    stack.appendChild(toast);
-    var life = typeof options.duration === 'number' ? options.duration : 5000;
-    var timer = setTimeout(function () { dismiss(toast); }, life);
-    toast._timer = timer;
+    toast._key = key;
+    activeToasts.set(key, toast);
+    pendingToasts.push(toast);
+    showPending();
+    return toast;
   }
 
   function dismiss(toast) {
     if (!toast || toast._closing) return;
     toast._closing = true;
     clearTimeout(toast._timer);
+    activeToasts.delete(toast._key);
     toast.classList.add('is-leaving');
-    setTimeout(function () { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 220);
+    setTimeout(function () {
+      if (toast.parentNode) toast.parentNode.removeChild(toast);
+      showPending();
+    }, 220);
+  }
+
+  // Action feedback has one presentation; leave field highlighting to the form.
+  function inline(element, message, type) {
+    if (element) {
+      element.textContent = '';
+      element.hidden = true;
+      element.classList.remove('is-visible', 'is-in');
+    }
+    if (message) {
+      var toast = notify({ message: message, type: type });
+      if (element) element._abecFeedbackToast = toast;
+    }
+  }
+
+  function dismissInline(element) {
+    if (!element) return;
+    var toast = element._abecFeedbackToast;
+    if (toast) {
+      pendingToasts = pendingToasts.filter(function (item) { return item !== toast; });
+      dismiss(toast);
+      element._abecFeedbackToast = null;
+    }
+    inline(element, '', 'error');
   }
 
   var loads = 0;
@@ -193,6 +224,8 @@
 
   window.AbecFeedback = {
     notify: notify,
+    inline: inline,
+    dismissInline: dismissInline,
     confirm: confirmDialog,
     showLoader: showLoader,
     hideLoader: hideLoader,
@@ -201,6 +234,14 @@
   };
 
   window.alert = function (message) {
-    notify(present(message));
+    notify({ message: message });
   };
+  // Preserve native validation and aria-invalid state without a second popup style.
+  document.addEventListener('invalid', function (event) {
+    if (!event.target || !event.target.validationMessage) return;
+    event.preventDefault();
+    var label = event.target.labels && event.target.labels[0];
+    var name = label ? label.textContent.trim() : '';
+    notify({ type: 'error', message: (name ? name + ': ' : '') + event.target.validationMessage });
+  }, true);
 })(window);

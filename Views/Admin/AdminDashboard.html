@@ -8,7 +8,8 @@
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <!-- Google Fonts: Inter -->
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
-<link href="../../wwwroot/css/abec-ui.css?v=20261105icons1" rel="stylesheet"/>
+<link href="../../wwwroot/css/abec-ui.css?v=20261107batchsdd1" rel="stylesheet"/>
+<link href="../../wwwroot/css/abec-admin-sidebar.css?v=20261108sharedsidebar1" rel="stylesheet"/>
 <script>
     tailwind.config = {
       theme: {
@@ -28,7 +29,6 @@
     }
   </script>
 <style data-purpose="custom-scrollbar">
-    /* Custom Scrollbar for Sidebar */
     .custom-scrollbar::-webkit-scrollbar {
       width: 4px;
     }
@@ -38,39 +38,6 @@
     .custom-scrollbar::-webkit-scrollbar-thumb {
       background: rgba(255,255,255,0.18);
       border-radius: 10px;
-    }
-    @keyframes view-in {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    .admin-view {
-      animation: view-in 0.35s ease;
-    }
-    @keyframes modal-in {
-      from { opacity: 0; transform: translateY(12px) scale(0.98); }
-      to { opacity: 1; transform: translateY(0) scale(1); }
-    }
-    @keyframes backdrop-in {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
-    .modal-backdrop {
-      animation: backdrop-in 0.2s ease;
-    }
-    .modal-panel {
-      animation: modal-in 0.28s ease;
-    }
-    .batch-option.selected {
-      border-color: #2563EB;
-      background: #F0F7FF;
-      box-shadow: 0 0 0 1px rgba(27, 79, 122, 0.25);
-    }
-    .batch-option.active-batch {
-      border-color: #6EE7B7;
-      background: #ECFDF5;
-    }
-    .abec-sidebar-footer.hidden {
-      display: block !important;
     }
     .dashboard-system-line {
       margin: 0;
@@ -91,6 +58,15 @@
     body.dash-look {
       background: #e8f1fb !important;
     }
+    body.dash-look .abec-main {
+      display: grid;
+      min-height: 100vh;
+      min-height: 100dvh;
+      grid-template-rows: auto auto auto minmax(min-content, 1fr);
+      align-content: stretch;
+      gap: clamp(0.5rem, 1.2vh, 0.85rem);
+      padding: clamp(0.65rem, 1.5vh, 1rem) clamp(0.75rem, 1.5vw, 1.25rem);
+    }
     body.dash-look::before,
     body.dash-look::after {
       display: none !important;
@@ -101,7 +77,7 @@
       box-shadow: none;
       backdrop-filter: none;
       padding: 0;
-      margin-bottom: 0.55rem;
+      margin-bottom: 0;
     }
     .dash-topbar {
       display: flex;
@@ -163,7 +139,7 @@
     }
     .dash-search input {
       width: 100%;
-      height: 2.75rem;
+      height: clamp(2.25rem, 5vh, 2.5rem);
       border-radius: 999px;
       border: 1px solid #e3ebf5;
       background: #fff;
@@ -201,9 +177,9 @@
     .dash-hero {
       position: relative;
       isolation: isolate;
-      margin-bottom: 1rem;
-      padding: 1.35rem 1.4rem;
-      min-height: 8.6rem;
+      margin-bottom: 0;
+      padding: clamp(0.7rem, 1.8vh, 1rem) 1.1rem;
+      min-height: 0;
       border-radius: 1.15rem;
       background-color: #07182e;
       background-image: linear-gradient(90deg, #07182e 0%, #0b2748 42%, #123864 100%);
@@ -238,6 +214,28 @@
       position: relative;
       z-index: 1;
     }
+    .dash-hero-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.5rem 1rem;
+    }
+    .dash-active-batch {
+      margin-left: auto;
+      max-width: 100%;
+      padding: 0.35rem 0.7rem;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 999px;
+      background: rgba(7, 24, 46, 0.72);
+      color: #e2eaf5;
+      font-size: 0.72rem;
+      font-weight: 500;
+      line-height: 1.4;
+      overflow-wrap: anywhere;
+      backdrop-filter: blur(6px);
+    }
+    .dash-active-batch[hidden] { display: none; }
     .dash-hero-hello {
       margin: 0;
       font-size: 1.05rem;
@@ -269,43 +267,37 @@
     }
     .dash-pair {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 0.85rem;
-      align-items: stretch;
-      height: 15.75rem;
-      margin: 0 0 1rem;
-    }
-    .dash-pair > .dash-recent,
-    .dash-batch-col {
+      grid-template-columns: minmax(0, 1fr);
       min-width: 0;
-      min-height: 0;
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-    }
-    .dash-pair > .dash-recent,
-    .dash-batch-col > .dash-batch {
-      flex: 1 1 auto;
-      width: 100%;
-      height: 100%;
-      min-height: 0;
+      height: auto;
       margin: 0;
     }
     .dash-pair > .dash-recent {
+      min-width: 0;
+      width: 100%;
+      height: auto;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      margin: 0;
       overflow: hidden;
     }
     .dash-pair .dash-recent > .px-4,
     .dash-pair .dash-recent > .px-5 {
       flex: 0 0 auto;
-      padding-top: 0.55rem;
-      padding-bottom: 0.55rem;
+      padding-top: 0.4rem;
+      padding-bottom: 0.4rem;
     }
     .dash-pair #dashboard-applicants-body {
-      flex: 1 1 auto;
+      display: flex;
+      flex-direction: column;
+      flex: 1 0 auto;
       min-height: 0;
-      overflow-y: auto;
-      scrollbar-width: thin;
+      max-height: none;
+      overflow: visible;
     }
+    .dash-pair #dashboard-applicants-body > * { flex: 0 0 auto; }
+    .dash-pair #dashboard-no-results { margin-block: auto; }
     .dash-pair .dash-recent h2 {
       font-size: 0.78rem;
       font-weight: 650;
@@ -318,9 +310,17 @@
     }
     .dash-pair .dash-recent > .px-4 a { font-size: 0.68rem; }
     .dash-pair .dashboard-applicant-row {
-      gap: 0.4rem;
-      padding: 0.28rem 0.65rem;
+      gap: 0.5rem;
+      padding: 0.35rem 0.75rem;
     }
+    .dash-pair .dashboard-applicant-row .min-w-0 {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      column-gap: 0.75rem;
+      align-items: baseline;
+    }
+    .dash-pair .dashboard-applicant-row .min-w-0 > span:first-child { grid-column: 1 / -1; }
+    .dash-pair .dashboard-applicant-row .min-w-0 > span:nth-child(3) { text-align: right; }
     .dash-pair .dashboard-applicant-row > span:first-child {
       width: 1.4rem !important;
       height: 1.4rem !important;
@@ -338,8 +338,7 @@
     }
     .dash-pair #dashboard-course-filter { padding-top: 0.2rem; padding-bottom: 0.2rem; font-size: 0.68rem; }
     .dash-pair #dashboard-showing-count { font-size: 0.62rem; }
-    body.dash-look .dash-pair > .dash-recent,
-    body.dash-look .dash-batch {
+    body.dash-look .dash-pair > .dash-recent {
       background: #fff !important;
       background-image: none !important;
       border: 1px solid #e6eef7 !important;
@@ -347,311 +346,17 @@
       border-radius: 1.15rem !important;
       box-shadow: 0 10px 24px rgba(15, 39, 71, 0.05) !important;
     }
-    body.dash-look .dash-batch {
-      overflow: visible !important;
-      display: flex;
-      flex-direction: column;
-    }
-    .dash-batch-head {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 0.65rem;
-      flex: 0 0 auto;
-      padding: 0.45rem 0.65rem 0.4rem;
-      border-bottom: 1px solid #eef3f8;
-    }
-    .dash-batch-title {
-      margin: 0;
-      font-size: 0.82rem;
-      line-height: 1.2;
-      font-weight: 650;
-      letter-spacing: -0.01em;
-      color: #0f2744;
-    }
-    .dash-batch-sub {
-      margin: 0.05rem 0 0;
-      font-size: 0.64rem;
-      font-weight: 500;
-      color: #64748b;
-    }
-    .dash-batch-body {
-      display: flex;
-      flex-direction: column;
-      gap: 0.4rem;
-      flex: 1 1 auto;
-      min-height: 0;
-      padding: 0.4rem 0.65rem 0.5rem;
-    }
-    .dash-batch-dates {
-      display: grid;
-      grid-template-columns: 1fr 1fr auto;
-      align-items: center;
-      gap: 0.45rem;
-    }
-    .dash-batch-dates p {
-      margin: 0;
-      font-size: 0.56rem;
-      font-weight: 700;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-      color: #64748b;
-    }
-    .dash-batch-dates strong {
-      display: block;
-      margin-top: 0.05rem;
-      font-size: 0.72rem;
-      font-weight: 650;
-      line-height: 1.2;
-      color: #1e3a5f;
-    }
-    .dash-batch-history {
-      margin-top: auto;
-      padding-top: 0.35rem;
-      border-top: 1px solid #e8eef6;
-    }
-    .dash-batch-history-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 0.5rem;
-    }
-    .dash-batch-history-head h3 {
-      margin: 0;
-      font-size: 0.72rem;
-      font-weight: 650;
-      line-height: 1.2;
-      color: #1e3a5f;
-    }
-    #btn-batch-history {
-      border: 0;
-      background: transparent;
-      padding: 0;
-      color: #2563eb;
-      font-size: 0.66rem;
-      font-weight: 650;
-      cursor: pointer;
-    }
-    #btn-batch-history:hover,
-    #btn-batch-history:focus-visible {
-      text-decoration: underline;
-      outline: none;
-    }
-    .dash-history-line {
-      display: flex;
-      align-items: baseline;
-      justify-content: space-between;
-      gap: 0.45rem;
-      margin: 0.18rem 0 0;
-      font-size: 0.64rem;
-      line-height: 1.25;
-      color: #334e6e;
-    }
-    .dash-history-line span:first-child {
-      min-width: 0;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      font-weight: 650;
-    }
-    .dash-history-line span:last-child {
-      flex: 0 0 auto;
-      color: #5b7190;
-    }
-    .dash-history-card {
-      padding: 0.28rem 0 0.32rem;
-      border-top: 1px solid #eef3f8;
-    }
-    .dash-history-card:first-child { border-top: 0; padding-top: 0.12rem; }
-    .dash-history-card-top {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 0.4rem;
-    }
-    .dash-history-name {
-      margin: 0;
-      min-width: 0;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      font-size: 0.68rem;
-      font-weight: 650;
-      color: #1e3a5f;
-    }
-    .dash-history-status {
-      flex: 0 0 auto;
-      padding: 0.05rem 0.35rem;
-      border-radius: 999px;
-      background: #eef2f6;
-      color: #52647a;
-      font-size: 0.56rem;
-      font-weight: 700;
-      letter-spacing: 0.03em;
-      text-transform: uppercase;
-    }
-    .dash-history-meta {
-      margin: 0.08rem 0 0;
-      font-size: 0.6rem;
-      line-height: 1.3;
-      color: #5b7190;
-    }
-    #modal-batch-history.is-anchored {
-      bottom: 0;
-      height: auto;
-    }
-    #modal-batch-history.is-anchored > .relative {
-      align-items: flex-start;
-      justify-content: flex-start;
-      min-height: 100%;
-    }
-    #modal-batch-history.is-anchored .modal-panel {
-      overflow: auto;
-    }
-    .dash-batch-actions {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 0.75rem;
-    }
-    .dash-history-btn {
-      border: 1px solid #c5d8f6;
-      background: #eef4ff;
-      color: #1d4ed8;
-      border-radius: 999px;
-      padding: 0.22rem 0.55rem;
-      font-size: 0.66rem;
-      font-weight: 650;
-      cursor: pointer;
-    }
-    .dash-batch #active-batch-status {
-      padding: 0.12rem 0.45rem;
-      font-size: 0.6rem;
-    }
-    .dash-history-btn:hover,
-    .dash-history-btn:focus-visible {
-      background: #dbeafe;
-      outline: none;
-    }
-    .dash-batch-facts {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 0.45rem;
-    }
-    .dash-batch-facts > div {
-      padding: 0.28rem 0.4rem;
-    }
-    .dash-batch-facts > div > p:first-child {
-      margin-bottom: 0.05rem;
-      font-size: 0.56rem;
-    }
-    .dash-batch-facts #active-batch-students,
-    .dash-batch-facts #active-batch-start,
-    .dash-batch-facts #active-batch-end {
-      font-size: 0.72rem;
-      line-height: 1.2;
-    }
     .dash-stat-grid {
       display: grid;
       grid-template-columns: repeat(5, minmax(0, 1fr));
-      gap: 0.75rem;
+      gap: clamp(0.4rem, 1vh, 0.65rem);
+      margin-bottom: 0;
     }
     .dash-stat-grid .dash-stat {
-      min-height: 5.6rem;
+      min-height: clamp(5.25rem, 11vh, 6rem);
       height: 100%;
       text-decoration: none;
     }
-    .batch-menu { position: relative; flex: 0 0 auto; }
-    .batch-menu-btn {
-      width: 1.65rem;
-      height: 1.65rem;
-      border-radius: 0.7rem;
-      border: 1px solid #dbe4ef;
-      background: #fff;
-      color: #1e3a5f;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-    }
-    .batch-menu-btn:hover,
-    .batch-menu-btn:focus-visible {
-      background: #eef4ff;
-      border-color: #93c5fd;
-      color: #1d4ed8;
-      outline: none;
-    }
-    .batch-menu-panel {
-      position: absolute;
-      top: calc(100% + 0.35rem);
-      right: 0;
-      z-index: 40;
-      min-width: 11.5rem;
-      padding: 0.35rem;
-      border-radius: 0.8rem;
-      background: #fff;
-      border: 1px solid #e3ebf5;
-      box-shadow: 0 16px 32px rgba(15, 39, 71, 0.14);
-    }
-    .batch-menu-panel[hidden] { display: none !important; }
-    .batch-menu-panel button {
-      display: block;
-      width: 100%;
-      text-align: left;
-      border: 0;
-      background: transparent;
-      border-radius: 0.55rem;
-      padding: 0.55rem 0.7rem;
-      font-size: 0.78rem;
-      font-weight: 650;
-      color: #17324f;
-      cursor: pointer;
-    }
-    .batch-menu-panel button:hover,
-    .batch-menu-panel button:focus-visible {
-      background: #eef4ff;
-      color: #1d4ed8;
-      outline: none;
-    }
-    .batch-menu-panel button:disabled {
-      color: #94a3b8;
-      cursor: not-allowed;
-      background: transparent;
-    }
-    .batch-total {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 1rem;
-      margin-top: 1rem;
-      padding: 0.95rem 1.15rem;
-      border-radius: 0.95rem;
-      text-decoration: none;
-      color: #0b2747;
-      background: linear-gradient(90deg, #e7f0ff 0%, #f5f9ff 58%, #ffffff 100%);
-      border: 1px solid #c5d8f6;
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
-    }
-    .batch-total span { font-size: 0.78rem; font-weight: 750; letter-spacing: 0.02em; }
-    .batch-total strong { font-size: 1.85rem; line-height: 1; font-weight: 800; color: #1d4ed8; letter-spacing: -0.03em; }
-    .batch-metrics { display: grid; gap: 0.7rem; margin-top: 0.7rem; }
-    .batch-metrics-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-    .batch-metrics-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-    .batch-metrics-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .batch-metric {
-      display: flex;
-      align-items: center;
-      gap: 0.7rem;
-      min-height: 5.25rem;
-      height: 100%;
-      padding: 0.85rem 0.9rem;
-      border-radius: 0.9rem;
-      background: #fff;
-      border: 1px solid #e7eef6;
-      text-decoration: none;
-      box-shadow: 0 6px 14px rgba(15, 39, 71, 0.04);
-    }
-    .batch-metric .dash-stat-copy strong { font-size: 1.3rem; }
     .dash-search-results {
       position: absolute;
       top: calc(100% + 0.4rem);
@@ -697,29 +402,30 @@
     body.dash-look.abec-app [data-purpose="stats-grid"] .abec-stat-card:nth-child(3n+2) {
       display: flex !important;
       align-items: flex-start;
-      gap: 0.7rem;
+      gap: 0.45rem;
       background: #fff !important;
       background-image: none !important;
       border: 1px solid #e7eef6 !important;
       border-radius: 1rem !important;
       box-shadow: 0 8px 18px rgba(15, 39, 71, 0.04) !important;
-      padding: 0.85rem 0.9rem !important;
+      padding: clamp(0.7rem, 1.5vh, 0.9rem) 0.75rem !important;
     }
     .dash-stat-icon {
-      width: 2.15rem;
-      height: 2.15rem;
+      width: 2rem;
+      height: 2rem;
       border-radius: 0.7rem;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       flex: 0 0 auto;
     }
-    .dash-stat-icon svg { width: 1.05rem; height: 1.05rem; }
+    .dash-stat-icon svg { width: 1.15rem; height: 1.15rem; }
     .dash-stat-copy { min-width: 0; display: block; }
+    .dash-stat-copy .abec-label { display: block; font-size: 0.65rem; line-height: 1.25; letter-spacing: 0.035em; }
     .dash-stat-copy strong {
       display: block;
       margin-top: 0.15rem;
-      font-size: 1.35rem;
+      font-size: clamp(1.3rem, 3vh, 1.5rem);
       line-height: 1.1;
       letter-spacing: -0.03em;
       color: #0f2744;
@@ -782,39 +488,45 @@
       box-shadow: 0 10px 24px rgba(15, 39, 71, 0.05) !important;
     }
     @media (max-width: 1100px) {
-      .dash-stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .dash-system-pill { max-width: 100%; }
-      .dash-topbar { flex-wrap: nowrap; }
-      .dash-search { width: min(18rem, 100%); margin-left: auto; }
+    .dash-system-pill { max-width: 100%; }
+    .dash-topbar { flex-wrap: nowrap; }
+    .dash-search { width: min(18rem, 100%); margin-left: auto; }
     }
     @media (max-width: 860px) {
-      .dash-topbar { flex-wrap: wrap; }
-      .dash-overview { flex-basis: 100%; }
-      .dash-topbar-tools { width: 100%; margin-left: 0; }
+    .dash-topbar { flex-wrap: wrap; }
+    .dash-overview { flex-basis: 100%; }
+    .dash-topbar-tools { width: 100%; margin-left: 0; }
     }
     @media (max-width: 980px) {
-      .dash-pair {
+    .dash-pair {
         grid-template-columns: 1fr;
         height: auto;
       }
-      .dash-pair > .dash-recent,
-      .dash-batch-col,
-      .dash-batch-col > .dash-batch {
+    .dash-pair > .dash-recent {
         height: auto;
         max-height: none;
       }
-      .dash-pair #dashboard-applicants-body { max-height: 9rem; }
-      .dash-hero::before { width: 70%; }
+    .dash-pair #dashboard-applicants-body { max-height: none; }
+    .dash-hero::before { width: 70%; }
     }
-    @media (max-width: 860px) {
-      .batch-metrics-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    @media (max-width: 900px) {
+      .dash-topbar-tools { flex: 1 1 auto; width: 100%; flex-wrap: nowrap; }
+      .dash-search { min-width: 0; width: auto; max-width: 22rem; flex: 1 1 auto; }
     }
-    @media (max-width: 720px) {
-      .batch-metrics-3,
-      .batch-metrics-2,
-      .dash-batch-facts { grid-template-columns: 1fr; }
-      .dash-topbar-tools { flex-wrap: wrap; }
-      .dash-search { width: 100%; flex: 1 1 100%; }
+    @media (max-width: 640px) {
+      .dash-stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .dash-hero::before { width: 100%; }
+      .dash-pair .dashboard-applicant-row .min-w-0 { grid-template-columns: minmax(0, 1fr); }
+      .dash-pair .dashboard-applicant-row .min-w-0 > span:nth-child(2) { white-space: normal; overflow-wrap: anywhere; }
+      .dash-pair .dashboard-applicant-row .min-w-0 > span:nth-child(3) { text-align: left; }
+    }
+    @media (min-width: 641px) and (max-height: 720px) {
+      body.dash-look .abec-main { gap: 0.5rem; padding-top: 0.5rem; padding-bottom: 0.5rem; }
+      .dash-hero { padding-top: 0.55rem; padding-bottom: 0.55rem; }
+      .dash-hero-hello { font-size: 0.9rem; }
+      .dash-hero h2 { font-size: 1.45rem; }
+      .dash-hero-sub { font-size: 0.75rem; }
+      .dash-stat-grid .dash-stat { min-height: 4.5rem; }
     }
     .abec-system-assistant {
       position: fixed;
@@ -852,26 +564,27 @@
       to { opacity: 0; transform: translateY(-1.1rem) scale(0.94); }
     }
     @media (max-width: 900px) {
-      .abec-system-assistant {
+    .abec-system-assistant {
         top: 6.6rem;
         right: 0.75rem;
         max-width: min(16rem, calc(100vw - 1.5rem));
       }
     }
     @media (prefers-reduced-motion: reduce) {
-      .abec-system-assistant,
-      .abec-system-assistant.is-leaving {
+    .abec-system-assistant,
+    .abec-system-assistant.is-leaving {
         animation: none !important;
         transition: none !important;
         transform: none !important;
       }
     }
   </style>
+<link href="../../wwwroot/css/abec-responsive.css?v=20261112features1" rel="stylesheet"/>
 </head>
 <body class="abec-app dash-look bg-surface font-sans text-slate-800">
 <div class="flex min-h-screen">
 <!-- BEGIN: Sidebar -->
-<aside class="abec-sidebar" data-purpose="main-sidebar">
+<aside class="abec-sidebar abec-admin-sidebar" data-purpose="main-sidebar">
 <div class="p-6 flex items-center gap-3">
 <div class="abec-brand-lockup abec-sidebar-brand">
 <div class="abec-brand-mark">
@@ -925,10 +638,11 @@
 </div>
 </div>
 <nav class="flex-1 px-3 mt-4 space-y-1 overflow-y-auto custom-scrollbar">
-<a class="abec-nav-link abec-nav-link-active" href="AdminDashboard.html">
+<a class="abec-nav-link abec-nav-link-active" href="AdminDashboard.html" aria-current="page">
 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
   Dashboard
 </a>
+
 <a class="abec-nav-link" href="StudentsApplicants.html">
 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
   Students &amp; Applicants
@@ -944,6 +658,10 @@
 <a class="abec-nav-link" href="DocumentManagement.html">
 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
   Document Management
+</a>
+<a class="abec-nav-link" href="BatchManagement.html">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2" stroke-width="2"/><path d="M16 3v4M8 3v4M3 11h18M8 15h3M8 18h6" stroke-linecap="round" stroke-width="2"/></svg>
+  Batch Management
 </a>
 <a class="abec-nav-link" href="Reports.html">
 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M8 17V10M12 17V7M16 17v-4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
@@ -987,10 +705,28 @@
 <!-- END: Page Header -->
 
 <section class="dash-hero" aria-label="Welcome">
-  <p class="dash-hero-hello" id="dash-greeting">Welcome Back</p>
+  <div class="dash-hero-heading">
+    <p class="dash-hero-hello" id="dash-greeting">Welcome back!</p>
+    <span id="dashboard-active-batch" class="dash-active-batch" role="status" aria-live="polite" hidden></span>
+  </div>
   <h2 id="dash-greeting-name">Admin</h2>
   <p class="dash-hero-sub">Here's what's happening with ABEC today.</p>
 </section>
+<!-- BEGIN: Dashboard statistics -->
+<section class="dash-stat-grid" data-purpose="stats-grid" aria-label="Dashboard statistics">
+  <a href="ApplicantPage.html" class="dash-stat"><span class="dash-stat-icon tone-blue" aria-hidden="true"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="1.8" d="M8 7h8M8 12h8M8 17h5"/><rect x="4" y="3" width="16" height="18" rx="2" stroke-width="1.8"/></svg></span><span class="dash-stat-copy"><span class="abec-label">Total Applicants</span><strong data-stat="totalApplicants">0</strong></span></a>
+  <a href="ApplicantPage.html?status=pending" class="dash-stat"><span class="dash-stat-icon tone-amber" aria-hidden="true"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" stroke-width="1.8"/><path stroke-linecap="round" stroke-width="1.8" d="M12 8v4l2.5 2"/></svg></span><span class="dash-stat-copy"><span class="abec-label">Pending</span><strong data-stat="pending">0</strong></span></a>
+  <a href="ApplicantPage.html?status=approved" class="dash-stat"><span class="dash-stat-icon tone-green" aria-hidden="true"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" stroke-width="1.8"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8.5 12.5l2.2 2.2 4.8-5"/></svg></span><span class="dash-stat-copy"><span class="abec-label">Approved</span><strong data-stat="approved">0</strong></span></a>
+  <a href="ApplicantPage.html?status=rejected" class="dash-stat"><span class="dash-stat-icon tone-red" aria-hidden="true"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" stroke-width="1.8"/><path stroke-linecap="round" stroke-width="1.8" d="M9 9l6 6M15 9l-6 6"/></svg></span><span class="dash-stat-copy"><span class="abec-label">Rejected</span><strong data-stat="rejected">0</strong></span></a>
+  <a href="ApplicantPage.html?status=waitlisted" class="dash-stat"><span class="dash-stat-icon tone-violet" aria-hidden="true"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="1.8" d="M8 4h8M8 20h8M9 4c0 4 6 4 6 8s-6 4-6 8M15 4c0 4-6 4-6 8s6 4 6 8"/></svg></span><span class="dash-stat-copy"><span class="abec-label">Waitlisted</span><strong data-stat="waitlisted">0</strong></span></a>
+  <a href="AccountActivation.html" class="dash-stat"><span class="dash-stat-icon tone-blue" aria-hidden="true"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="1.8" d="M16 19v-1a3 3 0 00-3-3H7a3 3 0 00-3 3v1"/><circle cx="10" cy="8" r="3" stroke-width="1.8"/></svg></span><span class="dash-stat-copy"><span class="abec-label">Active Students</span><strong data-stat="activeStudents">0</strong></span></a>
+  <a href="AccountActivation.html" class="dash-stat"><span class="dash-stat-icon tone-amber" aria-hidden="true"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" stroke-width="1.8"/><path stroke-linecap="round" stroke-width="1.8" d="M12 8v4"/></svg></span><span class="dash-stat-copy"><span class="abec-label">Awaiting Activation</span><strong data-stat="awaitingActivation">0</strong></span></a>
+  <a href="CourseManagement.html" class="dash-stat"><span class="dash-stat-icon tone-blue" aria-hidden="true"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M5 5.5h10a3 3 0 013 3V19H8a3 3 0 01-3-3V5.5z"/><path stroke-linecap="round" stroke-width="1.8" d="M5 19a3 3 0 013-3h10"/></svg></span><span class="dash-stat-copy"><span class="abec-label">Available Courses</span><strong data-stat="availableCourses">0</strong></span></a>
+  <a href="DocumentManagement.html" class="dash-stat"><span class="dash-stat-icon tone-amber" aria-hidden="true"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7 3h7l5 5v13H7z"/><path stroke-linecap="round" stroke-width="1.8" d="M14 3v5h5"/></svg></span><span class="dash-stat-copy"><span class="abec-label">Pending Documents</span><strong data-stat="pendingDocuments">0</strong></span></a>
+  <a href="DocumentManagement.html" class="dash-stat"><span class="dash-stat-icon tone-green" aria-hidden="true"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7 3h7l5 5v13H7z"/><path stroke-linecap="round" stroke-width="1.8" d="M9 14l2 2 4-4"/></svg></span><span class="dash-stat-copy"><span class="abec-label">Released Documents</span><strong data-stat="releasedDocuments">0</strong></span></a>
+</section>
+<!-- END: Dashboard statistics -->
+
 <div class="dash-pair">
 <!-- BEGIN: Recent Applicants -->
 <section class="abec-card abec-card-static overflow-hidden dash-recent" data-purpose="applicants-table">
@@ -1014,305 +750,23 @@
   </div>
 </section>
 <!-- END: Recent Applicants -->
-<!-- BEGIN: Current Active Batch (primary focus) -->
-<section class="dash-batch-col admin-view" data-purpose="current-active-batch">
-  <div class="abec-card abec-card-static dash-batch">
-    <div class="dash-batch-head">
-      <div class="min-w-0">
-        <h2 id="active-batch-name" class="dash-batch-title" data-bind="active-batch-name">No Active Batch</h2>
-        <p class="dash-batch-sub">Batch Management</p>
-      </div>
-      <div class="batch-menu">
-        <button type="button" id="batch-menu-btn" class="batch-menu-btn" aria-label="Batch actions" aria-haspopup="menu" aria-expanded="false" aria-controls="batch-menu-panel">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg>
-        </button>
-        <div id="batch-menu-panel" class="batch-menu-panel" role="menu" hidden>
-          <button type="button" id="btn-complete-batch" role="menuitem" onclick="openCompleteBatchModal()">Complete Batch</button>
-          <button type="button" id="btn-change-batch" role="menuitem" onclick="openChangeBatchModal()">Change Batch</button>
-        </div>
-      </div>
-    </div>
-    <div class="dash-batch-body">
-      <div class="dash-batch-dates">
-        <div>
-          <p>Start Date</p>
-          <strong id="active-batch-start">—</strong>
-        </div>
-        <div>
-          <p>End Date</p>
-          <strong id="active-batch-end">—</strong>
-        </div>
-        <span id="active-batch-status" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-slate-100 text-slate-600 shrink-0">
-          <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
-          None
-        </span>
-      </div>
-      <div class="dash-batch-facts">
-        <div class="rounded-lg border border-slate-100 bg-white/80 p-3.5">
-          <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Total Students</p>
-          <p id="active-batch-students" class="text-xl font-bold text-slate-800">0</p>
-        </div>
-      </div>
-      <div class="dash-batch-history">
-        <div class="dash-batch-history-head">
-          <h3>Batch History</h3>
-          <button type="button" id="btn-batch-history" onclick="openBatchHistory()">View All</button>
-        </div>
-        <div id="batch-history-preview"></div>
-        <p id="batch-history-preview-empty" class="dash-history-empty" hidden>No completed batches yet.</p>
-      </div>
-    </div>
-  </div>
-</section>
-<!-- END: Current Active Batch -->
-</div>
-<!-- BEGIN: Dashboard statistics -->
-<section class="dash-stat-grid" data-purpose="stats-grid" aria-label="Dashboard statistics">
-  <a href="ApplicantPage.html" class="dash-stat"><span class="dash-stat-icon tone-blue" aria-hidden="true"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="1.8" d="M8 7h8M8 12h8M8 17h5"/><rect x="4" y="3" width="16" height="18" rx="2" stroke-width="1.8"/></svg></span><span class="dash-stat-copy"><span class="abec-label">Total Applicants</span><strong data-stat="totalApplicants">0</strong></span></a>
-  <a href="ApplicantPage.html?status=pending" class="dash-stat"><span class="dash-stat-icon tone-amber" aria-hidden="true"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" stroke-width="1.8"/><path stroke-linecap="round" stroke-width="1.8" d="M12 8v4l2.5 2"/></svg></span><span class="dash-stat-copy"><span class="abec-label">Pending</span><strong data-stat="pending">0</strong></span></a>
-  <a href="ApplicantPage.html?status=approved" class="dash-stat"><span class="dash-stat-icon tone-green" aria-hidden="true"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" stroke-width="1.8"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8.5 12.5l2.2 2.2 4.8-5"/></svg></span><span class="dash-stat-copy"><span class="abec-label">Approved</span><strong data-stat="approved">0</strong></span></a>
-  <a href="ApplicantPage.html?status=rejected" class="dash-stat"><span class="dash-stat-icon tone-red" aria-hidden="true"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" stroke-width="1.8"/><path stroke-linecap="round" stroke-width="1.8" d="M9 9l6 6M15 9l-6 6"/></svg></span><span class="dash-stat-copy"><span class="abec-label">Rejected</span><strong data-stat="rejected">0</strong></span></a>
-  <a href="ApplicantPage.html?status=waitlisted" class="dash-stat"><span class="dash-stat-icon tone-violet" aria-hidden="true"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="1.8" d="M8 4h8M8 20h8M9 4c0 4 6 4 6 8s-6 4-6 8M15 4c0 4-6 4-6 8s6 4 6 8"/></svg></span><span class="dash-stat-copy"><span class="abec-label">Waitlisted</span><strong data-stat="waitlisted">0</strong></span></a>
-  <a href="AccountActivation.html" class="dash-stat"><span class="dash-stat-icon tone-blue" aria-hidden="true"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="1.8" d="M16 19v-1a3 3 0 00-3-3H7a3 3 0 00-3 3v1"/><circle cx="10" cy="8" r="3" stroke-width="1.8"/></svg></span><span class="dash-stat-copy"><span class="abec-label">Active Students</span><strong data-stat="activeStudents">0</strong></span></a>
-  <a href="AccountActivation.html" class="dash-stat"><span class="dash-stat-icon tone-amber" aria-hidden="true"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" stroke-width="1.8"/><path stroke-linecap="round" stroke-width="1.8" d="M12 8v4"/></svg></span><span class="dash-stat-copy"><span class="abec-label">Awaiting Activation</span><strong data-stat="awaitingActivation">0</strong></span></a>
-  <a href="CourseManagement.html" class="dash-stat"><span class="dash-stat-icon tone-blue" aria-hidden="true"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M5 5.5h10a3 3 0 013 3V19H8a3 3 0 01-3-3V5.5z"/><path stroke-linecap="round" stroke-width="1.8" d="M5 19a3 3 0 013-3h10"/></svg></span><span class="dash-stat-copy"><span class="abec-label">Available Courses</span><strong data-stat="availableCourses">0</strong></span></a>
-  <a href="DocumentManagement.html" class="dash-stat"><span class="dash-stat-icon tone-amber" aria-hidden="true"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7 3h7l5 5v13H7z"/><path stroke-linecap="round" stroke-width="1.8" d="M14 3v5h5"/></svg></span><span class="dash-stat-copy"><span class="abec-label">Pending Documents</span><strong data-stat="pendingDocuments">0</strong></span></a>
-  <a href="DocumentManagement.html" class="dash-stat"><span class="dash-stat-icon tone-green" aria-hidden="true"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7 3h7l5 5v13H7z"/><path stroke-linecap="round" stroke-width="1.8" d="M9 14l2 2 4-4"/></svg></span><span class="dash-stat-copy"><span class="abec-label">Released Documents</span><strong data-stat="releasedDocuments">0</strong></span></a>
-</section>
-<!-- END: Dashboard statistics -->
 
-<!-- BEGIN: Batch History Records -->
-<div id="modal-batch-history" class="fixed inset-0 z-50 hidden" aria-hidden="true" data-purpose="batch-history-records">
-  <div class="modal-backdrop absolute inset-0 abec-modal-backdrop" onclick="closeBatchHistory()"></div>
-  <div class="relative min-h-full flex items-center justify-center p-4">
-  <div class="modal-panel abec-modal w-full max-w-4xl overflow-hidden border border-slate-200" role="dialog" aria-labelledby="batch-history-title">
-    <div class="px-6 py-4 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
-      <div class="flex items-center gap-3">
-        <div class="w-9 h-9 rounded-lg bg-slate-100 text-abec-navy flex items-center justify-center">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-        </div>
-        <div>
-          <h4 id="batch-history-title" class="text-lg font-bold text-slate-800">Batch History</h4>
-          <p class="text-xs text-slate-500">Previous semesters stay here with all associated records. Restore to make a past batch active again.</p>
-        </div>
-      </div>
-      <div class="flex items-center gap-2">
-        <span id="batch-history-count" class="text-xs font-semibold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full">0 archived</span>
-        <button type="button" onclick="closeBatchHistory()" class="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50">Close</button>
-      </div>
-    </div>
-    <div class="overflow-x-auto">
-      <table class="w-full text-left">
-        <thead class="bg-slate-50/80 text-[10px] uppercase font-bold text-slate-500 border-b border-slate-100">
-          <tr>
-            <th class="px-6 py-3">Batch Name</th>
-            <th class="px-6 py-3">Academic Year</th>
-            <th class="px-6 py-3">Students</th>
-            <th class="px-6 py-3">Period</th>
-            <th class="px-6 py-3">Status</th>
-            <th class="px-6 py-3">Action</th>
-          </tr>
-        </thead>
-        <tbody id="batch-history-body" class="divide-y divide-slate-50">
-        </tbody>
-      </table>
-      <div id="batch-history-empty" class="px-6 py-10 text-center text-sm text-slate-400 hidden">
-        No completed batches yet. When you change or complete the current batch, it will appear here.
-      </div>
-    </div>
-  </div>
-  </div>
 </div>
-<!-- END: Batch History Records -->
-<!-- BEGIN: Dashboard Footer -->
-<footer class="mt-12 abec-card abec-card-static p-8" data-purpose="institutional-footer">
-<div class="grid grid-cols-1 md:grid-cols-4 gap-8">
-<div class="col-span-1 md:col-span-1">
-<h5 class="font-bold text-slate-800 mb-4">ABEC</h5>
-<p class="text-xs text-slate-500 leading-relaxed">Empowering growth through certified training and industry-standard assessment protocols.</p>
-</div>
-<div>
-<h6 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Resources</h6>
-<ul class="space-y-2">
-<li><a class="text-xs text-slate-600 hover:text-abec-blue" href="#">Privacy Policy</a></li>
-<li><a class="text-xs text-slate-600 hover:text-abec-blue" href="#">Terms of Service</a></li>
-<li><a class="text-xs text-slate-600 hover:text-abec-blue" href="#">Academic Calendar</a></li>
-</ul>
-</div>
-<div>
-<h6 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Support</h6>
-<ul class="space-y-2">
-<li><a class="text-xs text-slate-600 hover:text-abec-blue" href="#">Contact Support</a></li>
-<li><a class="text-xs text-slate-600 hover:text-abec-blue" href="#">Documentation</a></li>
-</ul>
-</div>
-<div class="text-right flex flex-col justify-end">
-<p class="text-[10px] text-slate-400">© 2024 ABEC Training and Assessment<br/>Center. All rights reserved.</p>
-</div>
-</div>
-</footer>
-<!-- END: Dashboard Footer -->
+
+
+
+
 </main>
 </div>
-<!-- BEGIN: Change Batch Modal -->
-<div id="modal-change-batch" class="fixed inset-0 z-50 hidden" aria-hidden="true">
-  <div class="modal-backdrop absolute inset-0 abec-modal-backdrop" onclick="closeChangeBatchModal()"></div>
-  <div class="relative min-h-full flex items-center justify-center p-4">
-    <div class="modal-panel abec-modal w-full max-w-xl overflow-hidden border border-slate-200" role="dialog" aria-labelledby="change-batch-title">
-      <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-        <div>
-          <h3 id="change-batch-title" class="text-lg font-bold text-slate-800">Change / Renew Batch</h3>
-          <p class="text-xs text-slate-500 mt-0.5">Start a new semester or restore a previous batch. Records are never deleted.</p>
-        </div>
-        <button type="button" onclick="closeChangeBatchModal()" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors" aria-label="Close">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-        </button>
-      </div>
-      <div class="px-6 py-4 space-y-4">
-        <div class="rounded-xl border border-amber-100 bg-amber-50/70 p-3 text-xs text-amber-900">
-          Changing the active batch starts a new training period. The current batch moves to Batch History with all of its applicants, students, schedules, and related records preserved.
-        </div>
-        <div class="flex flex-col sm:flex-row gap-2">
-          <div class="relative flex-1">
-            <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.355-4.355M17 10a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-            <input id="batch-search" type="search" placeholder="Search" oninput="renderChangeBatchList()" class="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-abec-blue focus:border-abec-blue"/>
-          </div>
-          <button type="button" onclick="openCreateBatchModal('from-change')" class="px-4 py-2 text-xs font-semibold rounded-lg bg-abec-navy text-white hover:bg-abec-blue transition-colors whitespace-nowrap">
-            + Create New Batch
-          </button>
-        </div>
-        <div>
-          <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Batch History (restore)</p>
-          <div id="change-batch-archived" class="space-y-2 max-h-56 overflow-y-auto custom-scrollbar pr-1"></div>
-        </div>
-        <div id="change-batch-available" class="hidden"></div>
-      </div>
-      <div class="px-6 py-4 border-t border-slate-100 bg-slate-50/60 flex justify-end gap-2">
-        <button type="button" onclick="closeChangeBatchModal()" class="px-4 py-2 text-xs font-semibold rounded-lg border border-slate-200 text-slate-600 hover:bg-white transition-colors">Cancel</button>
-        <button type="button" id="btn-select-batch" onclick="selectHighlightedBatch()" class="px-4 py-2 text-xs font-semibold rounded-lg bg-abec-navy text-white hover:bg-abec-blue transition-colors disabled:opacity-40 disabled:cursor-not-allowed" disabled>Continue</button>
-      </div>
-    </div>
-  </div>
-</div>
-<!-- END: Change Batch Modal -->
 
-<!-- BEGIN: Serious Switch Confirmation Modal -->
-<div id="modal-switch-batch" class="fixed inset-0 z-[60] hidden" aria-hidden="true">
-  <div class="modal-backdrop absolute inset-0 abec-modal-backdrop" onclick="closeSwitchBatchModal()"></div>
-  <div class="relative min-h-full flex items-center justify-center p-4">
-    <div class="modal-panel abec-modal w-full max-w-2xl overflow-hidden border border-rose-200" role="dialog" aria-labelledby="switch-batch-title">
-      <div class="px-6 py-4 border-b border-rose-100 bg-rose-50/80 flex items-start gap-3">
-        <div class="w-10 h-10 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
-        </div>
-        <div>
-          <h3 id="switch-batch-title" class="text-lg font-bold text-slate-900">Confirm Active Batch Change</h3>
-          <p class="text-xs text-slate-600 mt-1" id="switch-batch-instruction">
-            Changing the active batch will start a new semester/training period. Records belonging to the previous batch will be preserved in Batch History and will not be deleted. The new batch will become the active batch for new applicants, students, schedules, and related records.
-          </p>
-        </div>
-      </div>
-      <div class="px-6 py-4 space-y-4 max-h-[60vh] overflow-y-auto custom-scrollbar">
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
-            <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Current Active Batch</p>
-            <p id="switch-current-name" class="text-sm font-bold text-slate-800">—</p>
-            <p id="switch-current-meta" class="text-xs text-slate-500 mt-1">—</p>
-          </div>
-          <div class="rounded-xl border border-abec-blue/30 bg-blue-50/50 p-4">
-            <p class="text-[10px] font-bold uppercase tracking-wider text-abec-blue mb-1">New Active Batch</p>
-            <p id="switch-target-name" class="text-sm font-bold text-slate-800">—</p>
-            <p id="switch-target-meta" class="text-xs text-slate-500 mt-1">—</p>
-          </div>
-        </div>
-        <div class="rounded-xl border border-amber-100 bg-amber-50/50 p-4">
-          <p class="text-[10px] font-bold uppercase tracking-wider text-amber-700 mb-2">Important records on the current batch</p>
-          <ul id="switch-impact-list" class="space-y-1.5 text-xs text-slate-700"></ul>
-          <p id="switch-impact-note" class="text-[11px] text-slate-500 mt-3">These records stay linked to the previous batch in history. Nothing is deleted or reset.</p>
-        </div>
-        <label class="flex items-start gap-3 rounded-xl border border-slate-200 p-4 cursor-pointer hover:bg-slate-50">
-          <input id="switch-ack-checkbox" type="checkbox" class="mt-0.5 rounded border-slate-300 text-abec-navy focus:ring-abec-blue" onchange="onSwitchAckChanged()"/>
-          <span class="text-xs text-slate-700 leading-relaxed">
-            I understand that changing the active batch will start a new semester/training period and that the previous batch will be moved to Batch History.
-          </span>
-        </label>
-      </div>
-      <div class="px-6 py-4 border-t border-slate-100 bg-slate-50/60 flex justify-end gap-2">
-        <button type="button" onclick="closeSwitchBatchModal()" class="px-4 py-2 text-xs font-semibold rounded-lg border border-slate-200 text-slate-600 hover:bg-white transition-colors">Cancel</button>
-        <button type="button" id="btn-confirm-switch" onclick="confirmSwitchBatch()" class="px-4 py-2 text-xs font-semibold rounded-lg bg-rose-600 text-white hover:bg-rose-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed" disabled>Confirm Switch</button>
-      </div>
-    </div>
-  </div>
-</div>
-<!-- END: Serious Switch Confirmation Modal -->
 
-<!-- BEGIN: Complete Batch Confirmation Modal -->
-<div id="modal-complete-batch" class="fixed inset-0 z-50 hidden" aria-hidden="true">
-  <div class="modal-backdrop absolute inset-0 abec-modal-backdrop" onclick="closeCompleteBatchModal()"></div>
-  <div class="relative min-h-full flex items-center justify-center p-4">
-    <div class="modal-panel abec-modal w-full max-w-lg overflow-hidden border border-slate-200" role="dialog" aria-labelledby="complete-batch-title">
-      <div class="px-6 pt-6 pb-2 flex flex-col items-center text-center">
-        <div class="w-14 h-14 rounded-full bg-amber-50 border border-amber-100 flex items-center justify-center mb-4">
-          <svg class="w-7 h-7 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
-        </div>
-        <h3 id="complete-batch-title" class="text-lg font-bold text-slate-800">Complete Current Batch?</h3>
-        <p class="text-sm text-slate-500 mt-2">Prepare the next batch before completing <span id="complete-batch-label" class="font-semibold text-abec-blue">—</span>. Associated records are preserved in Batch History.</p>
-      </div>
-      <div class="px-6 py-4">
-        <div class="rounded-xl border border-amber-100 bg-amber-50/60 p-4 text-left">
-          <p class="text-[11px] font-bold uppercase tracking-wider text-amber-700 mb-2">What happens next</p>
-          <ul class="space-y-2 text-xs text-slate-600">
-            <li class="flex gap-2"><span class="text-amber-500 mt-0.5">•</span><span>This batch stays active until the new batch is saved and confirmed.</span></li>
-            <li class="flex gap-2"><span class="text-amber-500 mt-0.5">•</span><span>Preserve applicants, students, schedules, and document requests for this semester.</span></li>
-            <li class="flex gap-2"><span class="text-amber-500 mt-0.5">•</span><span>No records are deleted.</span></li>
-            <li class="flex gap-2"><span class="text-amber-500 mt-0.5">•</span><span>Enter the new batch details, then confirm to continue.</span></li>
-          </ul>
-        </div>
-      </div>
-      <div class="px-6 py-4 border-t border-slate-100 bg-slate-50/60 flex justify-end gap-2">
-        <button type="button" onclick="closeCompleteBatchModal()" class="px-4 py-2 text-xs font-semibold rounded-lg border border-slate-200 text-slate-600 hover:bg-white transition-colors">Cancel</button>
-        <button type="button" onclick="confirmCompleteBatch()" class="px-4 py-2 text-xs font-semibold rounded-lg bg-amber-500 text-white hover:bg-amber-600 transition-colors shadow-sm">Continue</button>
-      </div>
-    </div>
-  </div>
-</div>
-<!-- END: Complete Batch Confirmation Modal -->
 
-<!-- BEGIN: Create Batch Modal -->
-<div id="modal-create-batch" class="fixed inset-0 z-50 hidden" aria-hidden="true">
-  <div class="modal-backdrop absolute inset-0 abec-modal-backdrop" onclick="closeCreateBatchModal()"></div>
-  <div class="relative min-h-full flex items-center justify-center p-4">
-    <div class="modal-panel abec-modal w-full max-w-lg overflow-hidden border border-slate-200" role="dialog" aria-labelledby="create-batch-title">
-      <div class="px-6 py-5 border-b border-slate-100">
-        <h3 id="create-batch-title" class="text-lg font-bold text-slate-800">Create New Batch</h3>
-        <p class="text-xs text-slate-500 mt-0.5">After review and confirmation, this batch can become the Current Active Batch. Previous records stay in history.</p>
-      </div>
-      <form id="create-batch-form" class="px-6 py-5 space-y-4" onsubmit="submitCreateBatch(event)">
-        <div>
-          <label for="new-batch-name" class="block text-xs font-semibold text-slate-600 mb-1.5">Batch Name</label>
-          <input id="new-batch-name" required type="text" placeholder="e.g., Batch2026-101" class="w-full text-sm border border-slate-200 rounded-lg focus:ring-abec-blue focus:border-abec-blue"/>
-        </div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label for="new-batch-start" class="block text-xs font-semibold text-slate-600 mb-1.5">Start Date</label>
-            <input id="new-batch-start" required type="date" oninput="updateNewBatchDates()" class="w-full text-sm border border-slate-200 rounded-lg focus:ring-abec-blue focus:border-abec-blue"/>
-          </div>
-          <div>
-            <label for="new-batch-end" class="block text-xs font-semibold text-slate-600 mb-1.5">End Date</label>
-            <input id="new-batch-end" required readonly type="date" class="w-full text-sm border border-slate-200 rounded-lg focus:ring-abec-blue focus:border-abec-blue"/>
-          </div>
-        </div>
-        <div class="pt-2 flex justify-end gap-2">
-          <button type="button" onclick="closeCreateBatchModal()" class="px-4 py-2 text-xs font-semibold rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors">Cancel</button>
-          <button type="submit" class="px-4 py-2 text-xs font-semibold rounded-lg bg-abec-navy text-white hover:bg-abec-blue transition-colors shadow-sm">Continue to Confirmation</button>
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
-<!-- END: Create Batch Modal -->
 
-<script data-purpose="batch-management-bridge">
+
+
+
+
+<script data-purpose="dashboard-handlers">
   /* Global handlers are provided by wwwroot/js/abec-dashboard.js */
   function filterDashboardApplicants() {
     if (window.AbecDashboard && typeof AbecDashboard.filterApplicants === 'function') {
@@ -1320,11 +774,11 @@
     }
   }
 </script>
-<script src="../../wwwroot/js/sidebar-auto-hide.js"></script>
-<script src="../../wwwroot/js/abec-api.js?v=20261031ux1"></script>
-<script src="../../wwwroot/js/abec-admin.js?v=20261105icons1"></script>
+<script src="../../wwwroot/js/sidebar-auto-hide.js?v=20261112features1"></script>
+<script src="../../wwwroot/js/abec-api.js?v=20261112features1"></script>
+<script src="../../wwwroot/js/abec-admin.js?v=20261108nobatchbanner1"></script>
 <p id="abec-system-assistant" class="abec-system-assistant" role="status" hidden><span id="abec-assistant-line">Hi Admin!</span></p>
-<script src="../../wwwroot/js/abec-dashboard.js?v=20261106deferredcompletion1"></script>
+<script src="../../wwwroot/js/abec-dashboard.js?v=20261108activebadge1"></script>
 <script>
   document.addEventListener('DOMContentLoaded', function () {
     var greet = document.getElementById('dash-greeting');
@@ -1334,16 +788,6 @@
       var session = AbecApi.getSession();
       var name = session && (session.displayName || session.emailOrUsername);
       if (name) greetName.textContent = name;
-    }
-
-    var footer = document.querySelector('[data-purpose="main-sidebar"] .abec-sidebar-footer');
-    if (footer) {
-      function showAccount() {
-        if (footer.classList.contains('hidden')) footer.classList.remove('hidden');
-        if (footer.getAttribute('aria-hidden') === 'true') footer.removeAttribute('aria-hidden');
-      }
-      showAccount();
-      new MutationObserver(showAccount).observe(footer, { attributes: true, attributeFilter: ['class', 'aria-hidden'] });
     }
 
     var assistant = document.getElementById('abec-system-assistant');
@@ -1357,7 +801,7 @@
     assistant.hidden = false;
     var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     var line = document.getElementById('abec-assistant-line');
-    var secondLine = 'Review the active batch and latest applicants below.';
+    var secondLine = 'Review the latest applicants and current statistics below.';
     window.setTimeout(function () {
       if (!line) return;
       if (reduceMotion) {

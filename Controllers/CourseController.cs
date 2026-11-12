@@ -12,6 +12,10 @@ public class CourseController : ControllerBase
 
     public CourseController(ICourseService courseService) => _courseService = courseService;
 
+    [HttpPost]
+    public async Task<ActionResult<ApiResponse<CourseDto>>> Create([FromBody] CreateCourseDto dto, CancellationToken cancellationToken)
+        => Ok(await _courseService.CreateAsync(dto, cancellationToken));
+
     [HttpGet]
     public async Task<ActionResult<ApiResponse<IReadOnlyList<CourseDto>>>> GetAll(CancellationToken cancellationToken)
         => Ok(await _courseService.GetAllAsync(cancellationToken));
@@ -38,6 +42,6 @@ public class CourseController : ControllerBase
     }
 
     [HttpGet("{id:int}/students")]
-    public async Task<ActionResult<ApiResponse<IReadOnlyList<StudentDto>>>> GetStudents(int id, [FromQuery] string? search, CancellationToken cancellationToken)
-        => Ok(await _courseService.GetEnrolledStudentsAsync(id, search, cancellationToken));
+    public async Task<ActionResult<ApiResponse<IReadOnlyList<StudentDto>>>> GetStudents(int id, [FromQuery] string? search, [FromQuery] int? batchId, CancellationToken cancellationToken)
+        => Ok(await _courseService.GetEnrolledStudentsAsync(id, search, cancellationToken, batchId));
 }

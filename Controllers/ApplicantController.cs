@@ -29,8 +29,8 @@ public class ApplicantController : ControllerBase
     }
 
     [HttpGet("stats")]
-    public async Task<ActionResult<ApiResponse<DashboardStatsDto>>> Stats(CancellationToken cancellationToken)
-        => Ok(await _applicantService.GetDashboardStatsAsync(cancellationToken));
+    public async Task<ActionResult<ApiResponse<DashboardStatsDto>>> Stats([FromQuery] int? batchId, CancellationToken cancellationToken)
+        => Ok(await _applicantService.GetDashboardStatsAsync(cancellationToken, batchId));
 
     [HttpGet]
     public async Task<ActionResult<ApiResponse<IReadOnlyList<ApplicantDto>>>> GetAll(
@@ -38,8 +38,9 @@ public class ApplicantController : ControllerBase
         [FromQuery] int? courseId,
         [FromQuery] string? search,
         [FromQuery] int? take,
+        [FromQuery] int? batchId,
         CancellationToken cancellationToken)
-        => Ok(await _applicantService.GetApplicantsAsync(status, courseId, search, take, cancellationToken));
+        => Ok(await _applicantService.GetApplicantsAsync(status, courseId, search, take, cancellationToken, batchId));
 
     [HttpGet("{id:int}")]
     public async Task<ActionResult<ApiResponse<ApplicantDto>>> GetById(int id, CancellationToken cancellationToken)
@@ -103,8 +104,8 @@ public class ApplicantController : ControllerBase
     }
 
     [HttpGet("registration-documents")]
-    public async Task<ActionResult<ApiResponse<IReadOnlyList<ApplicantRegistrationDocumentDto>>>> AllRegistrationDocuments(CancellationToken cancellationToken)
-        => Ok(await _applicantService.GetAllRegistrationDocumentsAsync(cancellationToken));
+    public async Task<ActionResult<ApiResponse<IReadOnlyList<ApplicantRegistrationDocumentDto>>>> AllRegistrationDocuments([FromQuery] int? batchId, CancellationToken cancellationToken)
+        => Ok(await _applicantService.GetAllRegistrationDocumentsAsync(cancellationToken, batchId));
 
     [HttpGet("{id:int}/application-form")]
     public async Task<IActionResult> ApplicationForm(int id, [FromQuery] bool inline, CancellationToken cancellationToken)

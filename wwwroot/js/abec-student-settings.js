@@ -70,8 +70,8 @@
     if (saving || !$('student-password-form').reportValidity()) return;
     var password = $('student-new-password').value;
     var confirm = $('student-confirm-password').value;
-    if (password !== confirm) { $('student-credential-msg').textContent = 'Passwords do not match.'; return; }
-    if (new TextEncoder().encode(password).length > 72) { $('student-credential-msg').textContent = 'Password must be at most 72 UTF-8 bytes.'; return; }
+    if (password !== confirm) { setMsg('Passwords do not match.', false); return; }
+    if (new TextEncoder().encode(password).length > 72) { setMsg('Password must be at most 72 UTF-8 bytes.', false); return; }
     saving = true;
     $('student-credential-save').disabled = true;
     try {
@@ -80,7 +80,7 @@
         confirmPassword: confirm || null, currentPassword: $('student-current-password').value || null,
         passwordLoginEnabled: $('student-password-enabled').checked
       });
-      if (!result.success || !result.data) { $('student-credential-msg').textContent = result.message || 'Login settings could not be saved.'; return; }
+      if (!result.success || !result.data) { setMsg(result.message || 'Login settings could not be saved.', false); return; }
       renderLogin(result.data);
       saving = false;
       closeDialog();
@@ -96,11 +96,7 @@
   }
 
   function setMsg(text, ok) {
-    var el = $('set-msg');
-    if (!el) return;
-    el.textContent = text || '';
-    el.classList.toggle('hidden', !text);
-    el.className = 'text-xs mt-2' + (text ? '' : ' hidden') + (ok ? ' text-emerald-700' : ' text-red-600');
+    window.AbecFeedback.inline($('set-msg'), text, ok ? 'success' : 'error');
   }
 
   function shown(value) {

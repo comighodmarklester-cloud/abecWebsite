@@ -25,7 +25,7 @@ public class PdfService : IPdfService
         var first = applicant.FirstName ?? "";
         var middle = string.IsNullOrWhiteSpace(applicant.MiddleName) ? "" : applicant.MiddleName;
         var course = applicant.Course?.CourseName ?? "N/A";
-        var address = applicant.Address ?? "N/A";
+        var address = AddressFormatting.FullAddress(applicant);
         var gender = string.IsNullOrWhiteSpace(applicant.Gender) ? "N/A" : applicant.Gender;
         var contact = applicant.ContactNumber ?? "N/A";
         var email = applicant.Email ?? "N/A";

@@ -42,12 +42,16 @@ public class AdminProfileController : ControllerBase
         int adminId,
         [FromBody] ChangePasswordDto dto,
         CancellationToken cancellationToken)
-        => Ok(await _profileService.ChangePasswordAsync(
+    {
+        var result = await _profileService.ChangePasswordAsync(
             adminId,
             dto,
             Request.Headers.UserAgent.ToString(),
             HttpContext.Connection.RemoteIpAddress?.ToString(),
-            cancellationToken));
+            cancellationToken);
+        if (result.Success) await ABEC_System.Services.SessionSecurity.RefreshAsync(HttpContext);
+        return Ok(result);
+    }
 
     [HttpPut("profile/{adminId:int}/notification-preferences")]
     public async Task<ActionResult<ApiResponse<AdminNotificationPrefsDto>>> UpdateNotificationPreferences(

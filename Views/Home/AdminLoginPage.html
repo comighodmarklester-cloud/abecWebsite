@@ -4,7 +4,7 @@
 <title>Admin Login - ABEC Institute</title>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
-<link href="../../wwwroot/css/abec-ui.css?v=20261018ux2" rel="stylesheet"/>
+<link href="../../wwwroot/css/abec-ui.css?v=20261107batchsdd1" rel="stylesheet"/>
 <style data-purpose="admin-login-styling">
     html, body { height: 100%; max-height: 100dvh; overflow: hidden; overscroll-behavior: none; }
     body { font-family: 'Plus Jakarta Sans', Inter, sans-serif; }
@@ -78,6 +78,7 @@
     #branding-sidebar { display: none !important; height: 100dvh; }
     @media (min-width: 1024px) { #branding-sidebar { display: flex !important; } }
   </style>
+<link href="../../wwwroot/css/abec-responsive.css?v=20261112features1" rel="stylesheet"/>
 </head>
 <body class="abec-public-surface login-shell login-ready admin-portal-page flex items-stretch">
 <section id="branding-sidebar" class="flex-col relative text-white overflow-hidden">
@@ -87,7 +88,7 @@
 </div>
 <div class="relative z-10 p-6 xl:p-8">
 <a href="LandingPage.html" class="inline-flex items-center gap-2 bg-white/10 hover:bg-white/16 px-4 py-2 rounded-full text-sm transition-all border border-white/15">
-<span>←</span> Back to site
+<span>&lt;</span>
 </a>
 </div>
 <div class="relative z-10 flex-grow flex flex-col justify-center px-8 xl:px-12 pb-8">
@@ -151,6 +152,6 @@ Authorized ABEC personnel only. Sign in to manage applicants, courses, activatio
     btn.setAttribute('title', label + ' password');
   }
 </script>
-<script src="../../wwwroot/js/abec-api.js?v=20261031ux1"></script>
-<script src="../../wwwroot/js/abec-login.js?v=20261002a"></script>
+<script src="../../wwwroot/js/abec-api.js?v=20261112features1"></script>
+<script src="../../wwwroot/js/abec-login.js?v=20261108messages1"></script>
 </body></html>

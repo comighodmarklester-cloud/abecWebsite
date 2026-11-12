@@ -183,6 +183,26 @@ namespace ABEC_System.Migrations
                         .HasColumnType("varchar(150)")
                         .HasColumnName("barangay");
 
+                    b.Property<bool>("LegacyContactConflict")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("tinyint(1)")
+                        .HasDefaultValue(false)
+                        .HasColumnName("legacy_contact_conflict");
+
+                    b.Property<string>("BatchContactKey")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)")
+                        .HasColumnName("batch_contact_key")
+                        .HasComputedColumnSql("CASE WHEN legacy_contact_conflict=1 THEN NULL ELSE CASE WHEN LENGTH(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(TRIM(contact_number), '+', ''), ' ', ''), '-', ''), '(', ''), ')', ''))=12 AND LEFT(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(TRIM(contact_number), '+', ''), ' ', ''), '-', ''), '(', ''), ')', ''),2)='63' THEN CONCAT('0',SUBSTRING(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(TRIM(contact_number), '+', ''), ' ', ''), '-', ''), '(', ''), ')', ''),3)) ELSE REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(TRIM(contact_number), '+', ''), ' ', ''), '-', ''), '(', ''), ')', '') END END", true);
+
+                    b.Property<string>("BatchEmailKey")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("batch_email_key")
+                        .HasComputedColumnSql("LOWER(TRIM(email))", true);
+
                     b.Property<int?>("BatchId")
                         .HasColumnType("int")
                         .HasColumnName("batch_id");
@@ -399,12 +419,18 @@ namespace ABEC_System.Migrations
 
                     b.HasKey("ApplicantId");
 
-                    b.HasIndex("BatchId");
-
                     b.HasIndex("ConfirmationToken")
                         .IsUnique();
 
                     b.HasIndex("CourseId");
+
+                    b.HasIndex("BatchId", "BatchContactKey")
+                        .IsUnique()
+                        .HasDatabaseName("ux_batch_contact_key");
+
+                    b.HasIndex("BatchId", "BatchEmailKey")
+                        .IsUnique()
+                        .HasDatabaseName("ux_batch_email_key");
 
                     b.ToTable("applicants");
                 });
@@ -513,6 +539,12 @@ namespace ABEC_System.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("BatchId"));
 
+                    b.Property<int?>("ActiveSlotKey")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("int")
+                        .HasColumnName("active_slot_key")
+                        .HasComputedColumnSql("CASE WHEN status = 'Active' THEN 1 ELSE NULL END", true);
+
                     b.Property<DateTime?>("AssessmentDate")
                         .HasColumnType("datetime(6)")
                         .HasColumnName("assessment_date");
@@ -522,6 +554,10 @@ namespace ABEC_System.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("varchar(100)")
                         .HasColumnName("batch_name");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("completed_at");
 
                     b.Property<DateTime>("EndDate")
                         .HasColumnType("datetime(6)")
@@ -538,6 +574,10 @@ namespace ABEC_System.Migrations
                         .HasColumnName("status");
 
                     b.HasKey("BatchId");
+
+                    b.HasIndex("ActiveSlotKey")
+                        .IsUnique()
+                        .HasDatabaseName("ux_batch_active_slot");
 
                     b.ToTable("batches");
                 });
@@ -845,6 +885,14 @@ namespace ABEC_System.Migrations
                         .HasColumnType("int")
                         .HasColumnName("applicant_id");
 
+                    b.Property<int?>("BatchId")
+                        .HasColumnType("int")
+                        .HasColumnName("batch_id");
+
+                    b.Property<int?>("CourseDocumentId")
+                        .HasColumnType("int")
+                        .HasColumnName("course_document_id");
+
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime(6)")
@@ -879,6 +927,10 @@ namespace ABEC_System.Migrations
                     b.HasKey("NotificationId");
 
                     b.HasIndex("ApplicantId");
+
+                    b.HasIndex("BatchId");
+
+                    b.HasIndex("CourseDocumentId");
 
                     b.HasIndex("RequestId");
 
@@ -1045,6 +1097,37 @@ namespace ABEC_System.Migrations
                         .IsUnique();
 
                     b.ToTable("student_course_documents");
+                });
+
+            modelBuilder.Entity("ABEC_System.Models.StudentDocumentEligibility", b =>
+                {
+                    b.Property<int>("StudentId")
+                        .HasColumnType("int")
+                        .HasColumnName("student_id");
+
+                    b.Property<DateTime?>("AssessmentCompletedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("assessment_completed_at");
+
+                    b.Property<DateTime?>("FeesPaidAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("fees_paid_at");
+
+                    b.Property<DateTime?>("TrainingCompletedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("training_completed_at");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<int?>("VerifiedByAdminId")
+                        .HasColumnType("int")
+                        .HasColumnName("verified_by_admin_id");
+
+                    b.HasKey("StudentId");
+
+                    b.ToTable("student_document_eligibility");
                 });
 
             modelBuilder.Entity("ABEC_System.Models.StudentLoginCredential", b =>
@@ -1260,6 +1343,16 @@ namespace ABEC_System.Migrations
                         .HasForeignKey("ApplicantId")
                         .OnDelete(DeleteBehavior.Cascade);
 
+                    b.HasOne("ABEC_System.Models.Batch", null)
+                        .WithMany()
+                        .HasForeignKey("BatchId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ABEC_System.Models.StudentCourseDocument", null)
+                        .WithMany()
+                        .HasForeignKey("CourseDocumentId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("ABEC_System.Models.DocumentRequest", null)
                         .WithMany()
                         .HasForeignKey("RequestId")
@@ -1314,6 +1407,15 @@ namespace ABEC_System.Migrations
                         .IsRequired();
 
                     b.Navigation("Student");
+                });
+
+            modelBuilder.Entity("ABEC_System.Models.StudentDocumentEligibility", b =>
+                {
+                    b.HasOne("ABEC_System.Models.Student", null)
+                        .WithOne()
+                        .HasForeignKey("ABEC_System.Models.StudentDocumentEligibility", "StudentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("ABEC_System.Models.StudentLoginCredential", b =>

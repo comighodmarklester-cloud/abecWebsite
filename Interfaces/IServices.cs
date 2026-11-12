@@ -12,7 +12,8 @@ public interface IAuthService
 
 public interface IApplicantService
 {
-    Task<ApiResponse<DashboardStatsDto>> GetDashboardStatsAsync(CancellationToken cancellationToken = default);
+    Task ExpireSlotOffersAsync(CancellationToken cancellationToken = default);
+    Task<ApiResponse<DashboardStatsDto>> GetDashboardStatsAsync(CancellationToken cancellationToken = default, int? batchId = null);
     Task<ApiResponse<IReadOnlyList<ApplicantDto>>> GetApplicantsAsync(string? status = null, int? courseId = null, string? search = null, int? take = null, CancellationToken cancellationToken = default, int? batchId = null);
     Task<ApiResponse<ApplicantDto>> GetByIdAsync(int id, CancellationToken cancellationToken = default);
     Task<ApiResponse<ApplicantDto>> UpdateRegistrationAsync(int id, UpdateApplicantRegistrationDto dto, CancellationToken cancellationToken = default);
@@ -47,16 +48,17 @@ public interface IBatchService
 
 public interface ICourseService
 {
+    Task<ApiResponse<CourseDto>> CreateAsync(CreateCourseDto dto, CancellationToken cancellationToken = default);
     Task<ApiResponse<IReadOnlyList<CourseDto>>> GetAllAsync(CancellationToken cancellationToken = default);
     Task<ApiResponse<CourseDto>> GetByIdAsync(int id, CancellationToken cancellationToken = default);
-    Task<ApiResponse<IReadOnlyList<StudentDto>>> GetEnrolledStudentsAsync(int courseId, string? search = null, CancellationToken cancellationToken = default);
+    Task<ApiResponse<IReadOnlyList<StudentDto>>> GetEnrolledStudentsAsync(int courseId, string? search = null, CancellationToken cancellationToken = default, int? batchId = null);
     Task<ApiResponse<CourseDto>> SetSlotCapacityAsync(int courseId, int slotCapacity, CancellationToken cancellationToken = default);
     Task<ApiResponse<CourseHistoryPageDto>> GetHistoryAsync(string? search, int page, int pageSize, CancellationToken cancellationToken = default);
 }
 
 public interface IActivationService
 {
-    Task<ApiResponse<ActivationSummaryDto>> GetSummaryAsync(CancellationToken cancellationToken = default);
+    Task<ApiResponse<ActivationSummaryDto>> GetSummaryAsync(CancellationToken cancellationToken = default, int? batchId = null);
     Task<ApiResponse<IReadOnlyList<StudentDto>>> GetAccountsAsync(string? status = null, int? courseId = null, string? search = null, CancellationToken cancellationToken = default, int? batchId = null);
     Task<ApiResponse<StudentDto>> GeneratePinAsync(int studentId, CancellationToken cancellationToken = default);
     Task<ApiResponse<StudentDto>> ActivateAsync(int studentId, CancellationToken cancellationToken = default);
@@ -87,7 +89,7 @@ public interface IDocumentRequestService
     Task<ApiResponse<DocumentRequestDto>> GetByIdAsync(int id, CancellationToken cancellationToken = default);
     Task<ApiResponse<IReadOnlyList<DocumentRequestDto>>> GetByStudentAsync(int studentId, CancellationToken cancellationToken = default);
     Task<ApiResponse<IReadOnlyList<StudentDocumentCatalogItemDto>>> GetStudentCatalogAsync(int studentId, CancellationToken cancellationToken = default);
-    Task<ApiResponse<DocumentRequestDashboardDto>> GetDashboardAsync(CancellationToken cancellationToken = default);
+    Task<ApiResponse<DocumentRequestDashboardDto>> GetDashboardAsync(CancellationToken cancellationToken = default, int? batchId = null);
     Task<ApiResponse<DocumentRequestDto>> CreateAsync(int studentId, CreateDocumentRequestDto dto, CancellationToken cancellationToken = default);
     Task<ApiResponse<DocumentRequestDto>> UpdateStatusAsync(int id, string status, string? holdReason = null, CancellationToken cancellationToken = default);
     Task<ApiResponse<DocumentRequestDto>> SaveReleaseFileAsync(int id, IFormFile file, CancellationToken cancellationToken = default);
@@ -103,7 +105,7 @@ public interface INotificationService
     Task<ApiResponse<object>> MarkReadAsync(int notificationId, CancellationToken cancellationToken = default);
     Task<ApiResponse<object>> MarkAllReadAsync(int studentId, CancellationToken cancellationToken = default);
     Task CreateAsync(string title, string message, int? studentId = null, int? applicantId = null, CancellationToken cancellationToken = default);
-    Task CreateAdminAsync(string title, string message, int? applicantId = null, CancellationToken cancellationToken = default, int? requestId = null);
+    Task CreateAdminAsync(string title, string message, int? applicantId = null, CancellationToken cancellationToken = default, int? requestId = null, int? courseDocumentId = null);
 }
 
 public interface IArchiveService
@@ -124,6 +126,7 @@ public interface IAdminProfileService
 
 public interface ICourseDocumentService
 {
+    Task<ApiResponse<StudentCourseReleaseDto>> PrepareAsync(int studentId, CancellationToken ct = default);
     Task<ApiResponse<CourseReleaseBoardDto>> GetBoardAsync(int courseId, int? batchId, CancellationToken cancellationToken = default);
     Task<ApiResponse<StudentCourseReleaseDto>> GetStudentReleaseAsync(int studentId, CancellationToken cancellationToken = default);
     Task<ApiResponse<StudentCourseDocumentDto>> UploadAsync(int courseDocumentId, IFormFile file, int? adminId, CancellationToken cancellationToken = default);

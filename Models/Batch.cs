@@ -24,6 +24,9 @@ public class Batch
     [Column("assessment_date")]
     public DateTime? AssessmentDate { get; set; }
 
+    [Column("completed_at")]
+    public DateTime? CompletedAt { get; set; }
+
     [Required]
     [MaxLength(20)]
     [Column("status")]

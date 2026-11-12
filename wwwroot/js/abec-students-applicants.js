@@ -3,15 +3,6 @@
   'use strict';
 
   var PAGE_SIZE = 8;
-  var ARCHIVE_REASONS = [
-    'Graduated',
-    'Deactivated',
-    'Academic Dismissal',
-    'Withdrawal',
-    'Inactive Lead',
-    'Other'
-  ];
-
   var state = {
     records: [],
     courses: [],
@@ -65,21 +56,7 @@
   }
 
   function setMessage(text, kind) {
-    var el = document.getElementById('records-message');
-    if (!el) return;
-    if (!text) {
-      el.classList.add('hidden');
-      el.textContent = '';
-      return;
-    }
-    el.className = 'records-message ' + (kind || 'info');
-    el.textContent = text;
-    if (window.AbecFeedback) {
-      window.AbecFeedback.notify({
-        type: kind === 'ok' || kind === 'success' ? 'success' : (kind === 'error' ? 'error' : 'info'),
-        message: text
-      });
-    }
+    window.AbecFeedback.inline(document.getElementById('records-message'), text, kind || 'info');
   }
 
   function readFilters() {
@@ -256,7 +233,7 @@
         else if (category === 'archived') archived += 1;
       });
       var count = applied;
-      var text = applied + '/' + capacity + ' Available Slot' + (capacity === 1 ? '' : 's');
+      var text = applied + '/' + capacity;
       if (state.tab === 'enrolled') {
         count = enrolled;
         text = enrolled + ' Enrolled Student' + (enrolled === 1 ? '' : 's');
@@ -265,7 +242,16 @@
         text = archived + ' Archived Record' + (archived === 1 ? '' : 's');
       }
       var line = card.querySelector('.slot-available');
-      if (line) line.textContent = text;
+      if (line) {
+        line.textContent = text;
+        if (state.tab === 'applicants') {
+          line.setAttribute('data-tooltip', 'Available Slots');
+          line.setAttribute('aria-label', text + ' Available Slots');
+        } else {
+          line.removeAttribute('data-tooltip');
+          line.removeAttribute('aria-label');
+        }
+      }
       var bar = card.querySelector('.slot-progress > span');
       if (bar) {
         var pct = capacity > 0 ? Math.min(100, Math.round((count / capacity) * 100)) : 0;
@@ -318,6 +304,7 @@
       return {
         applicantId: applicant.applicantId,
         studentId: student ? student.studentId : null,
+        batchId: student ? student.batchId : applicant.batchId,
         name: nameOf(applicant),
         course: applicant.courseName || (student && student.courseName) || '',
         courseId: applicant.courseId || (student && student.courseId) || '',
@@ -340,6 +327,7 @@
       state.records.push({
         applicantId: student.applicantId,
         studentId: student.studentId,
+        batchId: student.batchId,
         name: student.fullName || '—',
         course: student.courseName || '',
         courseId: student.courseId || '',
@@ -424,41 +412,12 @@
     openDetails(applicantId);
   }
 
-  function openArchive(record) {
-    var modal = document.getElementById('archive-modal');
-    if (!modal) return;
-    document.getElementById('archive-student-id').value = record.studentId;
-    document.getElementById('archive-applicant-id').value = record.applicantId;
-    document.getElementById('archive-reason').value = '';
-    document.getElementById('archive-specific').value = '';
-    modal.classList.remove('hidden');
-  }
-
-  function closeArchive() {
-    var modal = document.getElementById('archive-modal');
-    if (modal) modal.classList.add('hidden');
-  }
-
-  async function saveArchive(event) {
-    event.preventDefault();
-    var reason = document.getElementById('archive-reason').value;
-    var specific = document.getElementById('archive-specific').value.trim();
-    if (!reason) {
-      setMessage('Select an archive reason.', 'error');
-      return;
-    }
-    if (reason === 'Other' && !specific) {
-      setMessage('Enter a specific reason when the archive reason is Other.', 'error');
-      return;
-    }
-    var studentId = document.getElementById('archive-student-id').value;
-    var result = await AbecApi.post('/api/activations/' + encodeURIComponent(studentId) + '/deactivate', {
-      archiveReason: reason,
-      specificReason: specific || null
+  async function openArchive(record) {
+    var result = await window.AbecArchiveDialog.open({
+      studentId: record.studentId, studentName: record.name || record.fullName, batchId: record.batchId
     });
-    setMessage(result.message || (result.success ? 'Record archived.' : 'Unable to archive this record.'), result.success ? 'ok' : 'error');
     if (!result.success) return;
-    closeArchive();
+    setMessage('Record archived.', 'ok');
     closeDetails();
     await loadRecords();
   }
@@ -515,7 +474,10 @@
     if (!window.AbecApi || !AbecApi.requireRole('Admin')) return;
     var openId = applyQuery();
     loadRecords().then(function () {
-      if (openId) openDetails(openId);
+      if (openId) {
+        AbecApi.consumePageAction(['id', 'highlight', 'status']);
+        openDetails(openId);
+      }
     });
 
     document.getElementById('records-search').addEventListener('input', function () { state.page = 1; renderTable(); });
@@ -556,11 +518,8 @@
     });
     document.getElementById('edit-form').addEventListener('submit', saveEdit);
     document.getElementById('edit-cancel').addEventListener('click', closeEdit);
-    document.getElementById('archive-form').addEventListener('submit', saveArchive);
-    document.getElementById('archive-cancel').addEventListener('click', closeArchive);
     document.addEventListener('keydown', function (event) {
       if (event.key === 'Escape') {
-        closeArchive();
         closeEdit();
         closeDetails();
       }

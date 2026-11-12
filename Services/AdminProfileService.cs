@@ -111,8 +111,9 @@ public class AdminProfileService : IAdminProfileService
         if (!VerifyPassword(dto.CurrentPassword, admin.Password))
             return ApiResponse<object>.Fail("Current password is incorrect.");
 
-        if (string.IsNullOrWhiteSpace(dto.NewPassword) || dto.NewPassword.Length < 6)
-            return ApiResponse<object>.Fail("New password must be at least 6 characters.");
+        if (string.IsNullOrWhiteSpace(dto.NewPassword) || dto.NewPassword.Length < 8
+            || System.Text.Encoding.UTF8.GetByteCount(dto.NewPassword) > 72)
+            return ApiResponse<object>.Fail("Use at least 8 characters and at most 72 UTF-8 bytes for the new password.");
 
         var hashed = AuthService.HashPassword(dto.NewPassword);
         admin.Password = hashed;
@@ -266,8 +267,6 @@ public class AdminProfileService : IAdminProfileService
 
     private static bool VerifyPassword(string plain, string stored)
     {
-        if (stored.StartsWith("$2", StringComparison.Ordinal))
-            return BCrypt.Net.BCrypt.Verify(plain, stored);
-        return string.Equals(plain, stored, StringComparison.Ordinal);
+        return AuthService.PasswordMatches(plain, stored);
     }
 }

@@ -16,6 +16,8 @@ public class AdminController : Controller
 
     public IActionResult Dashboard() => View();
 
+    public IActionResult BatchManagement() => Redirect("/Views/Admin/BatchManagement.html");
+
     public IActionResult Applicants() => View();
 
     public IActionResult AccountActivation() => View();
@@ -31,9 +33,10 @@ public class AdminController : Controller
     [HttpGet]
     public async Task<IActionResult> DashboardData(CancellationToken cancellationToken)
     {
-        var stats = await _applicantService.GetDashboardStatsAsync(cancellationToken);
         var activeBatch = await _batchService.GetActiveAsync(cancellationToken);
-        var recentApplicants = await _applicantService.GetApplicantsAsync(take: 10, cancellationToken: cancellationToken);
+        var batchId = activeBatch.Data?.BatchId ?? 0;
+        var stats = await _applicantService.GetDashboardStatsAsync(cancellationToken, batchId);
+        var recentApplicants = await _applicantService.GetApplicantsAsync(take: 10, cancellationToken: cancellationToken, batchId: batchId);
         return Json(new
         {
             stats = stats.Data,

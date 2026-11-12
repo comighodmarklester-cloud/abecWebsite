@@ -741,7 +741,7 @@
   </style>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
-<link href="../../wwwroot/css/abec-ui.css?v=20261018ux2" rel="stylesheet"/>
+<link href="../../wwwroot/css/abec-ui.css?v=20261107batchsdd1" rel="stylesheet"/>
 <script>
   tailwind.config = {
     theme: {
@@ -751,6 +751,7 @@
     }
   }
 </script>
+<link href="../../wwwroot/css/abec-responsive.css?v=20261112features1" rel="stylesheet"/>
 </head>
 <body class="abec-public-surface abec-landing-page font-sans text-slate-800">
 <!-- BEGIN: MainHeader -->
@@ -894,7 +895,6 @@ Log in
 </div>
 </div>
 <p class="hero-footnote">
-      Gain practical skills, learn from experienced trainers, and open doors to better career opportunities. Enroll now and take the first step toward your success!
     </p>
 </section>
 <!-- END: HeroSection -->
@@ -1182,14 +1182,10 @@ Log in
           <h3 id="enroll-modal-title" class="text-2xl font-bold text-slate-900">Enroll Now</h3>
           <button aria-label="Close" onclick="requestCloseEnrollModal()" class="text-gray-400 hover:text-slate-900 transition text-2xl leading-none px-2">&times;</button>
         </div>
-        <p class="text-sm text-gray-500 mb-6">Welcome to ABEC Institute of Business and Technology Inc.</p>
         <div class="mb-6 rounded-lg border border-[#2563EB] bg-[#f3f7fb] px-4 py-3">
           <p class="text-xs font-bold tracking-wide text-[#0B1F3A] mb-1">IMPORTANT NOTE</p>
           <p class="text-sm text-slate-700 leading-relaxed">Please enter legibly and complete the details needed. Please do not leave any blank field. Put None or N/A if field is not applicable. The details you put here will be used as the basis for the reporting and printing of the corresponding certificate.</p>
         </div>
-        <p class="text-sm text-gray-600 leading-relaxed mb-8">
-          You are about to begin your enrollment application. The registration form will ask for your basic information. Please make sure your details are accurate before submitting.
-        </p>
         <button onclick="showEnrollStep('wizard')" class="w-full bg-[#051630] hover:bg-[#0a2347] text-white py-3 rounded-lg font-semibold text-sm flex items-center justify-center gap-2 transition-colors">
           Continue
         </button>
@@ -1197,7 +1193,7 @@ Log in
     </div>
     <!-- Step 2: Registration Form -->
     <div id="enroll-step-form" class="hidden p-8 md:p-10">
-      <form id="enroll-wizard-form" action="#" method="POST" class="space-y-5" novalidate onsubmit="return false;">
+      <form id="enroll-wizard-form" action="#" method="POST" class="space-y-5" novalidate>
         <div class="flex items-start justify-between gap-4">
           <div>
             <h3 class="text-2xl font-bold text-slate-900 mb-1">Registration Form</h3>
@@ -1411,7 +1407,7 @@ Log in
             </div>
             <div>
               <label class="block text-xs font-medium text-slate-700 mb-1" for="enroll-barangay">Barangay <span class="text-red-500">*</span></label>
-              <input class="w-full enroll-input rounded-lg py-2.5 px-3 text-sm" id="enroll-barangay" name="barangay" type="text" maxlength="150" autocomplete="address-level3">
+              <div class="barangay-input"><span aria-hidden="true">Brgy.</span><input class="w-full enroll-input rounded-lg py-2.5 px-3 text-sm" id="enroll-barangay" name="barangay" type="text" maxlength="144" autocomplete="address-level3" aria-describedby="enroll-barangay-hint enroll-barangay-error"></div><span id="enroll-barangay-hint" class="sr-only">Brgy. is included automatically. Enter only the barangay name.</span>
               <p class="enroll-field-error" id="enroll-barangay-error"></p>
             </div>
             <div>
@@ -1577,7 +1573,7 @@ Log in
           </div>
           <div class="flex gap-3 pt-4">
             <button type="button" class="enroll-wizard-back-step flex-1 bg-white hover:bg-gray-100 text-[#051630] py-2.5 rounded-lg font-semibold text-sm border border-[#051630]">Back</button>
-            <button type="button" id="enroll-wizard-submit" class="flex-1 bg-[#051630] hover:bg-[#0a2347] text-white py-2.5 rounded-lg font-semibold text-sm">Submit Application</button>
+            <button type="submit" id="enroll-wizard-submit" class="flex-1 bg-[#051630] hover:bg-[#0a2347] text-white py-2.5 rounded-lg font-semibold text-sm">Submit Application</button>
           </div>
         </div>
 
@@ -1676,100 +1672,10 @@ Log in
     </div>
   </div>
 </div>
-<script data-purpose="enroll-modal">
-  function openEnrollModal() {
-    // Re-open without wiping fields — data is only cleared after confirmed X close (or successful submit).
-    var formStep = document.getElementById('enroll-step-form');
-    var hasFormProgress = formStep && !formStep.classList.contains('hidden');
-    if (!hasFormProgress) showEnrollStep('intro');
-    document.getElementById('enroll-modal').classList.remove('hidden');
-    document.body.style.overflow = 'hidden';
-  }
-
-  /** Backdrop / Escape: hide modal but keep entered registration data. */
-  function dismissEnrollModal() {
-    cancelCloseEnrollModal();
-    document.getElementById('enroll-modal').classList.add('hidden');
-    document.body.style.overflow = '';
-  }
-
-  function isEnrollCloseConfirmOpen() {
-    var el = document.getElementById('enroll-close-confirm');
-    return el && !el.classList.contains('hidden');
-  }
-
-  /** Intentional close via X: show designed confirmation dialog. */
-  function requestCloseEnrollModal() {
-    var confirmEl = document.getElementById('enroll-close-confirm');
-    if (!confirmEl) return;
-    confirmEl.classList.remove('hidden');
-  }
-
-  function cancelCloseEnrollModal() {
-    var confirmEl = document.getElementById('enroll-close-confirm');
-    if (confirmEl) confirmEl.classList.add('hidden');
-  }
-
-  function confirmCloseEnrollModal() {
-    cancelCloseEnrollModal();
-    if (typeof window.resetEnrollRegistrationForm === 'function') {
-      window.resetEnrollRegistrationForm();
-    }
-    showEnrollStep('intro');
-    document.getElementById('enroll-modal').classList.add('hidden');
-    document.body.style.overflow = '';
-  }
-
-  // Kept for successful submit and any legacy callers that should fully close.
-  function closeEnrollModal() {
-    dismissEnrollModal();
-  }
-
-  function showEnrollStep(step) {
-    var showForm = step === 'form' || step === 'wizard';
-    document.getElementById('enroll-step-intro').classList.toggle('hidden', step !== 'intro');
-    document.getElementById('enroll-step-form').classList.toggle('hidden', !showForm);
-    if (showForm) {
-      var contact = document.getElementById('enroll-contact');
-      if (contact) {
-        if (!contact.value) contact.value = '+63';
-        var value = String(contact.value || '').trim();
-        contact.classList.toggle('is-prefix-only', !value || value === '+63');
-      }
-    }
-    if (step === 'wizard' && window.AbecEnrollWizard && typeof window.AbecEnrollWizard.goToStep === 'function') {
-      var stepNum = typeof window.AbecEnrollWizard.getCurrentStep === 'function'
-        ? window.AbecEnrollWizard.getCurrentStep() : 1;
-      if (!stepNum || stepNum < 1) window.AbecEnrollWizard.goToStep(1);
-      else window.AbecEnrollWizard.goToStep(stepNum);
-    }
-  }
-
-  document.addEventListener('keydown', function (e) {
-    if (e.key !== 'Escape') return;
-    var privacy = document.getElementById('enroll-privacy-modal');
-    if (privacy && !privacy.classList.contains('hidden')) {
-      var privacyClose = document.getElementById('enroll-privacy-close');
-      if (privacyClose) privacyClose.click();
-      else {
-        privacy.classList.add('hidden');
-        privacy.setAttribute('aria-hidden', 'true');
-      }
-      return;
-    }
-    if (isEnrollCloseConfirmOpen()) {
-      cancelCloseEnrollModal();
-      return;
-    }
-    var modal = document.getElementById('enroll-modal');
-    if (modal && !modal.classList.contains('hidden')) {
-      dismissEnrollModal();
-    }
-  });
-</script>
-<script src="../../wwwroot/js/abec-api.js?v=20261031ux1"></script>
-<script src="../../wwwroot/js/abec-landing.js?v=20261030spread1"></script>
-<script src="../../wwwroot/js/abec-enroll-wizard.js?v=20261031ux1"></script>
+<script src="../../wwwroot/js/abec-enroll-modal.js?v=20261112security1"></script>
+<script src="../../wwwroot/js/abec-api.js?v=20261112features1"></script>
+<script src="../../wwwroot/js/abec-landing.js?v=20261112security1"></script>
+<script src="../../wwwroot/js/abec-enroll-wizard.js?v=20261112features1"></script>
 <!-- END: EnrollModal --><section id="courses" class="bg-white abec-section">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10">
     <div class="text-center mb-12">
@@ -1997,7 +1903,6 @@ Log in
       <div class="space-y-6">
         <div>
           <h3 class="text-[#2563EB] font-bold text-lg mb-2">ABEC Institute of Business and Technology Inc</h3>
-          <p class="text-gray-700 text-sm leading-relaxed">Dedicated to high-quality technical vocational training and assessment for the Filipino workforce.</p>
         </div>
         <div class="flex gap-4">
           <div class="w-1.5 bg-[#2563EB] shrink-0"></div>
@@ -2052,8 +1957,6 @@ Log in
         </div>
         <div class="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <p class="text-sm text-gray-700">122 Peñaranda Street, Legazpi, Bicol</p>
-            <p class="text-xs text-gray-600 mt-1">The pin marks Peñaranda Street in the Legazpi Port District from OpenStreetMap. Building number 122 is not a separate mapped point.</p>
           </div>
           <a class="abec-directions shrink-0" href="https://www.google.com/maps/dir/?api=1&amp;destination=122+Pe%C3%B1aranda+Street%2C+Legazpi%2C+Bicol" target="_blank" rel="noopener noreferrer">Get Directions</a>
         </div>
@@ -2113,21 +2016,7 @@ Log in
     })();
   </script>
 </section>
-<footer class="bg-white py-12 border-t border-gray-200">
-<div class="max-w-4xl mx-auto px-4 text-center">
-<p class="text-institutional-blue font-bold text-lg leading-relaxed">
-        ABEC Institute of Business and Technology, Inc. is a TESDA-accredited technical-vocational institution in Albay that provides skills-based training in business and technology. Through TESDA-registered programs, ABEC equips learners with industry-relevant competencies and prepares them for employment and career advancement.
-      </p>
-</div>
-</footer>
 <!-- END: AccreditationFooter -->
-
-
-
-
-
-
-
 
 <script src="../../wwwroot/js/abec-landing-chrome.js?v=20261012d"></script>
 <script data-purpose="premium-chrome">

@@ -15,25 +15,28 @@ public class AuthController : ControllerBase
 
     public AuthController(IAuthService authService) => _authService = authService;
 
+    [EnableRateLimiting("StudentLogin")]
     [HttpPost("admin-login")]
     public async Task<ActionResult<ApiResponse<AuthResultDto>>> AdminLogin([FromBody] AdminLoginDto dto, CancellationToken cancellationToken)
     {
         AttachClientMeta(dto);
-        return Ok(await _authService.AdminLoginAsync(dto, cancellationToken));
+        var result = await _authService.AdminLoginAsync(dto, cancellationToken);
+        await SignInStudentAsync(result);
+        return Ok(result);
     }
 
     [EnableRateLimiting("StudentLogin")]
     [HttpPost("student-login")]
     public async Task<ActionResult<ApiResponse<AuthResultDto>>> StudentLogin([FromBody] StudentLoginDto dto, CancellationToken cancellationToken)
     {
-        dto.ClientIp ??= HttpContext.Connection.RemoteIpAddress?.ToString();
-        if (string.IsNullOrWhiteSpace(dto.UserAgent))
-            dto.UserAgent = Request.Headers.UserAgent.ToString();
+        dto.ClientIp = HttpContext.Connection.RemoteIpAddress?.ToString();
+        dto.UserAgent = Request.Headers.UserAgent.ToString();
         var result = await _authService.StudentLoginAsync(dto, cancellationToken);
         await SignInStudentAsync(result);
         return Ok(result);
     }
 
+    [EnableRateLimiting("StudentLogin")]
     [HttpPost("register")]
     public async Task<ActionResult<ApiResponse<AuthResultDto>>> Register([FromBody] StudentRegisterDto dto, CancellationToken cancellationToken)
     {
@@ -48,7 +51,7 @@ public class AuthController : ControllerBase
         {
             var identity = new ClaimsIdentity(new[] {
                 new Claim(ClaimTypes.NameIdentifier, result.Data.UserId.ToString()),
-                new Claim(ClaimTypes.Role, "Student")
+                new Claim(ClaimTypes.Role, result.Data.Role)
             }, "StudentSession");
             await HttpContext.SignInAsync("StudentSession", new ClaimsPrincipal(identity));
         }
@@ -63,8 +66,7 @@ public class AuthController : ControllerBase
 
     private void AttachClientMeta(AdminLoginDto dto)
     {
-        dto.ClientIp ??= HttpContext.Connection.RemoteIpAddress?.ToString();
-        if (string.IsNullOrWhiteSpace(dto.UserAgent))
-            dto.UserAgent = Request.Headers.UserAgent.ToString();
+        dto.ClientIp = HttpContext.Connection.RemoteIpAddress?.ToString();
+        dto.UserAgent = Request.Headers.UserAgent.ToString();
     }
 }

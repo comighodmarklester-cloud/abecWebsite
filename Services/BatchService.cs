@@ -185,7 +185,7 @@ public class BatchService : IBatchService
             BatchName = dto.BatchName.Trim(),
             StartDate = dto.StartDate.Date,
             EndDate = dto.EndDate.Date,
-            Status = SystemConstants.BatchStatuses.Closed
+            Status = SystemConstants.BatchStatuses.Draft
         };
 
         _db.Batches.Add(batch);
@@ -203,7 +203,8 @@ public class BatchService : IBatchService
         {
             if (completing is not null)
             {
-                completing.Status = SystemConstants.BatchStatuses.Closed;
+                completing.Status = SystemConstants.BatchStatuses.Completed;
+                completing.CompletedAt ??= DateTime.UtcNow;
                 _db.BatchHistories.Add(new BatchHistory
                 {
                     BatchId = completing.BatchId,
@@ -242,7 +243,7 @@ public class BatchService : IBatchService
         if (batch.Status == SystemConstants.BatchStatuses.Active)
             return ApiResponse<BatchDto>.Ok(await MapAsync(batch, cancellationToken), "Batch is already active.");
 
-        if (await _db.BatchHistories.AnyAsync(h => h.BatchId == batchId && (h.Action == "Batch Completed" || h.Action == "Moved to Batch History" || h.Action == "Batch Activated" || h.Action == "Restored as Active Batch"), cancellationToken)
+        if (batch.Status is "Completed" or "Closed" || await _db.BatchHistories.AnyAsync(h => h.BatchId == batchId && (h.Action == "Batch Completed" || h.Action == "Moved to Batch History" || h.Action == "Batch Activated" || h.Action == "Restored as Active Batch"), cancellationToken)
             || await _db.Applicants.AnyAsync(a => a.BatchId == batchId, cancellationToken)
             || await _db.Students.AnyAsync(s => s.BatchId == batchId, cancellationToken))
             return ApiResponse<BatchDto>.Fail("Completed batches are view-only and cannot be reactivated. Create a new batch instead.");
@@ -254,7 +255,8 @@ public class BatchService : IBatchService
         foreach (var active in currentActive)
         {
             // Preserve all associated records — only flip status and write history.
-            active.Status = SystemConstants.BatchStatuses.Closed;
+            active.Status = SystemConstants.BatchStatuses.Completed;
+            active.CompletedAt ??= DateTime.UtcNow;
             _db.BatchHistories.Add(new BatchHistory
             {
                 BatchId = active.BatchId,
@@ -263,6 +265,7 @@ public class BatchService : IBatchService
             });
         }
 
+        if (currentActive.Count > 0) await _db.SaveChangesAsync(cancellationToken);
         batch.Status = SystemConstants.BatchStatuses.Active;
         _db.BatchHistories.Add(new BatchHistory
         {
@@ -282,6 +285,7 @@ public class BatchService : IBatchService
 
     public async Task<ApiResponse<BatchDto>> CompleteAsync(int batchId, CancellationToken cancellationToken = default)
     {
+        await using var transaction = await _db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, cancellationToken);
         var batch = await _db.Batches
             .FirstOrDefaultAsync(b => b.BatchId == batchId, cancellationToken);
         if (batch is null)
@@ -289,8 +293,11 @@ public class BatchService : IBatchService
 
         if (batch.Status == SystemConstants.BatchStatuses.Closed)
             return ApiResponse<BatchDto>.Ok(await MapAsync(batch, cancellationToken), "Batch is already in history.");
+        if (batch.Status != SystemConstants.BatchStatuses.Active)
+            return ApiResponse<BatchDto>.Fail("Only the active batch can be completed.");
 
-        batch.Status = SystemConstants.BatchStatuses.Closed;
+        batch.Status = SystemConstants.BatchStatuses.Completed;
+        batch.CompletedAt ??= DateTime.UtcNow;
         _db.BatchHistories.Add(new BatchHistory
         {
             BatchId = batch.BatchId,
@@ -298,6 +305,7 @@ public class BatchService : IBatchService
             ActionDate = DateTime.Now
         });
         await _db.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
         return ApiResponse<BatchDto>.Ok(
             await MapAsync(batch, cancellationToken),
             "Batch completed and moved to Batch History. All associated records were preserved.");
@@ -326,12 +334,13 @@ public class BatchService : IBatchService
 
         return new BatchDto
         {
+            CompletedAt = b.CompletedAt,
             BatchId = b.BatchId,
             BatchName = b.BatchName,
             StartDate = b.StartDate,
             EndDate = b.EndDate,
             Status = b.Status,
-            UnreadDocumentNotifications = await _db.Notifications.AsNoTracking().CountAsync(n => n.StudentId == null && n.Title == "New Document Request" && n.Status == "Unread" && n.Applicant != null && n.Applicant.BatchId == b.BatchId, cancellationToken),
+            UnreadDocumentNotifications = await _db.Notifications.AsNoTracking().CountAsync(n => n.StudentId == null && (n.RequestId != null || n.CourseDocumentId != null) && n.Status == "Unread" && n.BatchId == b.BatchId, cancellationToken),
             StudentCount = studentCount,
             ActiveStudentCount = activeStudents,
             ActiveScheduleCount = activeSchedules

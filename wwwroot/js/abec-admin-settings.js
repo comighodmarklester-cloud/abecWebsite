@@ -10,12 +10,7 @@
   function $(id) { return document.getElementById(id); }
 
   function setMsg(el, text, ok) {
-    if (!el) return;
-    el.textContent = text || '';
-    el.classList.toggle('hidden', !text);
-    el.classList.toggle('text-emerald-600', !!ok);
-    el.classList.toggle('text-red-600', !ok && !!text);
-    el.classList.toggle('text-slate-500', !text);
+    window.AbecFeedback.inline(el, text, ok ? 'success' : 'error');
   }
 
   function setPersonalEditable(on) {
@@ -230,8 +225,8 @@
       setMsg($('pwd-msg'), 'Please fill in all password fields.', false);
       return;
     }
-    if (next.length < 6) {
-      setMsg($('pwd-msg'), 'New password must be at least 6 characters.', false);
+    if (next.length < 8 || new TextEncoder().encode(next).length > 72) {
+      setMsg($('pwd-msg'), 'New password must be at least 8 characters and at most 72 UTF-8 bytes.', false);
       return;
     }
     if (next !== confirm) {

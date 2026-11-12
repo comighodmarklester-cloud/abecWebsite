@@ -263,7 +263,7 @@ public class Applicant
         ApplicationStatus == "Expired"
         || string.Equals(SlotResponse, "Expired", StringComparison.OrdinalIgnoreCase)
         || (ResponseDeadline.HasValue
-            && DateTime.Now > ResponseDeadline.Value
+            && DateTime.Now >= ResponseDeadline.Value
             && ApplicationStatus == "Approved"
             && !ConfirmedAt.HasValue
             && !DeclinedAt.HasValue);

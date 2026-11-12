@@ -42,6 +42,7 @@ public static class SystemConstants
         public const string AcademicDismissal = "Academic Dismissal";
         public const string Withdrawal = "Withdrawal";
         public const string InactiveLead = "Inactive Lead";
+        public const string RejectedSlots = "Rejected Slots";
         public const string Other = "Other";
 
         public static readonly string[] All =
@@ -51,6 +52,7 @@ public static class SystemConstants
             AcademicDismissal,
             Withdrawal,
             InactiveLead,
+            RejectedSlots,
             Other
         ];
 
@@ -68,6 +70,7 @@ public static class SystemConstants
                 "dismissal" or "academic dismissal" or "dismissed" => AcademicDismissal,
                 "withdraw" or "withdrew" or "dropped" or "drop" => Withdrawal,
                 "inactive" or "inactive lead" or "lead" => InactiveLead,
+                "others" => Other,
                 _ => null
             };
         }
@@ -102,7 +105,9 @@ public static class SystemConstants
     public static class BatchStatuses
     {
         public const string Active = "Active";
-        public const string Closed = "Closed";
+        public const string Completed = "Completed";
+        public const string Closed = Completed; // compatibility for existing callers
+        public const string Draft = "Draft";
     }
 
     public static class CourseStatuses

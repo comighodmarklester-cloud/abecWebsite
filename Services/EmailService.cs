@@ -1,5 +1,4 @@
 using System.Text;
-using System.Text.RegularExpressions;
 using ABEC_System.DTOs;
 using ABEC_System.Interfaces;
 using ABEC_System.Options;
@@ -35,6 +34,7 @@ public class EmailService : IEmailService
         CancellationToken cancellationToken = default)
     {
         var settings = _settingsMonitor.CurrentValue;
+        var deliveryId = Guid.NewGuid().ToString("N");
 
         if (string.IsNullOrWhiteSpace(toEmail))
             return EmailSendResult.Fail("Recipient email address is missing.");
@@ -42,42 +42,45 @@ public class EmailService : IEmailService
         // Local troubleshooting copy only — never treated as a successful send.
         try
         {
-            await WritePickupAsync(settings, toEmail, subject, htmlBody, pdfAttachment, attachmentFileName, CancellationToken.None);
+            if (_env.IsDevelopment() && settings.SaveDevelopmentCopies)
+                await WritePickupAsync(settings, toEmail, subject, htmlBody, pdfAttachment, attachmentFileName, CancellationToken.None);
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to write email pickup copy.");
+            _logger.LogWarning("Email {DeliveryId}: development copy failed ({ErrorType}).", deliveryId, ex.GetType().Name);
         }
 
         if (!settings.Enabled)
         {
-            _logger.LogWarning("Email disabled. To={To} Subject={Subject}", toEmail, subject);
+            _logger.LogWarning("Email {DeliveryId}: sending is disabled.", deliveryId);
             return EmailSendResult.Fail("Email sending is disabled in configuration (Email:Enabled=false).");
         }
 
         var username = (settings.Username ?? string.Empty).Trim();
-        var password = NormalizeSmtpPassword(settings.Password);
+        var host = string.IsNullOrWhiteSpace(settings.Host) ? "smtp.gmail.com" : settings.Host.Trim();
+        var password = host.Contains("gmail", StringComparison.OrdinalIgnoreCase)
+            ? NormalizeSmtpPassword(settings.Password) : settings.Password ?? string.Empty;
         var fromAddress = string.IsNullOrWhiteSpace(settings.FromAddress)
             ? username
             : settings.FromAddress.Trim();
-        var fromName = string.IsNullOrWhiteSpace(settings.FromName) ? "ABEC System" : settings.FromName.Trim();
-        var host = string.IsNullOrWhiteSpace(settings.Host) ? "smtp.gmail.com" : settings.Host.Trim();
+        var fromName = string.IsNullOrWhiteSpace(settings.FromName) ? "ABEC" : settings.FromName.Trim();
         var port = settings.Port <= 0 ? 587 : settings.Port;
+        if (!_env.IsDevelopment() && !settings.UseSsl)
+            return EmailSendResult.Fail("Production SMTP must use TLS. Configure Email__UseSsl=true in deployment secrets.");
 
         if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
         {
             _logger.LogError(
-                "SMTP App Password is not configured. Host={Host} User={User} To={To}",
-                host, username, toEmail);
+                "Email {DeliveryId}: SMTP credentials are not configured.", deliveryId);
             return EmailSendResult.Fail(
-                "Email was NOT sent: Gmail App Password is missing. Set Email:Password via user-secrets, environment variable Email__Password, or Admin → User Settings → Email Delivery.");
+                "Email was not sent: SMTP credentials are missing. Configure the mail provider through deployment secrets, or Email Delivery in local development.");
         }
 
         if (IsPlaceholderPassword(password))
         {
-            _logger.LogError("SMTP App Password is still a placeholder value. User={User} To={To}", username, toEmail);
+            _logger.LogError("Email {DeliveryId}: SMTP password is a placeholder.", deliveryId);
             return EmailSendResult.Fail(
-                "Email was NOT sent: replace the placeholder App Password with a real Google App Password for abec.legazpi10@gmail.com.");
+                "Email was not sent: replace the placeholder SMTP password through deployment secrets.");
         }
 
         // Independent of HTTP request cancellation — Approve must finish SMTP even if the browser times out.
@@ -103,26 +106,33 @@ public class EmailService : IEmailService
 
             using var client = new SmtpClient { Timeout = 90_000 };
             _logger.LogInformation(
-                "Connecting to SMTP {Host}:{Port} (STARTTLS={StartTls}) as {User} → {To}",
-                host, port, settings.UseSsl, username, toEmail);
+                "Email {DeliveryId}: connecting to SMTP (TLS={Tls}).", deliveryId, settings.UseSsl);
 
             await client.ConnectAsync(
                 host,
                 port,
-                settings.UseSsl ? SecureSocketOptions.StartTls : SecureSocketOptions.Auto,
+                settings.UseSsl ? (port == 465 ? SecureSocketOptions.SslOnConnect : SecureSocketOptions.StartTls) : SecureSocketOptions.Auto,
                 timeoutCts.Token);
             await client.AuthenticateAsync(username, password, timeoutCts.Token);
             await client.SendAsync(message, timeoutCts.Token);
             await client.DisconnectAsync(true, timeoutCts.Token);
 
-            _logger.LogInformation("SMTP send completed successfully. To={To} Subject={Subject}", toEmail, subject);
+            _logger.LogInformation("Email {DeliveryId}: SMTP delivery completed.", deliveryId);
             return EmailSendResult.Ok("smtp", $"Approval email sent to {toEmail}.");
         }
         catch (Exception ex)
         {
-            var safe = SanitizeException(ex, password);
-            _logger.LogError(ex, "SMTP send failed. Host={Host} User={User} To={To} Error={Error}", host, username, toEmail, safe);
-            return EmailSendResult.Fail($"Failed to send email via SMTP: {safe}");
+            // Provider exceptions can contain recipients, SMTP credentials and response text.
+            // Log only a code-defined type and a random reference, never the exception itself.
+            _logger.LogError("Email {DeliveryId}: SMTP delivery failed ({ErrorType}).", deliveryId, ex.GetType().Name);
+            var reason = ex switch
+            {
+                MailKit.Security.AuthenticationException => "SMTP authentication failed. Verify the configured SMTP username and app password.",
+                OperationCanceledException => "SMTP delivery timed out. Check the mail provider connection.",
+                System.Net.Sockets.SocketException => "Could not connect to the SMTP server. Check the host, port and network connection.",
+                _ => "SMTP delivery failed. Check the mail provider configuration and try again."
+            };
+            return EmailSendResult.Fail($"{reason} Reference: {deliveryId}.");
         }
     }
 
@@ -140,31 +150,6 @@ public class EmailService : IEmailService
             || p.Equals("changeme", StringComparison.OrdinalIgnoreCase);
     }
 
-    private static string SanitizeException(Exception ex, string password)
-    {
-        var detail = ex.GetBaseException().Message ?? ex.Message;
-        if (!string.IsNullOrEmpty(password) && detail.Contains(password, StringComparison.Ordinal))
-            detail = detail.Replace(password, "[REDACTED]", StringComparison.Ordinal);
-
-        detail = Regex.Replace(detail, @"Password[=:].*", "Password=[REDACTED]", RegexOptions.IgnoreCase);
-
-        if (detail.Contains("Authentication", StringComparison.OrdinalIgnoreCase)
-            || detail.Contains("Invalid credentials", StringComparison.OrdinalIgnoreCase)
-            || detail.Contains("5.7.8", StringComparison.OrdinalIgnoreCase)
-            || detail.Contains("Username and Password not accepted", StringComparison.OrdinalIgnoreCase))
-        {
-            detail += " Authentication failed for abec.legazpi10@gmail.com — verify the Google App Password (not the normal Gmail password).";
-        }
-        else if (detail.Contains("connected", StringComparison.OrdinalIgnoreCase)
-                 || detail.Contains("timeout", StringComparison.OrdinalIgnoreCase)
-                 || detail.Contains("actively refused", StringComparison.OrdinalIgnoreCase))
-        {
-            detail += " Could not complete the connection to smtp.gmail.com:587.";
-        }
-
-        return detail;
-    }
-
     private async Task WritePickupAsync(
         EmailSettings settings,
         string toEmail,
@@ -180,12 +165,16 @@ public class EmailService : IEmailService
         var root = Path.IsPathRooted(settings.PickupDirectory)
             ? settings.PickupDirectory
             : Path.Combine(_env.ContentRootPath, settings.PickupDirectory);
+        root = Path.GetFullPath(root);
+        var webRoot = Path.GetFullPath(_env.WebRootPath ?? Path.Combine(_env.ContentRootPath, "wwwroot"));
+        if (string.Equals(root, webRoot, StringComparison.OrdinalIgnoreCase)
+            || root.StartsWith(webRoot.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException("Development mail copies must be outside the web root.");
 
         Directory.CreateDirectory(root);
 
         var stamp = DateTime.Now.ToString("yyyyMMdd_HHmmss_fff");
-        var safeTo = string.Concat(toEmail.Where(c => char.IsLetterOrDigit(c) || c is '@' or '.' or '-' or '_'));
-        var baseName = $"{stamp}_{safeTo}";
+        var baseName = $"{stamp}_{Guid.NewGuid():N}";
         var htmlPath = Path.Combine(root, baseName + ".html");
 
         var wrapper = new StringBuilder();

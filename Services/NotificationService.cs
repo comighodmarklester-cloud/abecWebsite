@@ -55,12 +55,14 @@ public class NotificationService : INotificationService
         ];
 
         var query = _db.Notifications.AsNoTracking().Include(n => n.Applicant).Include(n => n.Student)
-            .Where(n => n.StudentId == null && adminTitles.Contains(n.Title));
+            .Where(n => n.StudentId == null && (adminTitles.Contains(n.Title) || n.RequestId != null || n.CourseDocumentId != null));
 
         if (!string.IsNullOrWhiteSpace(status))
             query = query.Where(n => n.Status == status);
 
-        if (batchId.HasValue) query = query.Where(n => n.Applicant != null && n.Applicant.BatchId == batchId && DocumentRequestTitles.Contains(n.Title));
+        var selectedBatchId = await _db.ResolveReadBatchIdAsync(batchId, cancellationToken);
+        query = query.Where(n => (n.BatchId ?? n.Applicant!.BatchId) == selectedBatchId);
+        if (batchId.HasValue) query = query.Where(n => n.RequestId != null || n.CourseDocumentId != null);
         var ordered = query.OrderByDescending(n => n.CreatedAt);
         var list = await (batchId.HasValue ? ordered.AsQueryable() : ordered.Take(50)).ToListAsync(cancellationToken);
 
@@ -107,8 +109,15 @@ public class NotificationService : INotificationService
 
     public async Task CreateAsync(string title, string message, int? studentId = null, int? applicantId = null, CancellationToken cancellationToken = default)
     {
+        var studentBatch = studentId.HasValue
+            ? await _db.Students.Where(s => s.StudentId == studentId).Select(s => (int?)s.BatchId).SingleOrDefaultAsync(cancellationToken) : null;
+        var applicantBatch = applicantId.HasValue
+            ? await _db.Applicants.Where(a => a.ApplicantId == applicantId).Select(a => a.BatchId).SingleOrDefaultAsync(cancellationToken) : null;
+        if (studentBatch.HasValue && applicantBatch.HasValue && studentBatch != applicantBatch)
+            throw new BatchIntegrityException("A notification cannot link records from different batches.", "batchId");
         _db.Notifications.Add(new Notification
         {
+            BatchId = studentBatch ?? applicantBatch,
             StudentId = studentId,
             ApplicantId = applicantId,
             Title = title,
@@ -119,10 +128,17 @@ public class NotificationService : INotificationService
         await _db.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task CreateAdminAsync(string title, string message, int? applicantId = null, CancellationToken cancellationToken = default, int? requestId = null)
+    public async Task CreateAdminAsync(string title, string message, int? applicantId = null, CancellationToken cancellationToken = default, int? requestId = null, int? courseDocumentId = null)
     {
+        var batchId = requestId.HasValue
+            ? await _db.DocumentRequests.Where(r => r.RequestId == requestId).Select(r => (int?)r.Student!.BatchId).SingleOrDefaultAsync(cancellationToken)
+            : courseDocumentId.HasValue
+                ? await _db.StudentCourseDocuments.Where(d => d.CourseDocumentId == courseDocumentId).Select(d => d.BatchId).SingleOrDefaultAsync(cancellationToken)
+                : await _db.Applicants.Where(a => a.ApplicantId == applicantId).Select(a => a.BatchId).SingleOrDefaultAsync(cancellationToken);
         _db.Notifications.Add(new Notification
         {
+            BatchId = batchId,
+            CourseDocumentId = courseDocumentId,
             RequestId = requestId,
             StudentId = null,
             ApplicantId = applicantId,
@@ -146,7 +162,8 @@ public class NotificationService : INotificationService
     private static NotificationDto Map(Notification n) => new()
     {
         RequestId = n.RequestId,
-        BatchId = n.Applicant?.BatchId ?? n.Student?.BatchId,
+        BatchId = n.BatchId ?? n.Applicant?.BatchId ?? n.Student?.BatchId,
+        CourseDocumentId = n.CourseDocumentId,
         NotificationId = n.NotificationId,
         StudentId = n.StudentId,
         ApplicantId = n.ApplicantId,

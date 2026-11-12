@@ -6,7 +6,9 @@
 <title>Students &amp; Applicants - ABEC Admin</title>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
-<link href="../../wwwroot/css/abec-ui.css?v=20261105icons1" rel="stylesheet"/>
+<link href="../../wwwroot/css/abec-archive-dialog.css?v=20261110archivereasons1" rel="stylesheet"/>
+<link href="../../wwwroot/css/abec-ui.css?v=20261107batchsdd1" rel="stylesheet"/>
+<link href="../../wwwroot/css/abec-admin-sidebar.css?v=20261108sharedsidebar1" rel="stylesheet"/>
 <script>
   tailwind.config = {
     theme: {
@@ -67,6 +69,14 @@
   .slot-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.5rem; }
   #slot-overview-grid .slot-card { padding: 0.7rem 0.8rem !important; }
   #slot-overview-grid .slot-card .text-2xl { font-size: 1.2rem; line-height: 1.15; }
+  #slot-overview-grid .slot-available[data-tooltip] { position: relative; width: fit-content; }
+  #slot-overview-grid .slot-available[data-tooltip]::after {
+    content: attr(data-tooltip); position: absolute; left: 0; bottom: calc(100% + 0.35rem); z-index: 5;
+    width: max-content; padding: 0.35rem 0.55rem; border-radius: 0.4rem; background: #0B2747; color: #fff;
+    font-size: 0.7rem; font-weight: 500; line-height: 1.4; white-space: nowrap;
+    visibility: hidden; opacity: 0; pointer-events: none;
+  }
+  #slot-overview-grid .slot-available[data-tooltip]:hover::after { visibility: visible; opacity: 1; }
   .summary-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 0.5rem; margin: 0; }
   .board-head { padding: 0.7rem 1rem 0.35rem; }
   .board-tools { padding: 0.35rem 1rem 0.15rem; }
@@ -421,10 +431,11 @@
   }
 
 </style>
+<link href="../../wwwroot/css/abec-responsive.css?v=20261112features1" rel="stylesheet"/>
 </head>
 <body class="abec-app records-page bg-surface font-sans text-slate-800">
 <div class="flex min-h-screen">
-<aside class="abec-sidebar" data-purpose="main-sidebar">
+<aside class="abec-sidebar abec-admin-sidebar" data-purpose="main-sidebar">
 <div class="p-6 flex items-center gap-3">
 <div class="abec-brand-lockup abec-sidebar-brand">
 <div class="abec-brand-mark">
@@ -482,7 +493,8 @@
 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
   Dashboard
 </a>
-<a class="abec-nav-link abec-nav-link-active" href="StudentsApplicants.html">
+
+<a class="abec-nav-link abec-nav-link-active" href="StudentsApplicants.html" aria-current="page">
 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
   Students &amp; Applicants
 </a>
@@ -497,6 +509,10 @@
 <a class="abec-nav-link" href="DocumentManagement.html">
 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
   Document Management
+</a>
+<a class="abec-nav-link" href="BatchManagement.html">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2" stroke-width="2"/><path d="M16 3v4M8 3v4M3 11h18M8 15h3M8 18h6" stroke-linecap="round" stroke-width="2"/></svg>
+  Batch Management
 </a>
 <a class="abec-nav-link" href="Reports.html">
 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M8 17V10M12 17V7M16 17v-4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
@@ -527,7 +543,6 @@
 <header class="mb-3 flex flex-wrap items-center justify-between gap-3" data-purpose="page-header">
   <div class="min-w-0">
     <h2 class="text-xl font-bold text-abec-navy">Students &amp; Applicants</h2>
-    <p class="text-xs text-slate-500 mt-0.5 max-w-2xl">Manage applicant registrations, enrollment records, and student information in one place.</p>
   </div>
   <div class="records-toolbar">
     <div class="abec-header-actions flex items-center shrink-0 relative z-40"></div>
@@ -536,9 +551,7 @@
 <p id="records-message" class="records-message hidden" role="status"></p>
 <section class="page-overview">
   <div data-purpose="quick-overview">
-    <p class="overview-label">Quick Overview</p>
     <div id="slot-overview-grid" class="slot-grid">
-      <div class="slot-card abec-card abec-card-static p-5 text-slate-400 text-sm">Loading course slots…</div>
     </div>
   </div>
   <section class="summary-grid" aria-label="Record summary">
@@ -685,32 +698,6 @@
     <div class="mt-4 flex justify-end gap-2">
       <button type="button" id="edit-cancel" class="records-btn records-btn-muted">Cancel</button>
       <button type="submit" class="records-btn">Save</button>
-    </div>
-  </form>
-</div>
-<div id="archive-modal" class="record-modal hidden" aria-hidden="true">
-  <form id="archive-form" class="record-panel" role="dialog" aria-label="Archive record">
-    <h3 class="text-lg font-bold text-slate-800 mb-1">Archive record</h3>
-    <p class="text-sm text-slate-500 mb-3">This uses the existing archive workflow. The student account is deactivated and kept in Archive. It is not deleted.</p>
-    <input id="archive-student-id" type="hidden">
-    <input id="archive-applicant-id" type="hidden">
-    <label class="text-xs font-semibold text-slate-600">Reason
-      <select id="archive-reason" required class="mt-1 w-full rounded-lg border border-slate-200 text-sm">
-        <option value="">Select a reason</option>
-        <option>Graduated</option>
-        <option>Deactivated</option>
-        <option>Academic Dismissal</option>
-        <option>Withdrawal</option>
-        <option>Inactive Lead</option>
-        <option>Other</option>
-      </select>
-    </label>
-    <label class="text-xs font-semibold text-slate-600 block mt-3">Specific reason
-      <input id="archive-specific" class="mt-1 w-full rounded-lg border border-slate-200 text-sm" placeholder="Required when the reason is Other">
-    </label>
-    <div class="mt-4 flex justify-end gap-2">
-      <button type="button" id="archive-cancel" class="records-btn records-btn-muted">Cancel</button>
-      <button type="submit" class="records-btn">Archive</button>
     </div>
   </form>
 </div>
@@ -1042,12 +1029,13 @@
   }
   filterApplicants();
 </script>
-<script src="../../wwwroot/js/sidebar-auto-hide.js"></script>
-<script src="../../wwwroot/js/abec-api.js?v=20261031ux1"></script>
-<script src="../../wwwroot/js/abec-admin.js?v=20261105icons1"></script>
-<script src="../../wwwroot/js/abec-profile-details.js?v=20261031ux1"></script>
-<script src="../../wwwroot/js/abec-applicants.js?v=20261031ux1"></script>
-<script src="../../wwwroot/js/abec-students-applicants.js?v=20261031ux1"></script>
-<script src="../../wwwroot/js/abec-add-applicant.js?v=20261031ux1"></script>
+<script src="../../wwwroot/js/sidebar-auto-hide.js?v=20261112features1"></script>
+<script src="../../wwwroot/js/abec-api.js?v=20261112features1"></script>
+<script src="../../wwwroot/js/abec-admin.js?v=20261108nobatchbanner1"></script>
+<script src="../../wwwroot/js/abec-profile-details.js?v=20261108messages1"></script>
+<script src="../../wwwroot/js/abec-applicants.js?v=20261112features1"></script>
+<script src="../../wwwroot/js/abec-archive-dialog.js?v=20261110archivereasons1"></script>
+<script src="../../wwwroot/js/abec-students-applicants.js?v=20261112onetime1"></script>
+<script src="../../wwwroot/js/abec-add-applicant.js?v=20261112security1"></script>
 </body>
 </html>

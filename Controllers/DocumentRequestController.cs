@@ -13,12 +13,12 @@ public class DocumentRequestController : ControllerBase
     public DocumentRequestController(IDocumentRequestService documentService) => _documentService = documentService;
 
     [HttpGet]
-    public async Task<ActionResult<ApiResponse<IReadOnlyList<DocumentRequestDto>>>> GetAll([FromQuery] string? status, CancellationToken cancellationToken)
-        => Ok(await _documentService.GetAllAsync(status, cancellationToken));
+    public async Task<ActionResult<ApiResponse<IReadOnlyList<DocumentRequestDto>>>> GetAll([FromQuery] string? status, [FromQuery] int? batchId, CancellationToken cancellationToken)
+        => Ok(await _documentService.GetAllAsync(status, cancellationToken, batchId));
 
     [HttpGet("dashboard")]
-    public async Task<ActionResult<ApiResponse<DocumentRequestDashboardDto>>> GetDashboard(CancellationToken cancellationToken)
-        => Ok(await _documentService.GetDashboardAsync(cancellationToken));
+    public async Task<ActionResult<ApiResponse<DocumentRequestDashboardDto>>> GetDashboard([FromQuery] int? batchId, CancellationToken cancellationToken)
+        => Ok(await _documentService.GetDashboardAsync(cancellationToken, batchId));
 
     [HttpGet("{id:int}")]
     public async Task<ActionResult<ApiResponse<DocumentRequestDto>>> GetById(int id, CancellationToken cancellationToken)

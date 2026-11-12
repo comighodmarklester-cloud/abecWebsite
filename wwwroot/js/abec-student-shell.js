@@ -7,6 +7,20 @@
     { href: 'DocumentRequest.html', label: 'Documents', key: 'documentrequest' }
   ];
 
+  window.AbecStudentBatch = {
+    apply: function (profile) {
+      var completed = profile.batchStatus === 'Completed' || profile.batchStatus === 'Closed';
+      document.body.classList.toggle('batch-completed', completed);
+      document.querySelectorAll('a[href*="ClassSchedule.html"]').forEach(function (a) { a.hidden = completed; });
+      var main = document.querySelector('main.abec-main');
+      if (!main) return;
+      var status = document.getElementById('student-batch-status');
+      if (!status) { status = document.createElement('section'); status.id = 'student-batch-status'; status.setAttribute('role','status'); main.prepend(status); }
+      status.textContent = 'Batch: ' + (profile.batchName || 'Unassigned') + (completed ? ' — Your batch has completed its training and assessment period. You can view and download your available documents on the Documents page.' : '');
+      if (completed && location.pathname.toLowerCase().indexOf('classschedule') >= 0) location.replace('/Views/Student/StudentDashboard.html');
+    }
+  };
+
   function currentKey() {
     var path = (window.location.pathname || '').toLowerCase();
     if (path.indexOf('classschedule') !== -1) return 'classschedule';
@@ -39,6 +53,11 @@
     if (!main || !main.parentNode) return;
 
     var key = currentKey();
+    var session = window.AbecApi && AbecApi.getSession();
+    if (session && session.role === 'Student') AbecApi.get('/api/student/' + session.userId + '/profile').then(function (result) {
+      if (result.success) window.AbecStudentBatch.apply(result.data);
+    });
+
     var items = PAGES.map(function (page) {
       var active = page.key === key;
       return '<a class="student-nav-item' + (active ? ' is-active' : '') + '" role="menuitem" href="' + page.href + '"' +

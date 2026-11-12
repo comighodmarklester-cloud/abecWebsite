@@ -25,11 +25,11 @@
   }
 
   function matchCourseToSlug(courseName) {
-    var name = normalize(courseName);
-    if (name.indexOf('bookkeeping') !== -1) return 'bookkeeping';
-    if (name.indexOf('customer') !== -1) return 'customer';
-    if (name.indexOf('electronic') !== -1 || name.indexOf('epas') !== -1) return 'epas';
-    if (name.indexOf('computer') !== -1 || name.indexOf('servicing') !== -1) return 'css';
+    var name = normalize(courseLabel(courseName));
+    if (name === 'bookkeeping') return 'bookkeeping';
+    if (name === 'customer service' || name === 'customer services') return 'customer';
+    if (/^electronic products? assembly and servicing$/.test(name)) return 'epas';
+    if (/^computer systems? servicing$/.test(name)) return 'css';
     return null;
   }
 
@@ -140,13 +140,36 @@
     window.__abecCourses = result.data;
     window.__abecCourseBySlug = {};
 
+    var grid = document.getElementById('course-grid');
+    var template = grid && grid.querySelector('.course-card');
+    var used = {};
     result.data.forEach(function (course) {
       var slug = matchCourseToSlug(course.courseName);
-      if (!slug) return;
+      if (!slug || used[slug]) slug = String(course.courseId);
+      used[slug] = true;
       window.__abecCourseBySlug[slug] = course;
       var card = findCard(slug);
-      if (card) updateCard(card, course);
+      if (!card && template) {
+        card = template.cloneNode(true);
+        card.setAttribute('data-course', slug);
+        grid.appendChild(card);
+      }
+      if (card) {
+        card.setAttribute('onclick', 'openCourse(' + Number(course.courseId) + ')');
+        card.setAttribute('tabindex', '0');
+        card.setAttribute('aria-label', 'View ' + courseLabel(course.courseName));
+        card.onkeydown = function (event) {
+          if (event.target === card && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); window.openCourse(course.courseId); }
+        };
+        updateCard(card, course);
+      }
     });
+    if (grid) {
+      grid.classList.toggle('has-extra-courses', result.data.length > 4);
+      grid.querySelectorAll('.course-card').forEach(function (card) {
+        if (!used[card.getAttribute('data-course')]) card.remove();
+      });
+    }
   }
 
   function resolveCourseRef(idOrSlug) {
@@ -218,7 +241,7 @@
       '<span class="text-[10px] font-bold uppercase text-emerald-700">' + esc(conf) + '</span></div></div></td>' +
       '<td class="px-5 py-3 text-sm text-slate-600">' + esc(date) + '</td>' +
       '<td class="px-5 py-3 text-sm text-slate-600">' + esc(phone) + '</td>' +
-      '<td class="px-5 py-3 text-center"><button type="button" class="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-md border border-slate-200 text-slate-600 hover:bg-red-50 hover:text-red-700 hover:border-red-200 transition-colors" aria-label="Archive ' + esc(name) + '"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg> Archive</button></td>' +
+      '<td class="px-5 py-3 text-center">' + (s.isArchived ? '<span class="text-xs font-semibold text-slate-500">Archived</span>' : '<button type="button" class="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-md border border-slate-200 text-slate-600 hover:bg-red-50 hover:text-red-700 hover:border-red-200 transition-colors" data-archive-student="' + s.studentId + '" aria-label="Archive ' + esc(name) + '"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg> Archive</button>') + '</td>' +
       '</tr>'
     );
   }
@@ -301,26 +324,13 @@
   window.closeCourseStudentsModal = closeCourseStudentsModal;
 
   var editSlotsBusy = false;
-  var slotNoticeTimer = 0;
 
   function setEditSlotsMessage(text, kind) {
-    var el = document.getElementById('add-slots-message');
-    if (!el) return;
-    el.textContent = text || '';
-    el.className = text ? 'is-' + (kind || 'error') : '';
+    window.AbecFeedback.inline(document.getElementById('add-slots-message'), text, kind || 'error');
   }
 
   function showSlotNotice(text) {
-    var el = document.getElementById('course-slot-notice');
-    if (!el) return;
-    el.textContent = text || '';
-    el.classList.toggle('is-visible', !!text);
-    if (slotNoticeTimer) clearTimeout(slotNoticeTimer);
-    if (text) {
-      slotNoticeTimer = setTimeout(function () {
-        el.classList.remove('is-visible');
-      }, 5000);
-    }
+    window.AbecFeedback.inline(document.getElementById('course-slot-notice'), text, 'success');
   }
 
   function resetEditSlotsControls() {
@@ -558,27 +568,11 @@
   }
 
   function setFormMessage(id, message, isError) {
-    var el = document.getElementById(id);
-    if (!el) return;
-    if (!message) {
-      el.classList.add('hidden');
-      el.textContent = '';
-      return;
-    }
-    el.textContent = message;
-    el.className = 'text-xs ' + (isError ? 'text-red-600' : 'text-emerald-700');
+    window.AbecFeedback.inline(document.getElementById(id), message, isError ? 'error' : 'success');
   }
 
   function showConflictAlert(show, message) {
-    var alert = document.getElementById('conflict-alert');
-    if (!alert) return;
-    if (message) {
-      var text = alert.querySelector('p');
-      if (text) {
-        text.innerHTML = '<span class="font-bold">Conflict Detected.</span> ' + esc(message);
-      }
-    }
-    alert.classList.toggle('hidden', !show);
+    window.AbecFeedback.inline(document.getElementById('conflict-alert'), show ? message : '', 'error');
   }
 
   function populateCourseSelect(selectedId) {
@@ -594,12 +588,12 @@
   }
 
   async function ensureActiveBatchId() {
-    if (window.__abecActiveBatchId) return window.__abecActiveBatchId;
     var active = await AbecApi.get('/api/batches/active');
     if (active.success && active.data && active.data.batchId) {
       window.__abecActiveBatchId = active.data.batchId;
       return window.__abecActiveBatchId;
     }
+    window.__abecActiveBatchId = 0;
     return 0;
   }
 
@@ -667,6 +661,7 @@
 
   function renderScheduleCards(courses, schedules) {
     var grid = document.getElementById('schedule-card-grid');
+    if (grid) grid.classList.toggle('has-extra-courses', courses.length > 4);
     if (!grid) return;
     var byCourse = {};
     (schedules || []).forEach(function (schedule) {
@@ -744,6 +739,9 @@
   }
 
   window.editCourseSchedule = editCourseSchedule;
+  window.abecReloadCourses = loadCourses;
+  window.abecReloadSchedules = loadSchedules;
+  window.abecScheduleEndDate = scheduleEndDate;
 
   async function loadSchedules() {
     var grid = document.getElementById('schedule-card-grid');
@@ -752,7 +750,7 @@
     var result = await AbecApi.get('/api/schedules');
     if (!result.success) {
       if (grid) grid.innerHTML = '<p class="text-sm text-red-600">' + esc(result.message || 'Unable to load schedules.') + '</p>';
-      return;
+      return result;
     }
     var all = result.data || [];
     window.__abecSchedules = all;
@@ -764,6 +762,7 @@
     });
     window.scheduleDetails = details;
     renderScheduleCards(window.__abecCourses || [], all);
+    return result;
   }
 
   var WEEKDAY_CODES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
@@ -869,11 +868,19 @@
     var added = roomCatalog.filter(function (room) {
       return courseId && String(room.courseId) === String(courseId);
     }).map(function (room) { return room.roomName; });
-    return uniqueNames(defaults.concat(added));
+    return uniqueNames(defaults.concat(added)).filter(function (name) { return roomAllowed(courseName, name); });
   }
 
-  function optionHtml(value, label) {
-    return '<option value="' + esc(value) + '">' + esc(label || value) + '</option>';
+  function roomAllowed(courseName, roomName) {
+    return !(/bookkeep/i.test(courseName) && /\b(?:room|lab)\s*301\b/i.test(roomName));
+  }
+
+  function appendOption(select, value, label, disabled) {
+    var option = document.createElement('option');
+    option.value = value;
+    option.textContent = label || value;
+    option.disabled = !!disabled;
+    select.appendChild(option);
   }
 
   function fillTrainerSelect(select, courseName, selected) {
@@ -882,7 +889,9 @@
     var keepSelected = selected && !isGenericTrainerLabel(selected) ? selected : '';
     var names = uniqueNames([official].concat(extraTrainers(courseName), keepSelected ? [keepSelected] : []))
       .filter(function (name) { return !isGenericTrainerLabel(name); });
-    select.innerHTML = '<option value="">Select trainer</option>' + names.map(function (name) { return name ? optionHtml(name) : ''; }).join('');
+    select.replaceChildren();
+    appendOption(select, '', 'Select trainer');
+    names.forEach(function (name) { if (name) appendOption(select, name); });
     if (selected && isGenericTrainerLabel(selected)) { select.value = ''; return; }
     var pick = keepSelected || official;
     if (pick && names.some(function (name) { return name === pick; })) select.value = pick;
@@ -892,12 +901,13 @@
   function otherRoomNames(courseName, courseId) {
     var assigned = roomsAssignedToCourse(courseName, courseId).map(normName);
     return uniqueNames(roomCatalog.map(function (room) { return room.roomName; })).filter(function (name) {
-      return assigned.indexOf(normName(name)) < 0;
+      return assigned.indexOf(normName(name)) < 0 && roomAllowed(courseName, name);
     });
   }
 
   function fillRoomSelect(select, courseName, courseId, selected) {
     if (!select) return;
+    if (!roomAllowed(courseName, selected)) selected = '';
     var showAll = select.getAttribute('data-room-mode') === 'all';
     var assigned = roomsAssignedToCourse(courseName, courseId);
     var match = assigned.filter(function (room) { return normName(room) === normName(selected); })[0];
@@ -906,20 +916,20 @@
       var borrowed = findCatalogRoom(selected);
       borrowedName = borrowed ? borrowed.roomName : String(selected).trim();
     }
-    var html = '<option value="">Select training room</option>';
-    assigned.forEach(function (room) { html += optionHtml(room); });
+    select.replaceChildren();
+    appendOption(select, '', 'Select training room');
+    assigned.forEach(function (room) { appendOption(select, room); });
     if (showAll) {
       var others = otherRoomNames(courseName, courseId);
       if (others.length) {
-        html += '<option disabled value="">Other rooms</option>';
-        others.forEach(function (room) { html += optionHtml(room); });
+        appendOption(select, '', 'Other rooms', true);
+        others.forEach(function (room) { appendOption(select, room); });
       }
-      html += optionHtml('__course__', 'Course rooms');
+      appendOption(select, '__course__', 'Course rooms');
     } else {
-      if (borrowedName) html += optionHtml(borrowedName);
-      html += optionHtml('__existing__', 'Use Existing Room');
+      if (borrowedName) appendOption(select, borrowedName);
+      appendOption(select, '__existing__', 'Use Existing Room');
     }
-    select.innerHTML = html;
     if (match) select.value = match;
     else if (borrowedName) select.value = borrowedName;
   }
@@ -1221,6 +1231,14 @@
       var el = document.getElementById(id);
       if (el) el.hidden = true;
     });
+    document.addEventListener('click', async function (event) {
+      var button = event.target.closest('[data-archive-student]');
+      if (!button) return;
+      var student = liveStudents.find(function (item) { return String(item.studentId) === button.getAttribute('data-archive-student'); });
+      if (!student) return;
+      var result = await window.AbecArchiveDialog.open({ studentId: student.studentId, studentName: student.fullName, batchId: student.batchId });
+      if (result.success) await loadCourseDetailLive(window.__abecActiveCourseId || window.__abecActiveCourseSlug);
+    });
     bindScheduleExtras();
     refreshCreatePickers();
 
@@ -1309,6 +1327,7 @@
     }
 
     if (typeof window.closeCreateScheduleModal === 'function') window.closeCreateScheduleModal();
+    window.AbecFeedback.notify({ type: 'success', message: result.message || 'Schedule created.' });
     await loadSchedules();
   };
 
@@ -1350,6 +1369,7 @@
     }
 
     if (typeof window.closeScheduleConfig === 'function') window.closeScheduleConfig();
+    window.AbecFeedback.notify({ type: 'success', message: result.message || 'Schedule updated.' });
     await loadSchedules();
   };
 

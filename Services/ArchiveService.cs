@@ -21,7 +21,8 @@ public class ArchiveService : IArchiveService
     public async Task<ApiResponse<IReadOnlyList<ArchiveDto>>> GetAllAsync(string? reason = null, CancellationToken cancellationToken = default, int? batchId = null)
     {
         var query = BaseQuery();
-        if (batchId.HasValue) query = query.Where(a => a.Student!.BatchId == batchId);
+        var selectedBatchId = await _db.ResolveReadBatchIdAsync(batchId, cancellationToken);
+        query = query.Where(a => a.Student!.BatchId == selectedBatchId);
 
         if (!string.IsNullOrWhiteSpace(reason) && !string.Equals(reason, "all", StringComparison.OrdinalIgnoreCase))
         {
@@ -60,14 +61,15 @@ public class ArchiveService : IArchiveService
         if (canonical is null)
         {
             return ApiResponse<ArchiveDto>.Fail(
-                "Invalid archive reason. Use: Graduated, Deactivated, Academic Dismissal, Withdrawal, Inactive Lead, or Other.");
+                "Select a reason: Graduated, Deactivated, Academic Dismissal, Withdrawal, Inactive Lead, Rejected Slots, or Others.");
         }
 
         var detail = (specificReason ?? string.Empty).Trim();
+        if (detail.Length > 500) return ApiResponse<ArchiveDto>.Fail("Specific reason must be 500 characters or fewer.");
         if (SystemConstants.ArchiveReasons.RequiresSpecificReason(canonical))
         {
             if (string.IsNullOrWhiteSpace(detail))
-                return ApiResponse<ArchiveDto>.Fail("Please specify a reason when selecting Other.");
+                return ApiResponse<ArchiveDto>.Fail("Please specify a reason when selecting Others.");
         }
         else
         {
@@ -81,6 +83,10 @@ public class ArchiveService : IArchiveService
 
         if (student is null)
             return ApiResponse<ArchiveDto>.Fail("Student not found.");
+
+        // Archive, account state, and notification must succeed together before the graph can count the change.
+        await using var transaction = _db.Database.CurrentTransaction is null
+            ? await _db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, cancellationToken) : null;
 
         // Keep a single archive row per student — update reason/date instead of duplicating.
         var archive = await _db.Archives
@@ -115,6 +121,8 @@ public class ArchiveService : IArchiveService
             studentId: student.StudentId,
             cancellationToken: cancellationToken);
 
+        if (transaction is not null) await transaction.CommitAsync(cancellationToken);
+
         archive.Student = student;
         return ApiResponse<ArchiveDto>.Ok(Map(archive), "Student archived successfully.");
     }
@@ -131,7 +139,7 @@ public class ArchiveService : IArchiveService
         StudentName = a.Student?.Applicant?.FullName ?? string.Empty,
         Email = a.Student?.Applicant?.Email ?? string.Empty,
         ContactNumber = a.Student?.Applicant?.ContactNumber ?? string.Empty,
-        Address = a.Student?.Applicant?.Address ?? string.Empty,
+        Address = AddressFormatting.FullAddress(a.Student?.Applicant),
         CourseName = a.Student?.Applicant?.Course?.CourseName ?? string.Empty,
         BatchName = a.Student?.Batch?.BatchName ?? string.Empty,
         AccountStatus = a.Student?.AccountStatus ?? SystemConstants.AccountStatuses.Inactive,
