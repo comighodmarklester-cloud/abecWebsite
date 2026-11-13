@@ -118,6 +118,11 @@ try
   await RequestedUpdatesChecks.Run(db, oldApplicant, oldStudent, admin, env);
   return;
  }
+ if (args.Contains("--security-pin-workflow-only"))
+ {
+  await SecurityPinWorkflowChecks.Run(db, oldApplicant, oldStudent, env);
+  return;
+ }
  if (args.Contains("--feature-updates-only"))
  {
   await FeatureUpdateChecks.Run(db, applicantService);

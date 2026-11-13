@@ -154,7 +154,8 @@ public class ActivationService : IActivationService
         await _db.RequireActiveBatchAsync(student.BatchId, cancellationToken);
         // Reactivate removes the archive record so the student leaves Archive and is Active again.
         var archives = await _db.Archives.Where(a => a.StudentId == studentId).ToListAsync(cancellationToken);
-        if (student.AccountStatus == SystemConstants.AccountStatuses.Active && archives.Count == 0)
+        if (student.AccountStatus == SystemConstants.AccountStatuses.Active && archives.Count == 0
+            && !string.IsNullOrWhiteSpace(student.SecurityPin))
             return ApiResponse<StudentDto>.Ok(await MapAsync(student, cancellationToken), "Account is already active.");
         var wasPending = student.AccountStatus == SystemConstants.AccountStatuses.Inactive && archives.Count == 0;
         if (archives.Count > 0)

@@ -34,25 +34,34 @@ internal static class SecurityPinGenerator
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
         var available = Enumerable.Range(0, 10000).Select(value => prefix + value.ToString("D4"))
             .Where(pin => !occupied.Contains(pin)).ToList();
-        while (available.Count > 0)
+        try
         {
-            ct.ThrowIfCancellationRequested();
-            var index = RandomNumberGenerator.GetInt32(available.Count);
-            student.SecurityPin = available[index];
-            available.RemoveAt(index);
-            try
+            while (available.Count > 0)
             {
-                await db.SaveChangesAsync(ct);
-                return;
+                ct.ThrowIfCancellationRequested();
+                var index = RandomNumberGenerator.GetInt32(available.Count);
+                student.SecurityPin = available[index];
+                available.RemoveAt(index);
+                try
+                {
+                    await db.SaveChangesAsync(ct);
+                    return;
+                }
+                catch (DbUpdateException ex) when (ex.InnerException is MySqlException { Number: 1062 })
+                {
+                    // The unique DB index is authoritative, including writers which do
+                    // not use our advisory lock. EF rolls a failed save back to its savepoint.
+                    if (!await db.Students.AsNoTracking().AnyAsync(s => s.SecurityPin == student.SecurityPin, ct)) throw;
+                }
             }
-            catch (DbUpdateException ex) when (ex.InnerException is MySqlException { Number: 1062 })
-            {
-                // The unique DB index is authoritative, including writers which do
-                // not use our advisory lock. EF rolls a failed save back to its savepoint.
-                if (!await db.Students.AsNoTracking().AnyAsync(s => s.SecurityPin == student.SecurityPin, ct)) throw;
-            }
+            throw new BatchIntegrityException("No unused security PIN remains for these initials. Contact the registrar; no credential has been issued.");
         }
-        student.SecurityPin = previousPin;
-        throw new BatchIntegrityException("No unused security PIN remains for these initials. Contact the registrar; no credential has been issued.");
+        catch
+        {
+            // A failed/cancelled save must not leave an unissued candidate in the
+            // tracked account, where a later SaveChanges could persist it accidentally.
+            student.SecurityPin = previousPin;
+            throw;
+        }
     }
 }
