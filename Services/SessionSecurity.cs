@@ -38,8 +38,13 @@ public sealed class SessionSecurity(ApplicationDbContext db) : CookieAuthenticat
     public override Task RedirectToAccessDenied(RedirectContext<CookieAuthenticationOptions> context)
     { context.Response.StatusCode = 403; return Task.CompletedTask; }
 
-    public static Task RefreshAsync(HttpContext context) => context.SignInAsync("StudentSession",
-        new ClaimsPrincipal(new ClaimsIdentity(context.User.Claims.Where(c => c.Type != VersionClaim), "StudentSession")));
+    public static async Task RefreshAsync(HttpContext context)
+    {
+        var ticket = await context.AuthenticateAsync("StudentSession");
+        await context.SignInAsync("StudentSession",
+            new ClaimsPrincipal(new ClaimsIdentity(context.User.Claims.Where(c => c.Type != VersionClaim), "StudentSession")),
+            ticket.Properties ?? new AuthenticationProperties());
+    }
 
     private async Task<string?> VersionAsync(ClaimsPrincipal? principal, CancellationToken ct)
     {

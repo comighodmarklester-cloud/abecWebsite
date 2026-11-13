@@ -112,6 +112,7 @@ builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddMemoryCache();
+builder.Services.AddSingleton<ApplicationReadiness>();
 builder.Services.AddHttpClient<ILocationService, LocationService>();
 
 builder.Services.AddScoped<IEmailService, EmailService>();
@@ -135,12 +136,14 @@ builder.Services.AddScoped<IArchiveService, ArchiveService>();
 builder.Services.AddScoped<IAdminProfileService, AdminProfileService>();
 builder.Services.AddScoped<IStudentPortalService, StudentPortalService>();
 
-builder.Services.AddCors(options =>
+builder.Services.AddCors();
+builder.Services.AddOptions<Microsoft.AspNetCore.Cors.Infrastructure.CorsOptions>()
+    .Configure<Microsoft.Extensions.Options.IOptions<AppSettings>>((options, appSettings) =>
 {
     options.AddPolicy("AbecCors", policy =>
         policy
             .WithOrigins(builder.Environment.IsDevelopment() ? RequestSecurityMiddleware.DevelopmentOrigins.ToArray()
-                : Array.Empty<string>())
+                : new[] { appSettings.Value.PublicBaseUrl })
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials());
@@ -171,6 +174,7 @@ catch
 try
 {
     await DbSeeder.SeedAsync(app.Services);
+    app.Services.GetRequiredService<ApplicationReadiness>().MarkSchemaReady();
 }
 catch (Exception ex)
 {
@@ -284,26 +288,8 @@ app.MapControllerRoute(
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
 app.MapGet("/", () => Results.Redirect("/Views/Home/LandingPage.html"));
-app.MapGet("/api/health", async (ApplicationDbContext db, CancellationToken cancellationToken) =>
-{
-    var database = false;
-    try
-    {
-        database = await db.Database.CanConnectAsync(cancellationToken);
-    }
-    catch
-    {
-        database = false;
-    }
-
-    return Results.Json(new
-    {
-        ok = true,
-        service = "ABEC System",
-        database,
-        databaseMessage = database ? null : "MySQL is not accepting connections on localhost:3306."
-    });
-});
+app.MapGet("/api/health", (ApplicationReadiness readiness, ApplicationDbContext db, CancellationToken ct) => readiness.CheckAsync(db, ct));
+app.MapGet("/api/health/live", () => Results.Json(new { ok = true, service = "ABEC System" }));
 app.Use(async (context, next) =>
 {
     if (context.Request.Path is var path && (path == "/confirm-slot" || path == "/reject-slot" || path == "/decline-slot"))

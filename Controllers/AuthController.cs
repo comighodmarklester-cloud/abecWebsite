@@ -32,7 +32,7 @@ public class AuthController : ControllerBase
         dto.ClientIp = HttpContext.Connection.RemoteIpAddress?.ToString();
         dto.UserAgent = Request.Headers.UserAgent.ToString();
         var result = await _authService.StudentLoginAsync(dto, cancellationToken);
-        await SignInStudentAsync(result);
+        await SignInStudentAsync(result, dto.RememberDevice);
         return Ok(result);
     }
 
@@ -45,7 +45,7 @@ public class AuthController : ControllerBase
         return Ok(result);
     }
 
-    private async Task SignInStudentAsync(ApiResponse<AuthResultDto> result)
+    private async Task SignInStudentAsync(ApiResponse<AuthResultDto> result, bool rememberDevice = false)
     {
         if (result.Success && result.Data is not null)
         {
@@ -53,7 +53,11 @@ public class AuthController : ControllerBase
                 new Claim(ClaimTypes.NameIdentifier, result.Data.UserId.ToString()),
                 new Claim(ClaimTypes.Role, result.Data.Role)
             }, "StudentSession");
-            await HttpContext.SignInAsync("StudentSession", new ClaimsPrincipal(identity));
+            await HttpContext.SignInAsync("StudentSession", new ClaimsPrincipal(identity), new AuthenticationProperties
+            {
+                IsPersistent = rememberDevice,
+                ExpiresUtc = DateTimeOffset.UtcNow.AddHours(8)
+            });
         }
     }
 

@@ -134,6 +134,12 @@
     }
 
     if (studentForm) {
+      var recoveryButton = document.getElementById('student-pin-help-button');
+      if (recoveryButton) recoveryButton.addEventListener('click', function () {
+        var recovery = document.getElementById('student-pin-recovery');
+        recovery.hidden = !recovery.hidden;
+        recoveryButton.setAttribute('aria-expanded', String(!recovery.hidden));
+      });
       var passwordMode = false;
       function setStudentLoginMode(mode) {
         passwordMode = mode === 'password';
@@ -146,6 +152,7 @@
         document.getElementById('student-pin').disabled = passwordMode;
         document.getElementById('student-pin').required = !passwordMode;
         document.getElementById('student-email').disabled = passwordMode;
+        document.getElementById('student-email').required = !passwordMode;
         document.getElementById('student-login-method-label').textContent = passwordMode ? 'Username and password login' : 'Security PIN login';
         document.getElementById('student-login-method').textContent = passwordMode ? 'Use security PIN' : 'Use username & password';
       }

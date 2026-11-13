@@ -112,6 +112,8 @@ public class ActivationService : IActivationService
             query = query.Where(s =>
                 s.Applicant!.FirstName.ToLower().Contains(term) ||
                 s.Applicant.LastName.ToLower().Contains(term) ||
+                (s.Applicant.FirstName + " " + s.Applicant.LastName).ToLower().Contains(term) ||
+                (s.Applicant.FirstName + " " + (s.Applicant.MiddleName ?? "") + " " + s.Applicant.LastName).ToLower().Contains(term) ||
                 s.Applicant.Email.ToLower().Contains(term));
         }
 

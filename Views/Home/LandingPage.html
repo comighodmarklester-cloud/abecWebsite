@@ -830,7 +830,7 @@ Log in
 <a href="AdminLoginPage.html" role="menuitem">Admin</a>
 </div>
 </div>
-<button type="button" class="abec-mobile-menu-toggle md:hidden" id="mobile-menu-toggle" aria-label="Open menu" aria-controls="mobile-nav-drawer">
+<button type="button" class="abec-mobile-menu-toggle md:hidden" id="mobile-menu-toggle" aria-expanded="false" aria-label="Open menu" aria-controls="mobile-nav-drawer">
 <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16m-7 6h7" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"></path></svg>
 </button>
 </div>
@@ -1710,11 +1710,11 @@ Log in
             <img src="../../wwwroot/images/Photo8Bookkeeping.jpg" alt="Bookkeeping" class="w-full h-full object-cover">
           </div>
           <div class="course-card-body">
-            <h3 class="text-xl font-bold text-institutional-blue">Bookkeeping <span class="whitespace-nowrap">NC III</span></h3>
+            <h3 class="text-xl font-bold text-institutional-blue">Bookkeeping</h3>
           </div>
           <div class="course-card-wash" aria-hidden="true"></div>
           <div class="course-card-details" id="course-detail-bookkeeping" aria-hidden="true">
-            <h3 class="text-xl font-bold text-institutional-blue">Bookkeeping <span class="whitespace-nowrap">NC III</span></h3>
+            <h3 class="text-xl font-bold text-institutional-blue">Bookkeeping</h3>
             <dl class="course-detail-list">
               <div><dt>Course Description</dt><dd data-course-description="bookkeeping">Perform journalizing, posting, and preparation of financial reports.</dd></div>
               <div><dt>Training Duration</dt><dd data-course-duration="bookkeeping">37 training days + 19 on-the-job training days</dd></div>
@@ -1952,87 +1952,25 @@ Log in
       <div>
         <h3 class="text-[#2563EB] font-bold text-lg mb-4">Location:</h3>
         <div class="abec-contact-map-shell">
-          <div id="abec-contact-map" role="region" aria-label="Interactive map of 122 Peñaranda Street, Legazpi, Bicol"></div>
-          <p id="abec-map-status" class="abec-map-status" hidden>Map tiles could not be loaded. The address is still listed here, and Get Directions opens it in Google Maps.</p>
+          <div id="abec-contact-map" role="region" aria-label="Interactive map near ABEC Institute, Peñaranda Street, Legazpi City"></div>
+          <p id="abec-map-status" class="abec-map-status" role="status" aria-live="polite" hidden>Map tiles could not be loaded. The address is still listed here, and Get Directions opens it in Google Maps.</p>
         </div>
         <div class="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div>
-          </div>
-          <a class="abec-directions shrink-0" href="https://www.google.com/maps/dir/?api=1&amp;destination=122+Pe%C3%B1aranda+Street%2C+Legazpi%2C+Bicol" target="_blank" rel="noopener noreferrer">Get Directions</a>
+          <p class="text-sm text-slate-600">3F PVLB Building, Peñaranda St., Legazpi City, Albay, Philippines</p>
+          <a class="abec-directions shrink-0" href="https://www.google.com/maps/dir/?api=1&amp;destination=3F+PVLB+Building%2C+Pe%C3%B1aranda+Street%2C+Legazpi+City%2C+Albay%2C+Philippines" target="_blank" rel="noopener noreferrer">Get Directions</a>
         </div>
         <p class="text-center text-gray-600 text-xs mt-8">ABEC Institute of Business and Technology Inc 2026</p>
       </div>
     </div>
   </div>
   <script src="../../wwwroot/lib/leaflet/leaflet.js"></script>
-  <script>
-    (function () {
-      var el = document.getElementById('abec-contact-map');
-      if (!el || !window.L || el.getAttribute('data-ready') === '1') return;
-      el.setAttribute('data-ready', '1');
-      var lat = 13.1472258;
-      var lon = 123.7538898;
-      var map = L.map(el, { scrollWheelZoom: true }).setView([lat, lon], 16);
-      var status = document.getElementById('abec-map-status');
-      var errors = 0;
-      var usingFallback = false;
-      function watch(layer) {
-        layer.on('tileload', function () {
-          if (status) status.hidden = true;
-        });
-        layer.on('tileerror', function () {
-          errors += 1;
-          if (!usingFallback && errors >= 4) {
-            usingFallback = true;
-            map.removeLayer(layer);
-            watch(L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-              subdomains: 'abcd',
-              maxZoom: 20,
-              attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
-            }).addTo(map));
-          } else if (usingFallback && errors >= 12 && status) {
-            status.hidden = false;
-          }
-        });
-      }
-      watch(L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-      }).addTo(map));
-      var icon = L.divIcon({
-        className: 'abec-pin-wrap',
-        html: '<div class="abec-pin"><span class="abec-pin-label">ABEC</span><svg width="28" height="40" viewBox="0 0 28 40" aria-hidden="true"><path d="M14 0C6.3 0 0 6.2 0 13.8 0 24 14 40 14 40s14-16 14-26.2C28 6.2 21.7 0 14 0z" fill="#2563EB"/><circle cx="14" cy="14" r="5.5" fill="#fff"/></svg></div>',
-        iconSize: [56, 62],
-        iconAnchor: [28, 62],
-        popupAnchor: [0, -56]
-      });
-      L.marker([lat, lon], { icon: icon }).addTo(map).bindPopup(
-        '<strong>ABEC Institute of Business and Technology Inc</strong><br>122 Peñaranda Street, Legazpi, Bicol<br>3F PVLB Building, Peñaranda St., Legazpi City, Albay, Philippines<br><span style="color:#4b5563">Pin marks Peñaranda Street in the port district. Building number 122 is not a separate mapped point.</span>'
-      ).openPopup();
-      function fit() { map.invalidateSize(); }
-      window.addEventListener('resize', fit);
-      setTimeout(fit, 200);
-      setTimeout(fit, 800);
-    })();
-  </script>
+  <script src="../../wwwroot/js/abec-contact-map.js"></script>
 </section>
 <!-- END: AccreditationFooter -->
 
 <script src="../../wwwroot/js/abec-landing-chrome.js?v=20261012d"></script>
 <script data-purpose="premium-chrome">
   (function () {
-    var closeBtn = document.getElementById('mobile-nav-close');
-    if (closeBtn) {
-      closeBtn.addEventListener('click', function () {
-        var drawer = document.getElementById('mobile-nav-drawer');
-        if (drawer) {
-          drawer.classList.remove('is-open');
-          drawer.setAttribute('aria-hidden', 'true');
-          document.body.style.overflow = '';
-        }
-      });
-    }
-
     var reveals = document.querySelectorAll('.abec-reveal');
     if ('IntersectionObserver' in window && reveals.length) {
       var io = new IntersectionObserver(function (entries) {

@@ -44,6 +44,19 @@ internal static class StrictSecurityChecks
         Check(student.AccountStatus == "Inactive", "Rejected registration must not change account state.");
         student.AccountStatus = "Active"; await db.SaveChangesAsync();
         Check((await auth.RegisterStudentAsync(registration)).Success && student.SecurityPin == originalPin, "Existing active users retain legacy PIN sign-in.");
+        Check(!(await auth.StudentLoginAsync(new() { SecurityPin = originalPin })).Success, "PIN login requires the registered email address.");
+        Check(!(await auth.StudentLoginAsync(new() { Email = "different@example.invalid", SecurityPin = originalPin })).Success, "A valid PIN must not authenticate a different email address.");
+        Check((await auth.StudentLoginAsync(new() { Email = applicant.Email, SecurityPin = originalPin })).Success, "Issued legacy PIN remains usable with its registered email.");
+        var preservedPin = student.SecurityPin;
+        student.SecurityPin = "0000123456789012"; await db.SaveChangesAsync();
+        Check((await auth.StudentLoginAsync(new() { Email = applicant.Email, SecurityPin = student.SecurityPin })).Success, "Numeric PIN authentication preserves leading zeroes.");
+        student.SecurityPin = preservedPin; await db.SaveChangesAsync();
+        var activation = new ActivationService(db, new NotificationService(db), new TestPdf(), new ArchiveService(db, new NotificationService(db)), new TestEmail(), new TestOptions(), environment);
+        var courseQueries = new CourseService(db, new CourseHistoryRecorder(db, new HttpContextAccessor()));
+        var namedStudent = (await courseQueries.GetEnrolledStudentsAsync(applicant.CourseId, applicant.FirstName + " " + applicant.LastName, batchId: student.BatchId)).Data!;
+        Check(namedStudent.Any(s => s.StudentId == student.StudentId), "Course enrollment search supports a combined first and last name.");
+        Check(namedStudent.All(s => string.IsNullOrEmpty(s.SecurityPin)), "General course lists must not disclose login PINs.");
+        Check((await activation.GetAccountsAsync(search: applicant.FirstName + " " + applicant.LastName, batchId: student.BatchId)).Data!.Any(s => s.StudentId == student.StudentId), "Activation search supports a student's combined name.");
 
         var credentials = Enumerable.Range(0, 4).Select(_ => (IFormFile)new FormFile(new MemoryStream("%PDF-1.4\n<svg onload=alert(1)>"u8.ToArray()), 0, "%PDF-1.4\n<svg onload=alert(1)>"u8.Length, "credentialFiles", "upload.pdf")
             { Headers = new HeaderDictionary(), ContentType = "text/html" }).ToList();
@@ -61,13 +74,12 @@ internal static class StrictSecurityChecks
         record.StoredRelativePath = outside; await db.SaveChangesAsync();
         Check((await storage.OpenDocumentAsync(applicant.ApplicantId, record.DocumentId)).Stream is null, "Corrupted upload metadata must not escape private storage.");
 
-        var activation = new ActivationService(db, new NotificationService(db), new TestPdf(), new ArchiveService(db, new NotificationService(db)), new TestEmail(), new TestOptions(), environment);
         var issued = new HashSet<string>();
         for (var count = 0; count < 3; count++)
         {
             var generated = await activation.GeneratePinAsync(student.StudentId);
             var pin = generated.Data?.SecurityPin ?? "";
-            Check(generated.Success && System.Text.RegularExpressions.Regex.IsMatch(pin, "^ABEC[A-HJ-NP-Z2-9]{16}$") && issued.Add(pin), "PIN regeneration must use fresh random values within the storage limit.");
+            Check(generated.Success && System.Text.RegularExpressions.Regex.IsMatch(pin, "^[0-9]{16}$") && issued.Add(pin), "PIN regeneration must use fresh numeric values within the storage limit.");
         }
         var tooLong = await new AdminProfileService(db, new NotificationService(db)).ChangePasswordAsync(admin.AdminId,
             new() { CurrentPassword = VerificationAccounts.Password, NewPassword = new string('x', 73) });

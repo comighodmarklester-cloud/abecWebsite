@@ -101,9 +101,15 @@
 
   function closeMobileNav() {
     if (!mobileDrawer) return;
+    var wasOpen = mobileDrawer.classList.contains('is-open');
     mobileDrawer.classList.remove('is-open');
     mobileDrawer.setAttribute('aria-hidden', 'true');
     document.body.style.overflow = '';
+    if (menuToggle) {
+      menuToggle.setAttribute('aria-expanded', 'false');
+      menuToggle.setAttribute('aria-label', 'Open menu');
+      if (wasOpen) menuToggle.focus();
+    }
   }
 
   function openMobileNav() {
@@ -112,6 +118,9 @@
     mobileDrawer.classList.add('is-open');
     mobileDrawer.setAttribute('aria-hidden', 'false');
     document.body.style.overflow = 'hidden';
+    if (menuToggle) { menuToggle.setAttribute('aria-expanded', 'true'); menuToggle.setAttribute('aria-label', 'Close menu'); }
+    var first = mobileDrawer.querySelector('button, a[href]');
+    if (first) first.focus();
   }
 
   var menuToggle = document.getElementById('mobile-menu-toggle');
@@ -126,6 +135,16 @@
   if (backdrop) backdrop.addEventListener('click', closeMobileNav);
 
   if (mobileDrawer) {
+    var closeButton = document.getElementById('mobile-nav-close');
+    if (closeButton) closeButton.addEventListener('click', closeMobileNav);
+    document.addEventListener('keydown', function (event) {
+      if (event.key !== 'Tab' || !mobileDrawer.classList.contains('is-open')) return;
+      var items = Array.prototype.filter.call(mobileDrawer.querySelectorAll('a[href], button:not([disabled])'), function (el) { return el.getClientRects().length > 0; });
+      var first = items[0], last = items[items.length - 1];
+      if (!first) return;
+      if (event.shiftKey && (document.activeElement === first || !mobileDrawer.contains(document.activeElement))) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && (document.activeElement === last || !mobileDrawer.contains(document.activeElement))) { event.preventDefault(); first.focus(); }
+    });
     mobileDrawer.querySelectorAll('a').forEach(function (link) {
       link.addEventListener('click', closeMobileNav);
     });

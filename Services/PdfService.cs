@@ -297,7 +297,7 @@ public class PdfService : IPdfService
                     col.Item().Text($"Dear {name},").FontSize(9);
 
                     col.Item().PaddingTop(4).Text(
-                        "Your enrollment application has been approved. This official notice contains your Security PIN, which is required to activate your student account in the ABEC Online Enrollment and Document Release Tracking System.")
+                        "Your enrollment application has been approved. This official notice contains your Security PIN for signing in after the ABEC registrar activates your student account.")
                         .FontSize(8.5f).LineHeight(1.25f);
 
                     CompactSectionTitle(col, "Student Information");
@@ -322,7 +322,7 @@ public class PdfService : IPdfService
                     col.Item().PaddingVertical(4).AlignCenter()
                         .Text(pin).Bold().FontSize(16).FontColor(Colors.Black);
                     col.Item().Text(
-                        "This Security PIN is confidential. Present or use it only during the account activation process on the student login page.")
+                        "This Security PIN is confidential. Use it to sign in to the student portal after the registrar activates your account.")
                         .FontSize(8).FontColor(Colors.Grey.Darken2).LineHeight(1.2f);
 
                     CompactSectionTitle(col, "Account Activation Procedure");
@@ -335,7 +335,7 @@ public class PdfService : IPdfService
                     CompactSectionTitle(col, "Important Security Reminders");
                     CompactBullet(col, "Keep this Security PIN confidential at all times.");
                     CompactBullet(col, "Do not share your PIN or login credentials with anyone.");
-                    CompactBullet(col, "This PIN is intended for one-time account activation.");
+                    CompactBullet(col, "This PIN remains valid for sign-in until the registrar replaces it or you enable username and password login.");
                     CompactBullet(col, "If you suspect unauthorized use, contact the ABEC Administration Office immediately.");
 
                     CompactSectionTitle(col, "Activation Record");
@@ -403,9 +403,6 @@ public class PdfService : IPdfService
     {
         if (string.IsNullOrWhiteSpace(pin)) return "N/A";
         var raw = pin.Trim().ToUpperInvariant();
-        if (raw.StartsWith("ABEC-", StringComparison.Ordinal)) return raw;
-        if (raw.StartsWith("ABEC", StringComparison.Ordinal) && raw.Length > 4 && raw.Skip(4).All(char.IsDigit))
-            return "ABEC-" + raw[4..];
         return raw;
     }
 

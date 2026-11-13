@@ -571,7 +571,7 @@
     <div class="shrink-0 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 pb-3 border-b border-slate-200">
       <h2 class="text-2xl font-bold text-abec-blue shrink-0">Course Management</h2>
       <div class="flex flex-wrap items-center gap-3">
-        <button type="button" onclick="openCreateScheduleModal()" class="abec-btn abec-btn-primary">Create New Course Schedule</button>
+        <button type="button" onclick="openCreateScheduleModal()" class="abec-btn abec-btn-primary">Create New</button>
         <button type="button" onclick="openAddCourse()" class="abec-btn abec-btn-primary">Add New Course</button>
       </div>
     </div>
@@ -711,7 +711,7 @@
 <div class="course-detail-head">
 <button type="button" data-abec-back-btn="true" onclick="showView('overview')" class="abec-back-btn">
   <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M15 19l-7-7 7-7"></path></svg>
-  <span>Back to Course Management</span>
+  <span></span>
 </button>
 <header>
   <h2 id="course-title" class="text-2xl font-bold text-abec-blue">Course Name</h2>
@@ -910,7 +910,7 @@
 <div id="view-schedule" class="hidden">
 <button type="button" data-abec-back-btn="true" onclick="showView('overview')" class="abec-back-btn">
   <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M15 19l-7-7 7-7"></path></svg>
-  <span>Back to Course Management</span>
+  <span></span>
 </button>
 <header class="mb-6 flex flex-wrap items-center justify-between gap-3">
   <h2 class="text-2xl md:text-3xl font-bold text-abec-blue">Course Schedule Management</h2>
@@ -942,7 +942,7 @@
 
     </div>
     <div id="schedule-card-grid" class="schedule-card-grid p-4 sm:p-5">
-      <p class="text-sm text-slate-500">Loading schedules...</p>
+      <p class="text-sm text-slate-500">Loading...</p>
     </div>
   </section>
 </div>

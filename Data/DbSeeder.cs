@@ -506,7 +506,7 @@ public static partial class DbSeeder
             }
         }
 
-        var schedules = await db.CourseSchedules.ToListAsync(cancellationToken);
+        var schedules = await db.CourseSchedules.Include(s => s.Batch).ToListAsync(cancellationToken);
         foreach (var schedule in schedules)
         {
             var name = (schedule.Room ?? string.Empty).Trim();
@@ -528,6 +528,9 @@ public static partial class DbSeeder
 
         foreach (var schedule in schedules)
         {
+            // Completed schedules are immutable history. Their saved room text is
+            // still readable without a room_id; normalize only writable schedules.
+            if (schedule.Batch?.Status != SystemConstants.BatchStatuses.Active) continue;
             var name = (schedule.Room ?? string.Empty).Trim();
             if (name.Length == 0) continue;
             var room = rooms.FirstOrDefault(item => SameRoom(item.RoomName, name));

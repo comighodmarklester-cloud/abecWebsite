@@ -4,11 +4,11 @@ namespace ABEC_System.Services;
 
 internal static class SecurityPinGenerator
 {
-    // 80 bits of entropy, case-insensitive and within the existing 20-character storage limit.
+    // Keep PINs as text to preserve leading zeroes. Sixteen random digits provide
+    // about 53 bits of entropy without exceeding the existing storage limit.
     public static string Generate()
     {
-        const string alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-        return "ABEC" + new string(Enumerable.Range(0, 16)
-            .Select(_ => alphabet[RandomNumberGenerator.GetInt32(alphabet.Length)]).ToArray());
+        return new string(Enumerable.Range(0, 16)
+            .Select(_ => (char)('0' + RandomNumberGenerator.GetInt32(10))).ToArray());
     }
 }

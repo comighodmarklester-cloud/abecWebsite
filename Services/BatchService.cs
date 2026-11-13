@@ -365,7 +365,6 @@ public class BatchService : IBatchService
             BatchName = s.Batch?.BatchName ?? string.Empty,
             BatchStartDate = s.Batch?.StartDate,
             BatchEndDate = s.Batch?.EndDate,
-            SecurityPin = s.SecurityPin,
             AccountStatus = s.AccountStatus,
             ApplicationStatus = a?.ApplicationStatus ?? string.Empty,
             ConfirmationStatus = a?.SlotResponse ?? string.Empty,

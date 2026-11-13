@@ -423,7 +423,7 @@ public class ScheduleService : IScheduleService
     private static bool TimesOverlap(TimeSpan aStart, TimeSpan aEnd, TimeSpan bStart, TimeSpan bEnd)
         => aStart < bEnd && bStart < aEnd;
 
-    private static CourseScheduleDto Map(CourseSchedule s) => new()
+    internal static CourseScheduleDto Map(CourseSchedule s) => new()
     {
         ScheduleId = s.ScheduleId,
         CourseId = s.CourseId,

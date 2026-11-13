@@ -9,6 +9,7 @@
   var classSchedules = [];
   var selectedDayKey = '';
   var classCalWired = false;
+  var classScheduleLoaded = false;
 
   function esc(value) {
     return String(value == null ? '' : value)
@@ -68,6 +69,7 @@
   }
 
   function dayNameFromSchedule(schedule) {
+    if (schedule.trainingDays) return String(schedule.trainingDays).split(',').map(function (day) { return day.trim(); }).filter(Boolean).join(', ');
     if (schedule.dayOfWeek) return schedule.dayOfWeek;
     if (!schedule.scheduleDate) return '—';
     var d = new Date(schedule.scheduleDate);
@@ -76,7 +78,7 @@
   }
 
   function formatDayTime(schedule) {
-    var day = schedule.dayOfWeek || '';
+    var day = dayNameFromSchedule(schedule);
     if (!day && schedule.scheduleDate) {
       var d = new Date(schedule.scheduleDate);
       if (!isNaN(d.getTime())) day = d.toLocaleDateString(undefined, { weekday: 'long' });
@@ -169,7 +171,7 @@
     var tbody = document.getElementById('upcoming-classes-body');
     if (!tbody) return;
     if (!list || !list.length) {
-      tbody.innerHTML = '<tr><td colspan="4" class="px-6 py-10 text-center text-sm text-slate-500">No active course schedule assigned yet.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="4" class="px-6 py-10 text-center text-sm text-slate-500">No training schedule is currently available for your enrolled course.</td></tr>';
       return;
     }
     tbody.innerHTML = list.map(function (s) {
@@ -577,7 +579,7 @@
       wireClassCalendar(classSchedules);
       renderDayView();
 
-      if (classSchedules.length) {
+      if (!classScheduleLoaded && classSchedules.length) {
         var firstKey = toDateKey(classSchedules[0].scheduleDate);
         if (firstKey) {
           var parts = firstKey.split('-');
@@ -588,6 +590,7 @@
           }
         }
       }
+      classScheduleLoaded = true;
       applyScheduleNotificationTarget();
     }
 
@@ -643,12 +646,12 @@
     var path = window.location.pathname.toLowerCase();
 
     if (path.indexOf('studentdashboard') !== -1) {
-      await loadDashboard(session);
+      await watchSchedule(session, loadDashboard);
       return;
     }
 
     if (path.indexOf('classschedule') !== -1) {
-      await loadClassSchedule(session);
+      await watchSchedule(session, loadClassSchedule);
       return;
     }
 
@@ -662,6 +665,22 @@
     if (path.indexOf('documentrequest') !== -1) {
       return;
     }
+  }
+
+  async function watchSchedule(session, load) {
+    var loading = false;
+    async function refresh() {
+      if (loading || document.hidden) return;
+      loading = true;
+      try { await load(session); }
+      finally { loading = false; }
+    }
+    document.addEventListener('visibilitychange', function () {
+      if (!document.hidden) refresh();
+    });
+    window.addEventListener('focus', refresh);
+    window.setInterval(refresh, 15000);
+    await refresh();
   }
 
   function loadProfileMenuScript(done) {

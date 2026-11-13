@@ -112,6 +112,8 @@ public class CourseService : ICourseService
             query = query.Where(s =>
                 s.Applicant!.FirstName.ToLower().Contains(term) ||
                 s.Applicant.LastName.ToLower().Contains(term) ||
+                (s.Applicant.FirstName + " " + s.Applicant.LastName).ToLower().Contains(term) ||
+                (s.Applicant.FirstName + " " + (s.Applicant.MiddleName ?? "") + " " + s.Applicant.LastName).ToLower().Contains(term) ||
                 s.Applicant.Email.ToLower().Contains(term) ||
                 (s.Applicant.ContactNumber != null && s.Applicant.ContactNumber.ToLower().Contains(term)));
         }
@@ -218,7 +220,6 @@ public class CourseService : ICourseService
         CourseId = s.Applicant?.CourseId ?? 0,
         BatchId = s.BatchId,
         BatchName = s.Batch?.BatchName ?? string.Empty,
-        SecurityPin = s.SecurityPin,
         AccountStatus = s.AccountStatus,
         ApplicationStatus = s.Applicant?.ApplicationStatus ?? string.Empty,
         ConfirmationStatus = SystemConstants.ApplicationStatuses.IsConfirmedSlot(s.Applicant?.ApplicationStatus)

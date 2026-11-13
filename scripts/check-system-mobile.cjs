@@ -135,6 +135,15 @@ const server = tlsFixture.server;
       });
     }), 'Desktop schedule cards retain every detail when the catalog grows beyond four courses');
     await page.screenshot({ path: path.join(output, 'schedule-desktop.png') });
+    await open('Admin/Reports.html');
+    await page.locator('#report-status-legend tbody tr').first().waitFor();
+    check(await page.evaluate(() => {
+      var legend = document.querySelector('.report-overview-legend').getBoundingClientRect();
+      var rows = [...document.querySelectorAll('#report-status-legend tbody tr')];
+      var chart = document.querySelector('.report-overview-chart').getBoundingClientRect();
+      return legend.width >= 280 && legend.height < 900 && rows.every(row => row.getBoundingClientRect().height < 110) && chart.top < 650;
+    }), 'Desktop report status labels remain readable without a tall compressed legend');
+    await page.screenshot({ path: path.join(output, 'reports-desktop.png'), fullPage: true });
     const files = ['Admin/AdminDashboard.html', 'Admin/StudentsApplicants.html', 'Admin/AccountActivation.html', 'Admin/CourseManagement.html', 'Admin/CourseManagement.html?view=schedule', 'Admin/CourseManagement.html?view=detail&course=5', 'Admin/DocumentManagement.html', 'Admin/BatchManagement.html', 'Admin/StudentArchive.html', 'Admin/Reports.html', 'Admin/UserSettings.html', 'Admin/CourseSchedule.html',
       'Student/StudentDashboard.html', 'Student/ClassSchedule.html', 'Student/DocumentRequest.html', 'Student/Notifications.html', 'Student/UserSettings.html', 'Home/LandingPage.html', 'Home/AdminLoginPage.html', 'Home/LoginPage.html', 'Home/ConfirmSlot.html'];
     if (securityChecks) {

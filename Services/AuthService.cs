@@ -78,10 +78,17 @@ public class AuthService : IAuthService
         }
         else
         {
+            var email = dto.Email?.Trim() ?? "";
+            if (email.Length is < 3 or > 100 || !new System.ComponentModel.DataAnnotations.EmailAddressAttribute().IsValid(email))
+                return ApiResponse<AuthResultDto>.Fail("Enter your registered email address and security PIN.");
             var pin = (dto.SecurityPin ?? string.Empty).Trim().ToUpperInvariant();
             if (string.IsNullOrEmpty(pin)) return ApiResponse<AuthResultDto>.Fail("Enter your security PIN.");
-            student = await _db.Students.AsNoTracking().Include(s => s.Applicant)
-                .FirstOrDefaultAsync(s => s.SecurityPin == pin, cancellationToken);
+            if (pin.Length > 20 || pin.Any(c => !char.IsAsciiLetterOrDigit(c) && c != '-'))
+                return ApiResponse<AuthResultDto>.Fail("Invalid login details.");
+            student = await FindStudentByPinAsync(pin, cancellationToken);
+            if (student?.Applicant is not null && !string.IsNullOrWhiteSpace(dto.Email)
+                && !string.Equals(student.Applicant.Email, dto.Email.Trim(), StringComparison.OrdinalIgnoreCase))
+                return ApiResponse<AuthResultDto>.Fail("Invalid login details.");
             if (student is not null && await _db.StudentLoginCredentials.AnyAsync(
                 c => c.StudentId == student.StudentId && c.PasswordLoginEnabled, cancellationToken))
                 return ApiResponse<AuthResultDto>.Fail("Username and password login is enabled. Use your username and password.");
@@ -117,10 +124,10 @@ public class AuthService : IAuthService
         if (dto.Password != dto.ConfirmPassword)
             return ApiResponse<AuthResultDto>.Fail("Password and confirm password do not match.");
 
-        var pin = dto.SecurityPin.Trim();
-        var student = await _db.Students
-            .Include(s => s.Applicant)
-            .FirstOrDefaultAsync(s => s.SecurityPin == pin, cancellationToken);
+        var pin = (dto.SecurityPin ?? string.Empty).Trim().ToUpperInvariant();
+        if (pin.Length is < 1 or > 20 || pin.Any(c => !char.IsAsciiLetterOrDigit(c) && c != '-'))
+            return ApiResponse<AuthResultDto>.Fail("Invalid login details.");
+        var student = await FindStudentByPinAsync(pin, cancellationToken);
 
         if (student?.Applicant is null)
             return ApiResponse<AuthResultDto>.Fail("No student account matches this security PIN. Contact the registrar.");
@@ -141,6 +148,21 @@ public class AuthService : IAuthService
             DisplayName = student.Applicant.FullName,
             EmailOrUsername = student.Applicant.Email
         }, "Student sign-in successful.");
+    }
+
+    private async Task<Student?> FindStudentByPinAsync(string pin, CancellationToken ct)
+    {
+        var student = await _db.Students.AsNoTracking().Include(s => s.Applicant)
+            .FirstOrDefaultAsync(s => s.SecurityPin == pin, ct);
+        // Older printed notices inserted a hyphen after ABEC. Prefer an exact
+        // issued code, then accept that display-only alias without changing it.
+        if (student is null && pin.StartsWith("ABEC-", StringComparison.Ordinal))
+        {
+            var issued = "ABEC" + pin[5..];
+            student = await _db.Students.AsNoTracking().Include(s => s.Applicant)
+                .FirstOrDefaultAsync(s => s.SecurityPin == issued, ct);
+        }
+        return student;
     }
 
     private async Task LogActivityAsync(

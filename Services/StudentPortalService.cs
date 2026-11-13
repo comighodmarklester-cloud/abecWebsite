@@ -97,7 +97,6 @@ public class StudentPortalService : IStudentPortalService
             CanViewTrainingSchedule = student.Batch?.Status == "Active",
             BatchStartDate = student.Batch?.StartDate,
             BatchEndDate = student.Batch?.EndDate,
-            SecurityPin = student.SecurityPin,
             AccountStatus = student.AccountStatus,
             ApplicationStatus = student.Applicant?.ApplicationStatus ?? string.Empty,
             CreatedAt = student.CreatedAt
@@ -142,7 +141,7 @@ public class StudentPortalService : IStudentPortalService
 
         if (student.Batch?.Status != "Active") return ApiResponse<IReadOnlyList<CourseScheduleDto>>.Ok(Array.Empty<CourseScheduleDto>());
 
-        // Students see the Active/Current schedule for their enrolled course (synced from Course Schedule Management).
+        // Read the student's actual enrollment, never the currently selected admin batch.
         var active = await _db.CourseSchedules.AsNoTracking()
             .Include(s => s.Course)
             .Include(s => s.Batch)
@@ -152,31 +151,11 @@ public class StudentPortalService : IStudentPortalService
             .ThenBy(s => s.StartTime)
             .ToListAsync(cancellationToken);
 
-        var mapped = active.Select(s => new CourseScheduleDto
-        {
-            TrainingDays = s.TrainingDays,
-            Trainers = ReadTrainerAssignments(s.TrainerAssignments),
-            ScheduleId = s.ScheduleId,
-            CourseId = s.CourseId,
-            CourseName = s.Course?.CourseName ?? string.Empty,
-            BatchId = s.BatchId,
-            BatchName = s.Batch?.BatchName ?? string.Empty,
-            ScheduleDate = s.ScheduleDate,
-            StartTime = s.StartTime,
-            EndTime = s.EndTime,
-            Room = s.Room,
-            Trainer = s.Trainer,
-            Status = s.Status
-        }).ToList();
+        // Keep the admin and student payloads in sync, including saved training days,
+        // batch dates and legacy trainer assignments.
+        var mapped = active.Select(ScheduleService.Map).ToList();
 
         return ApiResponse<IReadOnlyList<CourseScheduleDto>>.Ok(mapped);
-    }
-
-    private static List<TrainerAssignmentDto> ReadTrainerAssignments(string? json)
-    {
-        if (string.IsNullOrWhiteSpace(json)) return new();
-        try { return System.Text.Json.JsonSerializer.Deserialize<List<TrainerAssignmentDto>>(json) ?? new(); }
-        catch (System.Text.Json.JsonException) { return new(); }
     }
 
     public async Task<ApiResponse<IReadOnlyList<AdminActivityDto>>> GetLoginActivityAsync(int studentId, CancellationToken cancellationToken = default)

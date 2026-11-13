@@ -17,6 +17,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.DependencyInjection;
 using MySqlConnector;
 
 if (args.Contains("--create-browser-tls")) { BrowserFixtureTls.Write(); return; }
@@ -105,6 +106,11 @@ try
  if (args.Contains("--strict-security-only"))
  {
   await StrictSecurityChecks.Run(db, oldApplicant, oldStudent, admin, env);
+  return;
+ }
+ if (args.Contains("--training-schedule-only"))
+ {
+  await TrainingScheduleChecks.Run(db, oldStudent, requests, notices, accessor);
   return;
  }
  if (args.Contains("--feature-updates-only"))
@@ -278,7 +284,7 @@ try
  Check((await applicantService.GetAllRegistrationDocumentsAsync(batchId:oldId)).Data!.Single().ApplicantId==oldApplicant.ApplicantId,"explicit historical registration documents remain available");
  Check((await requests.GetAllAsync(batchId:oldId)).Data!.Count==activeRequest && (await courseDocuments.GetBoardAsync(course.CourseId,oldId)).Data!.EnrolledStudents==1,"explicit historical document requests and release board remain available");
  await VerifyAuthorization(db,oldStudent.StudentId,admin.AdminId,completedRequest.RequestId);
- var activeIdentity=await new AuthService(db).StudentLoginAsync(new() {SecurityPin=currentPin});
+ var activeIdentity=await new AuthService(db).StudentLoginAsync(new() {Email=reused.Email,SecurityPin=currentPin});
  Check(activeIdentity.Success && activeIdentity.Data?.UserId==currentStudent.StudentId,"active fixture can sign in before HTTP checks: "+activeIdentity.Message);
  // Use the normal password workflow for an additional HTTP sign-in fixture.
  db.StudentLoginCredentials.Add(new() {StudentId=currentStudent.StudentId,Username=VerificationAccounts.StudentUsername,PasswordHash=BCrypt.Net.BCrypt.HashPassword(VerificationAccounts.Password),PasswordLoginEnabled=true});
@@ -385,6 +391,13 @@ static async Task VerifyAuthorization(ApplicationDbContext db, int studentId, in
 }
 static async Task VerifyHttp(string connection, string filesRoot, int studentId, int applicantId, int requestId, int activeStudentId, string originalPin, byte[] expected, int fixtureAdminId)
 {
+ // Diagnose initialization in the disposable fixture without exposing provider
+ // exception contents through the production health endpoint or console.
+ using (var bootstrap = new ServiceCollection().AddDbContext<ApplicationDbContext>(o => o.UseMySql(connection, new MySqlServerVersion(new Version(8,0,36)))).BuildServiceProvider())
+ {
+  try { await DbSeeder.SeedAsync(bootstrap); }
+  catch (Exception ex) { Directory.CreateDirectory("artifacts/verification-http"); await File.WriteAllTextAsync("artifacts/verification-http/bootstrap-error.private.log", ex.ToString()); throw new Exception("Disposable fixture schema initialization failed; inspect private verification-http evidence."); }
+ }
  var listener=new System.Net.Sockets.TcpListener(System.Net.IPAddress.Loopback,0);listener.Start();var port=((System.Net.IPEndPoint)listener.LocalEndpoint).Port;listener.Stop();
  using var https = new VerificationHttps(filesRoot);
  var start=new System.Diagnostics.ProcessStartInfo("dotnet") {UseShellExecute=false,CreateNoWindow=true,RedirectStandardOutput=true,RedirectStandardError=true};
@@ -510,7 +523,9 @@ static async Task VerifyHttp(string connection, string filesRoot, int studentId,
   using var denied=await admin.PutAsync($"/api/applicants/{applicantId}/status",new StringContent("{\"status\":\"Rejected\"}",System.Text.Encoding.UTF8,"application/json"));
   Check(denied.StatusCode==System.Net.HttpStatusCode.Conflict,"HTTP admin general write to completed batch rejected");
   using var student=https.Client(anonymous.BaseAddress!);
-  using var completedLogin=await student.PostAsync("/api/auth/student-login",new StringContent(JsonSerializer.Serialize(new {securityPin=originalPin}),System.Text.Encoding.UTF8,"application/json"));
+  var completedProfile=await AdminData($"/api/applicants/{applicantId}");
+  using var completedLogin=await student.PostAsync("/api/auth/student-login",new StringContent(JsonSerializer.Serialize(new {email=completedProfile.GetProperty("email").GetString(),securityPin=originalPin,rememberDevice=true}),System.Text.Encoding.UTF8,"application/json"));
+  Check(completedLogin.Headers.GetValues("Set-Cookie").Any(c=>c.StartsWith("abec-student-session=",StringComparison.Ordinal)&&c.Contains("expires=",StringComparison.OrdinalIgnoreCase)),"Remembered PIN login issues a persistent cookie");
   using var completedLoginBody=JsonDocument.Parse(await completedLogin.Content.ReadAsStringAsync());
   Check(completedLoginBody.RootElement.GetProperty("success").GetBoolean(),"HTTP historical PIN remains valid after startup with repeat enrollment");
   Check((await student.GetAsync($"/api/student/{studentId}/dashboard")).IsSuccessStatusCode,"HTTP completed student dashboard remains available");
@@ -527,6 +542,7 @@ static async Task VerifyHttp(string connection, string filesRoot, int studentId,
   using var activeStudent=https.Client(anonymous.BaseAddress!);
   using var activeLogin=await activeStudent.PostAsync("/api/auth/student-login",new StringContent(JsonSerializer.Serialize(new {username=VerificationAccounts.StudentUsername,password=VerificationAccounts.Password}),System.Text.Encoding.UTF8,"application/json"));
   using var activeLoginBody=JsonDocument.Parse(await activeLogin.Content.ReadAsStringAsync());
+  Check(activeLogin.Headers.GetValues("Set-Cookie").Any(c=>c.StartsWith("abec-student-session=",StringComparison.Ordinal)&&!c.Contains("expires=",StringComparison.OrdinalIgnoreCase)),"Unremembered password login keeps a session-only cookie");
   Check(activeLogin.IsSuccessStatusCode && activeLoginBody.RootElement.GetProperty("success").GetBoolean(),"HTTP active student login succeeds: "+activeLoginBody.RootElement.GetProperty("message").GetString());
   using var activeSchedule=await activeStudent.GetAsync($"/api/student/{activeStudentId}/schedule");
   Check(activeSchedule.IsSuccessStatusCode,"HTTP active student retains schedule API access ("+activeSchedule.StatusCode+")");
@@ -591,6 +607,8 @@ static async Task VerifyHttp(string connection, string filesRoot, int studentId,
   if(!process.HasExited){process.Kill(true);await process.WaitForExitAsync();}
   var output=await stdout;var errors=await stderr;
   Check(!output.Contains(privateLinkToken,StringComparison.Ordinal) && !errors.Contains(privateLinkToken,StringComparison.Ordinal),"Production framework request logs do not expose slot-link bearer tokens");
+  Directory.CreateDirectory("artifacts/verification-http");
+  await File.WriteAllTextAsync("artifacts/verification-http/server.private.log", output + errors);
  }
 }
 

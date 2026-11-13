@@ -48,6 +48,7 @@ id_ed25519
 *.publishsettings
 
 # Private applicant uploads, email copies, recovery snapshots, and local data.
+*.eml
 App_Data/
 wwwroot/uploads/
 backups/

@@ -941,7 +941,7 @@
   }
 
   function courseDetailKey(courseName) {
-    var name = String(courseName || '').replace(/\s*NC\s*II\b/gi, '').trim().toLowerCase();
+    var name = String(courseName || '').replace(/\s*NC\s*[IVX]+\b/gi, '').trim().toLowerCase();
     if (name === 'bookkeeping') return 'bookkeeping';
     if (/^customer services?$/.test(name)) return 'customer';
     if (/^electronic products? assembly and servicing$/.test(name)) return 'electronic';
@@ -976,6 +976,11 @@
           grid.appendChild(card);
           return;
         }
+        var detail = document.getElementById('course-detail-' + key);
+        var existingCard = detail && detail.closest('.course-card');
+        if (existingCard) existingCard.querySelectorAll('h3').forEach(function (heading) {
+          heading.textContent = course.courseName || course.CourseName;
+        });
         var total = Number(course.totalHours || course.TotalHours || 0);
         var days = Number(course.trainingDays || course.TrainingDays || 0);
         var ojt = Number(course.ojtDays || course.OjtDays || 0);
