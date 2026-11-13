@@ -571,12 +571,9 @@
     <div class="shrink-0 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 pb-3 border-b border-slate-200">
       <h2 class="text-2xl font-bold text-abec-blue shrink-0">Course Management</h2>
       <div class="flex flex-wrap items-center gap-3">
-        <button type="button" onclick="openCreateScheduleModal()" class="abec-btn abec-btn-primary">Create New</button>
-        <button type="button" onclick="openAddCourse()" class="abec-btn abec-btn-primary">Add New Course</button>
+        <button type="button" onclick="showView('schedule')" class="abec-btn abec-btn-primary">Manage Course Schedules</button>
       </div>
     </div>
-    <button type="button" onclick="openCourseHistory()" class="review-history-link">Review History</button>
-    <button type="button" onclick="showView('schedule')" class="review-history-link">Manage Course Schedules</button>
     <p id="course-slot-notice" class="course-slot-notice" role="status"></p>
 
     <!-- Course cards: fill remaining viewport as even 2x2 -->
@@ -914,10 +911,13 @@
 </button>
 <header class="mb-6 flex flex-wrap items-center justify-between gap-3">
   <h2 class="text-2xl md:text-3xl font-bold text-abec-blue">Course Schedule Management</h2>
+  <div class="flex items-center gap-2" style="margin-left:auto">
+  <button type="button" onclick="window.abecReloadSchedules()" class="calendar-action" aria-label="Refresh schedules" title="Refresh schedules">&#8635;</button>
   <button type="button" onclick="openScheduleCalendar()" class="calendar-action" aria-label="View Calendar" title="View Calendar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4m8-4v4M3 11h18m-12 4h2m3 0h2m-7 3h2"/></svg></button>
+  </div>
 </header>
 
-<div class="course-top-actions">
+<div class="course-top-actions" style="display:flex;flex-direction:column;align-items:flex-start;gap:0.75rem">
   <div class="flex flex-wrap items-center gap-3">
     <button type="button" onclick="openCreateScheduleModal()" class="abec-btn abec-btn-primary">Create New Course Schedule</button>
     <button type="button" onclick="openAddCourse()" class="abec-btn abec-btn-primary">Add New Course</button>

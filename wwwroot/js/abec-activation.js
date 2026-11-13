@@ -12,7 +12,7 @@
   function rowHtml(s) {
     var status = mapUiStatus(s.accountStatus, !!s.isArchived);
     var created = AbecApi.formatDate(s.createdAt);
-    var pin = s.securityPin || '';
+    var pin = s.hasSecurityPin ? 'Issued' : '';
     var metaBadge = status === 'activated'
       ? 'bg-green-100 text-green-700'
       : status === 'deactivated'

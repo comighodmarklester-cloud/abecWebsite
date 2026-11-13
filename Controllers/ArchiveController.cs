@@ -43,7 +43,7 @@ public class ArchiveController : ControllerBase
     // Aggregate-only reporting across batches. BatchAccessFilter limits Archive actions to administrators.
     [HttpGet("categories")]
     public async Task<IActionResult> Categories([FromQuery] int? batchId, [FromQuery] int? courseId,
-        [FromServices] ApplicationDbContext db, CancellationToken cancellationToken)
+        [FromServices] ApplicationDbContext db, CancellationToken cancellationToken, [FromQuery] bool studentStatusOnly = false)
     {
         if (batchId is <= 0 || courseId is <= 0)
             return BadRequest(new { success = false, message = "Select a valid batch and course." });
@@ -79,8 +79,19 @@ public class ArchiveController : ControllerBase
         var slots = await applicants.Where(a => a.ApplicationStatus == "Declined" || a.ApplicationStatus == "Rejected")
             .Select(a => new RejectedSlotEntry(a.ApplicantId, a.BatchId, a.CourseId,
                 a.ApplicationStatus, a.SlotResponse, a.DeclinedAt, false)).ToListAsync(cancellationToken);
-        return Ok(ApiResponse<ArchiveCategoryStatistics>.Ok(
-            ArchiveCategoryStatistics.Build(records, slots, batchId, batchName, courseId, courseName)));
+        var report = ArchiveCategoryStatistics.Build(records, slots, batchId, batchName, courseId, courseName);
+        if (studentStatusOnly)
+        {
+            // The report view is a projection; never rewrite saved archive reasons.
+            var graduates = db.Students.AsNoTracking().Where(s => s.Batch!.Status == "Completed" && s.AccountStatus == "Active" && !s.Archives.Any());
+            if (batchId.HasValue) graduates = graduates.Where(s => s.BatchId == batchId);
+            if (courseId.HasValue) graduates = graduates.Where(s => s.Applicant!.CourseId == courseId);
+            var completed = await graduates.CountAsync(cancellationToken);
+            var categories = new[] { "Deactivated", "Rejected Slots", "Graduated" }.Select(reason =>
+                new ArchiveReasonCount(reason, report.Categories.Single(c => c.Reason == reason).Count + (reason == "Graduated" ? completed : 0))).ToList();
+            report = report with { Categories = categories, TotalAccounts = categories.Sum(c => c.Count) };
+        }
+        return Ok(ApiResponse<ArchiveCategoryStatistics>.Ok(report));
     }
 
     [HttpPost]

@@ -80,7 +80,6 @@
   }
 
   function computeScreening() {
-    var prevEnrolled = getRadio('tesda-prev-enrolled') === 'yes';
     var currentEnrolled = getRadio('tesda-current-enrolled') === 'yes';
     var completed = getRadio('tesda-completed') === 'yes';
     var appliedCourse = courseName();
@@ -102,14 +101,11 @@
         summaryParts.push('Completed TESDA qualification differs from applied qualification.');
       }
     }
-    if (prevEnrolled) summaryParts.push('Applicant reported previous TESDA enrollment.');
     state.screening = { status: status, summary: summaryParts.join(' '), requiresAdmin: requiresAdmin };
     return state.screening;
   }
 
   function refreshTesdaScreeningUi() {
-    var prev = getRadio('tesda-prev-enrolled');
-    $('tesda-prev-details')?.classList.toggle('hidden', prev !== 'yes');
     var current = getRadio('tesda-current-enrolled');
     $('tesda-current-notice')?.classList.toggle('hidden', current !== 'yes');
     var completed = getRadio('tesda-completed');
@@ -397,12 +393,6 @@
       showFormMessage('Please read the Qualification Notice and click I Understand before continuing.', 'info');
       return false;
     }
-    if (getRadio('tesda-prev-enrolled') === 'yes') {
-      if (!val('tesda-prev-course') || !val('tesda-prev-institution') || !val('tesda-prev-status') || !val('tesda-prev-year')) {
-        showFormMessage('Please complete all previous TESDA training information fields.', 'error');
-        return false;
-      }
-    }
     if (getRadio('tesda-completed') === 'yes' && !val('tesda-completed-name')) {
       showFormMessage('Please enter the TESDA qualification you completed.', 'error');
       return false;
@@ -598,11 +588,6 @@
       qualificationType: getRadio('enroll-qualification'),
       cocSpecification: getRadio('enroll-qualification') === 'COC' ? val('enroll-coc-specify') : null,
       applicantClassification: val('enroll-classification'),
-      tesdaPreviouslyEnrolled: getRadio('tesda-prev-enrolled') === 'yes',
-      tesdaPreviousCourse: getRadio('tesda-prev-enrolled') === 'yes' ? val('tesda-prev-course') : null,
-      tesdaPreviousInstitution: getRadio('tesda-prev-enrolled') === 'yes' ? val('tesda-prev-institution') : null,
-      tesdaPreviousStatus: getRadio('tesda-prev-enrolled') === 'yes' ? val('tesda-prev-status') : null,
-      tesdaPreviousYear: getRadio('tesda-prev-enrolled') === 'yes' ? parseInt(val('tesda-prev-year'), 10) : null,
       tesdaCurrentlyEnrolled: getRadio('tesda-current-enrolled') === 'yes',
       tesdaCompletedQualification: getRadio('tesda-completed') === 'yes',
       tesdaCompletedQualificationName: getRadio('tesda-completed') === 'yes' ? val('tesda-completed-name') : null,
@@ -787,7 +772,7 @@
     document.querySelectorAll('[data-enroll-privacy-close]').forEach(function (el) {
       el.addEventListener('click', function () { setPrivacyOpen(false); });
     });
-    document.querySelectorAll('input[name="tesda-prev-enrolled"],input[name="tesda-current-enrolled"],input[name="tesda-completed"],#tesda-completed-name').forEach(function (el) {
+    document.querySelectorAll('input[name="tesda-current-enrolled"],input[name="tesda-completed"],#tesda-completed-name').forEach(function (el) {
       el.addEventListener('change', refreshTesdaScreeningUi);
       el.addEventListener('input', refreshTesdaScreeningUi);
     });

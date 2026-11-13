@@ -589,6 +589,15 @@
     bindAddressInput('enroll-street', 'street');
     bindAddressInput('enroll-district', 'district');
     bindAddressInput('enroll-zip', 'zip');
+    // Free-text locations have no authoritative ZIP data. Reconfirm on changes.
+    ['enroll-province', 'enroll-city', 'enroll-region'].forEach(function (id) {
+      var input = document.getElementById(id);
+      if (input) input.addEventListener('change', function () {
+        var zip = document.getElementById('enroll-zip');
+        if (zip) zip.value = '';
+        addressState.zip = '';
+      });
+    });
     var region = document.getElementById('enroll-region');
     if (region) {
       region.addEventListener('change', function () {

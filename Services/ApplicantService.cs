@@ -927,18 +927,16 @@ public class ApplicantService : IApplicantService
         if (filled >= capacity)
             return ApiResponse<StudentDto>.Fail("Course slot capacity has been reached.");
 
-        var pin = await GenerateUniquePinAsync(cancellationToken);
         var student = new Student
         {
             ApplicantId = applicant.ApplicantId,
             BatchId = activeBatch.BatchId,
-            SecurityPin = pin,
             AccountStatus = SystemConstants.AccountStatuses.Inactive,
             CreatedAt = DateTime.Now
         };
 
         _db.Students.Add(student);
-        await _db.SaveChangesAsync(cancellationToken);
+        await SecurityPinGenerator.AssignAndSaveAsync(_db, student, applicant, cancellationToken);
 
         applicant.Student = student;
 
@@ -1352,16 +1350,6 @@ public class ApplicantService : IApplicantService
                  || c.CourseName.ToLower().Contains(name)
                  || name.Contains(c.CourseName.ToLower()),
             cancellationToken);
-    }
-
-    private async Task<string> GenerateUniquePinAsync(CancellationToken cancellationToken)
-    {
-        string pin;
-        do
-        {
-            pin = SecurityPinGenerator.Generate();
-        } while (await _db.Students.AnyAsync(s => s.SecurityPin == pin, cancellationToken));
-        return pin;
     }
 
     private static string? NormalizeStatus(string status) => status.Trim().ToLowerInvariant() switch

@@ -131,8 +131,7 @@ public class ActivationService : IActivationService
         if (await IsArchivedAsync(studentId, cancellationToken))
             return ApiResponse<StudentDto>.Fail("This student is archived. Reactivate the account before generating a PIN.");
 
-        student.SecurityPin = await GenerateUniquePinAsync(studentId, cancellationToken);
-        await _db.SaveChangesAsync(cancellationToken);
+        await SecurityPinGenerator.AssignAndSaveAsync(_db, student, student.Applicant!, cancellationToken);
 
         await _notifications.CreateAsync(
             "Security PIN Generated",
@@ -162,8 +161,6 @@ public class ActivationService : IActivationService
             _db.Archives.RemoveRange(archives);
 
         await EnsurePinAsync(student, cancellationToken);
-        if (string.IsNullOrWhiteSpace(student.SecurityPin))
-            student.SecurityPin = await GenerateUniquePinAsync(studentId, cancellationToken);
 
         student.AccountStatus = SystemConstants.AccountStatuses.Active;
         await _db.SaveChangesAsync(cancellationToken);
@@ -292,20 +289,10 @@ public class ActivationService : IActivationService
             .Include(s => s.Batch)
             .FirstOrDefaultAsync(s => s.StudentId == studentId, cancellationToken);
 
-    private async Task<string> GenerateUniquePinAsync(int studentId, CancellationToken cancellationToken)
-    {
-        string pin;
-        do
-        {
-            pin = SecurityPinGenerator.Generate();
-        } while (await _db.Students.AnyAsync(s => s.SecurityPin == pin && s.StudentId != studentId, cancellationToken));
-        return pin;
-    }
-
     private async Task EnsurePinAsync(Models.Student student, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(student.SecurityPin))
-            student.SecurityPin = await GenerateUniquePinAsync(student.StudentId, ct);
+            await SecurityPinGenerator.AssignAndSaveAsync(_db, student, student.Applicant!, ct);
     }
 
     private static string? NormalizeStatus(string status) => status.ToLowerInvariant() switch

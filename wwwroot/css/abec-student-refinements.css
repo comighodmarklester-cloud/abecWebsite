@@ -1,0 +1,21 @@
+/* Shared student typography and spacing; preserve the existing palette and layouts. */
+body.student-module { font-size: .9375rem; line-height: 1.55; }
+body.student-module h1, body.student-module h2, body.student-module h3 { line-height: 1.25; text-wrap: balance; }
+body.student-module h2 { letter-spacing: -.02em; }
+body.student-module .abec-main p { overflow-wrap: anywhere; }
+body.student-module button, body.student-module .doc-link { min-height: 2.5rem; }
+body.student-module button:disabled { opacity: .5; cursor: not-allowed; }
+body.student-module button:focus-visible, body.student-module a:focus-visible { outline: 3px solid #93c5fd; outline-offset: 3px; }
+body.student-module table { font-size: .875rem; }
+body.student-module td, body.student-module th { vertical-align: top; line-height: 1.5; }
+body.student-module .train-empty, body.student-module [role="status"] { line-height: 1.6; }
+body.student-module .train-card { padding: 1.25rem; }
+body.student-module #request-document-hint { max-width: 32rem; }
+body.student-module #credentials-grid > div { padding: 1.25rem; }
+@media (max-width: 640px) {
+  body.student-module .student-intro, body.student-module .doc-header { gap: 1rem; }
+  body.student-module .abec-main h2 { font-size: 1.4rem; }
+  body.student-module .abec-main h3 { font-size: 1.05rem; }
+  body.student-module #credentials-grid > div, body.student-module .train-card { padding: 1rem; }
+  body.student-module #request-document-hint { text-align: left; }
+}

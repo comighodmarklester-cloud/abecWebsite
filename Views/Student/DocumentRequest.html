@@ -61,14 +61,19 @@
   }
 </style>
 <link href="../../wwwroot/css/abec-responsive.css?v=20261112features1" rel="stylesheet"/>
+<link rel="stylesheet" href="../../wwwroot/css/abec-student-refinements.css?v=20261114updates1">
 </head>
 <body class="abec-app student-module student-desk doc-page bg-surface font-sans text-slate-800">
+
 <div class="student-frame">
 
 <main class="abec-main student-content">
   <header class="doc-page-header flex flex-wrap items-center justify-between gap-3 mb-4">
     <h2 class="text-2xl font-bold text-abec-navy">Documents</h2>
-    <button type="button" id="btn-request-tracking" aria-haspopup="dialog" aria-controls="request-tracking-modal" class="bg-abec-navy hover:bg-abec-blue text-white text-sm font-bold px-4 py-2 rounded-lg">Request Tracking</button>
+    <div class="text-right"><div class="flex flex-wrap justify-end gap-3 items-center">
+      <button type="button" id="btn-view-request-history" aria-haspopup="dialog" aria-controls="request-tracking-modal" class="text-sm font-semibold text-abec-blue hover:underline">View request history</button>
+      <button type="button" id="btn-request-document" disabled aria-describedby="request-document-hint" aria-haspopup="dialog" aria-controls="new-request-modal" class="bg-abec-navy hover:bg-abec-blue text-white text-sm font-bold px-4 py-2 rounded-lg">Request Document</button>
+    </div><p id="request-document-hint" role="status" class="mt-2 text-xs text-slate-600">Loading document eligibility...</p></div>
   </header>
 
   <div class="doc-layout space-y-4">
@@ -97,7 +102,7 @@
     <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
       <div class="px-6 py-5 border-b border-slate-100">
         <h3 class="text-lg font-bold text-abec-navy">Recent Requests</h3>
-        <p class="text-xs text-slate-500 mt-1">Latest three requests. View all in Request Tracking.</p>
+        <p class="text-xs text-slate-500 mt-1">Latest three requests. View all in request history.</p>
       </div>
       <div class="overflow-x-auto">
         <table class="w-full text-left min-w-[720px]">
@@ -128,7 +133,7 @@
   <div class="absolute inset-0 bg-abec-navy/50 backdrop-blur-[1px]" data-close-tracking></div>
   <div class="relative bg-white rounded-xl shadow-xl w-full max-w-3xl max-h-[90dvh] flex flex-col overflow-hidden">
     <div class="flex items-center justify-between gap-3 px-5 py-4 border-b border-slate-200">
-      <h3 id="request-tracking-title" class="text-lg font-bold text-abec-navy" tabindex="-1">Request Tracking</h3>
+      <h3 id="request-tracking-title" class="text-lg font-bold text-abec-navy" tabindex="-1">Request history</h3>
       <button type="button" class="text-sm font-bold text-abec-navy px-3 py-2 rounded-lg border border-slate-200" data-close-tracking>Close</button>
     </div>
     <div id="request-tracking-list" class="space-y-3 p-5 min-h-0 overflow-y-auto">
@@ -164,7 +169,7 @@
           <li>Choose the reason for your request.</li>
           <li>Verify that all information is correct.</li>
           <li>Wait for the administrator's review.</li>
-          <li>Track your request status in Request Tracking.</li>
+          <li>Track your request status in request history.</li>
           <li>Check your notifications for updates and release instructions.</li>
         </ul>
       </div>
@@ -225,7 +230,7 @@
 <script src="../../wwwroot/js/abec-api.js?v=20261112features1"></script>
 <script src="../../wwwroot/js/abec-other-reason.js"></script>
 <script src="../../wwwroot/js/abec-student-shell.js?v=20261107batchsdd1"></script>
-<script src="../../wwwroot/js/abec-student.js?v=20261112onetime1"></script>
-<script src="../../wwwroot/js/abec-student-documents.js?v=20261112onetime1"></script>
+<script src="../../wwwroot/js/abec-student.js?v=20261114updates1"></script>
+<script src="../../wwwroot/js/abec-student-documents.js?v=20261114updates1"></script>
 </body>
 </html>

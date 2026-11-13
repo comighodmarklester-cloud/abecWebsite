@@ -276,7 +276,7 @@ internal static class SlotWorkflowChecks
             Check(activationMessage.HtmlBody!.Contains(AppSettings.DefaultProductionBaseUrl + "/Views/Home/LoginPage.html") && activationMessage.HtmlBody.Contains(">Student Portal</a>")
                 && activationMessage.HtmlBody.Contains("ready to use"), "Activation email confirms readiness and links to Student Portal using the configured app URL.");
             Check(activationMessage.HtmlBody!.Contains(savedFirstStudent.SecurityPin)
-                && activations.All(a => a.GetProperty("data").GetProperty("securityPin").GetString() == savedFirstStudent.SecurityPin),
+                && activations.All(a => !a.GetProperty("data").TryGetProperty("securityPin", out _)),
                 "Email contains the activated student's persisted PIN, including any standardized PIN change.");
             var beforeInvalid = smtp.Messages.Count;
             Check(!(await Activate(int.MaxValue)).GetProperty("success").GetBoolean() && smtp.Messages.Count == beforeInvalid, "Failed activation must not send an email.");

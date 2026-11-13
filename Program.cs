@@ -14,6 +14,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Hosting information logs include query strings, including emailed bearer tokens.
 // Keep safe application error references without recording full request URLs.
 builder.Logging.AddFilter("Microsoft.AspNetCore.Hosting.Diagnostics", LogLevel.Warning);
+builder.Logging.AddFilter((category, level) => CredentialDiagnostics.ShouldLog(category));
 
 const long registrationRequestBodyLimit = SystemConstants.RegistrationUploadLimits.MaxRegistrationRequestBytes;
 

@@ -558,6 +558,13 @@
 
   async function loadClassSchedule(session) {
     var profileRes = await AbecApi.get('/api/student/' + session.userId + '/profile');
+    if (!profileRes.success || !profileRes.data) {
+      classSchedules = [];
+      var errorHost = document.getElementById('class-schedule-body');
+      if (errorHost) errorHost.innerHTML = '<p class="train-empty" role="alert">' + esc(profileRes.message || 'Unable to load your enrollment and schedule.') + '</p>';
+      wireClassCalendar([]);
+      return;
+    }
     var profile = (profileRes.success && profileRes.data) ? profileRes.data : { fullName: session.displayName };
     applySidebar(profile, session);
     if (profile.batchStatus === 'Completed' || profile.batchStatus === 'Closed') return;
@@ -672,8 +679,13 @@
     async function refresh() {
       if (loading || document.hidden) return;
       loading = true;
+      var host = document.getElementById('class-schedule-body') || document.getElementById('upcoming-classes-body');
+      if (host) host.setAttribute('aria-busy', 'true');
       try { await load(session); }
-      finally { loading = false; }
+      finally {
+        loading = false;
+        if (host) host.setAttribute('aria-busy', 'false');
+      }
     }
     document.addEventListener('visibilitychange', function () {
       if (!document.hidden) refresh();

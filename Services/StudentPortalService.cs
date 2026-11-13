@@ -28,6 +28,8 @@ public class StudentPortalService : IStudentPortalService
             return ApiResponse<StudentDashboardDto>.Fail(profile.Message);
 
         var schedule = await GetScheduleAsync(studentId, cancellationToken);
+        if (!schedule.Success)
+            return ApiResponse<StudentDashboardDto>.Fail(schedule.Message);
         var docs = await _documents.GetByStudentAsync(studentId, cancellationToken);
         var notifs = await _notifications.GetForStudentAsync(studentId, cancellationToken: cancellationToken);
 

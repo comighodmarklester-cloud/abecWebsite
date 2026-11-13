@@ -38,7 +38,7 @@
     </p>
 
     <div class="space-y-3 mb-8">
-      <a href="LoginPage.html" class="abec-btn abec-btn-primary w-full">
+      <a id="return-login" href="LoginPage.html" class="abec-btn abec-btn-primary w-full">
         Return to Login
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
@@ -86,7 +86,14 @@
       window.location.href = '../Admin/AdminDashboard.html';
     }
 
-    try { sessionStorage.removeItem('abec-session'); } catch (e) { /* ignore */ }
+    var signOutRole = '';
+    try {
+      var signedOutSession = JSON.parse(sessionStorage.getItem('abec-session') || 'null');
+      signOutRole = signedOutSession && signedOutSession.role || sessionStorage.getItem('abec-signout-role') || '';
+      if (signOutRole === 'Admin' || signOutRole === 'Student') sessionStorage.setItem('abec-signout-role', signOutRole);
+      sessionStorage.removeItem('abec-session');
+    } catch (e) { /* ignore */ }
+    document.getElementById('return-login').href = signOutRole === 'Admin' ? 'AdminLoginPage.html' : 'LoginPage.html';
   </script>
 <script src="../../wwwroot/js/abec-api.js?v=20261112features1"></script>
 <script>AbecApi.post('/api/auth/student-logout', {});</script>

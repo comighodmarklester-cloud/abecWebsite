@@ -26,8 +26,15 @@ public class ActivationController : ControllerBase
         => Ok(await _activationService.GetAccountsAsync(status, courseId, search, cancellationToken, batchId));
 
     [HttpPost("{id:int}/generate-pin")]
-    public async Task<ActionResult<ApiResponse<StudentDto>>> GeneratePin(int id, CancellationToken cancellationToken)
-        => Ok(await _activationService.GeneratePinAsync(id, cancellationToken));
+    public async Task<IActionResult> GeneratePin(int id, CancellationToken cancellationToken)
+    {
+        var result = await _activationService.GeneratePinAsync(id, cancellationToken);
+        // Only this explicit administrative reissue exposes the newly issued code.
+        Response.Headers.CacheControl = "no-store";
+        return result.Success && result.Data is not null
+            ? Ok(ApiResponse<object>.Ok(new { result.Data.StudentId, result.Data.SecurityPin }, result.Message))
+            : Ok(ApiResponse<object>.Fail(result.Message));
+    }
 
     [HttpPost("{id:int}/activate")]
     public async Task<ActionResult<ApiResponse<StudentDto>>> Activate(int id, CancellationToken cancellationToken)
@@ -48,6 +55,7 @@ public class ActivationController : ControllerBase
     [HttpGet("{id:int}/activation-notice")]
     public async Task<IActionResult> ActivationNotice(int id, CancellationToken cancellationToken)
     {
+        Response.Headers.CacheControl = "no-store";
         var result = await _activationService.GetActivationNoticePdfAsync(id, cancellationToken);
         if (!result.Success || result.Data is null)
             return BadRequest(result);

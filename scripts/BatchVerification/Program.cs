@@ -113,6 +113,11 @@ try
   await TrainingScheduleChecks.Run(db, oldStudent, requests, notices, accessor);
   return;
  }
+ if (args.Contains("--requested-updates-only"))
+ {
+  await RequestedUpdatesChecks.Run(db, oldApplicant, oldStudent, admin, env);
+  return;
+ }
  if (args.Contains("--feature-updates-only"))
  {
   await FeatureUpdateChecks.Run(db, applicantService);
@@ -134,8 +139,11 @@ try
  Check((await activePortal.GetProfileAsync(oldStudent.StudentId)).Data!.CanViewTrainingSchedule && (await activePortal.GetScheduleAsync(oldStudent.StudentId)).Data!.Count==1,"active student retains own batch schedule including legacy blank trainer assignments");
  Check(!(await requests.CreateAsync(oldStudent.StudentId,new() {DocumentType="Payment Receipt",Reason="Verification"})).Success,"unpaid student cannot request receipt even in an active batch");
  Check(!(await requests.CreateAsync(oldStudent.StudentId,new() {DocumentType="Certificate of Completion",Reason="Verification"})).Success,"elapsed batch dates do not prove individual completion");
+ Check(!(await requests.CreateAsync(oldStudent.StudentId,new() {DocumentType="National Certificate (TESDA)",Reason="Verification"})).Success,"TESDA certificate requires verified training and assessment completion");
+ var ncBatch = await db.Batches.FindAsync(oldId); ncBatch!.AssessmentDate = DateTime.Today.AddDays(-2); await db.SaveChangesAsync();
+ await new StudentDocumentCatalog(db).VerifyAsync(oldStudent.StudentId,admin.AdminId,new() {TrainingCompleted=true,AssessmentCompleted=true},default);
  var earlyNc = await requests.CreateAsync(oldStudent.StudentId,new() {DocumentType="National Certificate (TESDA)",Reason="Verification"});
- Check(earlyNc.Success,"unreleased TESDA certificate can be requested independently of other eligibility");
+ Check(earlyNc.Success,"verified student can request TESDA certificate after the training and assessment period");
  Check((await new StudentDocumentCatalog(db).VerifyAsync(oldStudent.StudentId,admin.AdminId,new() {FeesPaid=true},default)).Success,"registrar records payment separately from completion");
  var unprepared = await courseDocuments.GetStudentReleaseAsync(oldStudent.StudentId);
  Check(unprepared.Data!.Catalog.Count==3 && await db.StudentCourseDocuments.CountAsync()==0,"student catalog includes all three documents without inserting rows");

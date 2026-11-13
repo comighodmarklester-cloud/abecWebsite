@@ -101,10 +101,11 @@ async function main() {
     .map(row => ({ ...row, batchId: 1, createdAt: '2026-11-02', courseId: 1 }));
   const courses = [{ courseId: 1, courseName: 'CSS', capacity: 25 }, { courseId: 2, courseName: 'Bookkeeping', capacity: 25 }, { courseId: 3, courseName: 'Customer Services', capacity: 25 }, { courseId: 4, courseName: 'Electronics', capacity: 25 }];
   const archives = [{ studentId: 91, archiveDate: '2026-11-03', archiveReason: 'Graduated' }];
-  const categoryNames=['Graduated','Deactivated','Academic Dismissal','Withdrawal','Inactive Lead','Rejected Slots','Others'];
-  const categoryRows=categoryNames.map((reason,i)=>({reason,batchId:[1,5,1,8,5,1,8][i],courseId:[1,2,2,1,1,1,2][i]}));
+  const categoryNames=['Deactivated','Rejected Slots','Graduated'];
+  const storedCategoryNames=['Graduated','Deactivated','Academic Dismissal','Withdrawal','Inactive Lead','Rejected Slots','Others'];
+  const categoryRows=storedCategoryNames.map((reason,i)=>({reason,batchId:[1,5,1,8,5,1,8][i],courseId:[1,2,2,1,1,1,2][i]}));
   const categoryReport=(batch,course)=>{
-    const rows=categoryRows.filter(r=>(!batch||String(r.batchId)===batch)&&(!course||String(r.courseId)===course));
+    const rows=categoryRows.filter(r=>categoryNames.includes(r.reason)&&(!batch||String(r.batchId)===batch)&&(!course||String(r.courseId)===course));
     return {batchId:batch?Number(batch):null,batchName:batch?batches.find(b=>String(b.batchId)===batch).batchName:'All Batches',
       courseId:course?Number(course):null,courseName:course?courses.find(c=>String(c.courseId)===course).courseName:'All Courses',
       totalAccounts:rows.length,categories:categoryNames.map(reason=>({reason,count:rows.filter(r=>r.reason===reason).length}))};
@@ -150,7 +151,7 @@ async function main() {
   check(ids['report-batch'].value === '5', 'Active batch selected by default');
   check(ids['report-population-total'].textContent === '0 people', 'New active batch remains empty');
   check(breakdownRows(ids['report-status-legend'].innerHTML).length===10 && breakdownRows(ids['report-status-legend'].innerHTML).every(row=>row.count===0&&row.percentage===0), 'Overview retains every status as a separate zero-count, zero-percentage row');
-  check(ids['report-status-legend'].innerHTML.includes('<th scope="col">Status</th><th scope="col">Number of Applicants</th><th scope="col">Percentage</th>'), 'Breakdown has three explicit aligned column headings');
+  check(ids['report-status-legend'].innerHTML.includes('<th scope="col">Status</th><th scope="col">Count</th><th scope="col">Percentage</th>'), 'Breakdown has three explicit aligned column headings');
   check(root.hidden && !ids['report-overview'].hidden, 'Overview is the initial report');
   buttons[1].emit('click');
   check((root.innerHTML.match(/class="report-course-fill is-entering"/g)||[]).length===4, 'Each course bar animates from zero on entering Course Statistics');
@@ -183,27 +184,27 @@ async function main() {
   buttons[2].emit('click');
   check(root.innerHTML.includes('Loading archive categories') && !root.innerHTML.includes('data-report-entrance'), 'Archives waits for its scoped data before starting an entrance animation');
   await flush();
-  check(root.innerHTML.includes('data-report-entrance="true"') && (root.innerHTML.match(/class="report-archive-fill is-entering"/g)||[]).length===7, 'All seven Archives bars animate after the data arrives');
+  check(root.innerHTML.includes('data-report-entrance="true"') && (root.innerHTML.match(/class="report-archive-fill is-entering"/g)||[]).length===3, 'All three Archives bars animate after the data arrives');
   check(ids['report-archive-course'].value==='' && ids['report-archive-batch'].value==='', 'Archives defaults independently to All Courses and All Batches');
   check(!root.innerHTML.includes('StudentArchive.html') && !root.innerHTML.includes('report-archive-btn'), 'Archives shows the graph directly without a Manage active-batch archives button');
   check(categoryNames.every(reason=>countFor(reason)===1), 'Every requested category has its count directly on the graph');
   check(breakdownRows(root.innerHTML).every(row=>Number.isFinite(row.percentage)) && breakdownRows(root.innerHTML).reduce((sum,row)=>sum+row.percentage,0)===100, 'Archive rows have separately aligned percentages that sum to 100');
-  check(breakdownRows(root.innerHTML).length===7 && !root.innerHTML.includes('data-archive-page'), 'All seven graph categories remain visible without pagination');
-  check(root.innerHTML.includes('aria-label="Archive status counts and percentages"') && root.innerHTML.includes('7 accounts'), 'Graph counts are accessible and the summary matches their sum');
+  check(breakdownRows(root.innerHTML).length===3 && !root.innerHTML.includes('data-archive-page'), 'All three graph categories remain visible without pagination');
+  check(root.innerHTML.includes('aria-label="Archive status counts and percentages"') && root.innerHTML.includes('3 accounts'), 'Graph counts are accessible and the summary matches their sum');
   check(ids['report-batch-picker'].hidden && !root.innerHTML.split('</header>')[0].includes('Batch2026-101'), 'Archives shows only its own Course and Batch controls without a conflicting batch indicator');
   archiveFilter('course','1'); await flush();
-  check((root.innerHTML.match(/class="report-archive-fill is-entering"/g)||[]).length===7 && root.innerHTML.includes('data-report-entrance="true"'), 'Changing an Archives filter replays every bar after the filtered data arrives');
-  check(ids['report-archive-batch'].value==='' && countFor('Graduated')===1 && countFor('Rejected Slots')===1 && countFor('Deactivated')===0 && root.innerHTML.includes('4 accounts'), 'Course-only selection spans all batches and updates each visible count');
+  check((root.innerHTML.match(/class="report-archive-fill is-entering"/g)||[]).length===3 && root.innerHTML.includes('data-report-entrance="true"'), 'Changing an Archives filter replays every bar after the filtered data arrives');
+  check(ids['report-archive-batch'].value==='' && countFor('Graduated')===1 && countFor('Rejected Slots')===1 && countFor('Deactivated')===0 && root.innerHTML.includes('2 accounts'), 'Course-only selection spans all batches and updates each visible count');
   archiveFilter('batch','5'); await flush();
-  check(ids['report-archive-course'].value==='1' && countFor('Inactive Lead')===1 && countFor('Graduated')===0 && root.innerHTML.includes('1 account &middot;'), 'Combining Course and Batch applies their intersection');
-  check((root.innerHTML.match(/report-archive-fill is-entering/g)||[]).length===7, 'The archive Batch filter also replays all bars with the combined scope');
+  check(ids['report-archive-course'].value==='1' && countFor('Inactive Lead')===undefined && countFor('Graduated')===0 && root.innerHTML.includes('0 accounts &middot;'), 'Combining Course and Batch applies their intersection');
+  check((root.innerHTML.match(/report-archive-fill is-entering/g)||[]).length===3, 'The archive Batch filter also replays all bars with the combined scope');
   archiveFilter('course',''); await flush();
-  check(ids['report-archive-batch'].value==='5' && countFor('Deactivated')===1 && countFor('Inactive Lead')===1 && root.innerHTML.includes('2 accounts'), 'Clearing Course preserves Batch and restores all courses in that batch');
+  check(ids['report-archive-batch'].value==='5' && countFor('Deactivated')===1 && countFor('Inactive Lead')===undefined && root.innerHTML.includes('1 account &middot;'), 'Clearing Course preserves Batch and restores all courses in that batch');
   archiveFilter('batch',''); await flush();
   check(categoryNames.every(reason=>countFor(reason)===1), 'Clearing Batch restores all-batches category counts');
-  check((root.innerHTML.match(/report-archive-fill is-entering/g)||[]).length===7, 'Returning to All Courses and All Batches replays previously opened archive data');
+  check((root.innerHTML.match(/report-archive-fill is-entering/g)||[]).length===3, 'Returning to All Courses and All Batches replays previously opened archive data');
   archiveFilter('course','3'); await flush();
-  check(categoryNames.every(reason=>countFor(reason)===0) && root.innerHTML.includes('No accounts match the selected course and batch.'), 'Empty selections keep all seven explicit zero counts');
+  check(categoryNames.every(reason=>countFor(reason)===0) && root.innerHTML.includes('No accounts match the selected course and batch.'), 'Empty selections keep all three explicit zero counts');
   archiveFilter('course','1'); await flush();
   let releaseArchive;
   archiveDeferred=new Promise(resolve=>releaseArchive=resolve);
@@ -213,8 +214,8 @@ async function main() {
   archiveFilter('batch','5'); await flush();
   const latestArchiveRender = reportRenders;
   releaseArchive({success:true,data:categoryReport('8','1')}); await flush(); archiveDeferred=null;
-  check(countFor('Inactive Lead')===1 && countFor('Withdrawal')===0 && ids['report-archive-batch'].value==='5', 'A delayed response cannot replace the newest Course and Batch selection');
-  check(reportRenders===latestArchiveRender && (root.innerHTML.match(/report-archive-fill is-entering/g)||[]).length===7, 'A superseded archive response cannot interrupt or restart the newest selection animation');
+  check(countFor('Inactive Lead')===undefined && countFor('Withdrawal')===undefined && ids['report-archive-batch'].value==='5', 'A delayed response cannot replace the newest Course and Batch selection');
+  check(reportRenders===latestArchiveRender && (root.innerHTML.match(/report-archive-fill is-entering/g)||[]).length===3, 'A superseded archive response cannot interrupt or restart the newest selection animation');
   archiveFailure=true; archiveFilter('batch',''); await flush();
   check(root.innerHTML.includes('Archive categories unavailable') && !root.innerHTML.includes('report-breakdown-row'), 'Archive failures remove stale graphs and explain the failure');
   archiveFailure=false;archiveMismatch=true;archiveFilter('batch','5');await flush();
@@ -225,16 +226,16 @@ async function main() {
   window.listeners.storage({key:'unrelated'});await flush();
   check(calls.length===beforeRefresh, 'Unrelated storage changes leave the graph untouched');
   window.listeners.storage({key:'abec-archives-changed'});await flush();
-  check(countFor('Graduated')===2 && root.innerHTML.includes('8 accounts'), 'Successful archive in another page refreshes counts from persisted data');
+  check(countFor('Graduated')===2 && root.innerHTML.includes('4 accounts'), 'Successful archive in another page refreshes counts from persisted data');
   categoryRows.pop();window.listeners['abec:archives-changed']();await flush();
-  check(countFor('Graduated')===1 && root.innerHTML.includes('7 accounts'), 'Same-page archive refresh also reloads real category counts');
+  check(countFor('Graduated')===1 && root.innerHTML.includes('3 accounts'), 'Same-page archive refresh also reloads real category counts');
   ids['report-batch'].value='5';ids['report-batch'].emit('change',{target:ids['report-batch']});await flush();
-  check(ids['report-archive-course'].value==='' && ids['report-archive-batch'].value==='' && root.innerHTML.includes('7 accounts'), 'Unrelated report batch changes do not alter the Archives scope');
-  check(calls.includes('/api/archives/categories') && calls.includes('/api/archives/categories?courseId=1') && calls.includes('/api/archives/categories?batchId=5&courseId=1') && calls.includes('/api/archives/categories?batchId=5'), 'API calls apply Course and Batch independently and together');
+  check(ids['report-archive-course'].value==='' && ids['report-archive-batch'].value==='' && root.innerHTML.includes('3 accounts'), 'Unrelated report batch changes do not alter the Archives scope');
+  check(calls.includes('/api/archives/categories?studentStatusOnly=true') && calls.includes('/api/archives/categories?studentStatusOnly=true&courseId=1') && calls.includes('/api/archives/categories?studentStatusOnly=true&batchId=5&courseId=1') && calls.includes('/api/archives/categories?studentStatusOnly=true&batchId=5'), 'API calls apply Course and Batch independently and together');
   check(!calls.some(p=>/^\/api\/archives(?:\?|$)/.test(p)), 'Combined archive reporting never broadens operational archive list calls');
   buttons[3].emit('click');
   check(root.innerHTML.includes('data-report-entrance="true"') && root.innerHTML.includes('data-report-motion="reveal"'), 'An empty profile chart receives a subtle entrance reveal');
-  check(root.innerHTML.includes('Applicant Profile Statistics') && root.innerHTML.includes('No registration records'), 'Renamed profile section follows the top Batch dropdown');
+  check(root.innerHTML.includes('Profile statistics') && root.innerHTML.includes('No registration records'), 'Renamed profile section follows the top Batch dropdown');
   ids['report-batch'].value='1'; ids['report-batch'].emit('change',{target:ids['report-batch']}); await flush();
   check(ids['report-profile-field'].value==='gender' && root.innerHTML.includes('10 registration form responses'), 'Profile statistics include all registrations, including enrolled and archived applicants');
   check(root.innerHTML.includes('report-donut-rotation is-spinning'), 'Changing the top batch replays the profile donut with the new registration data');
@@ -283,12 +284,12 @@ async function main() {
   check(ids['report-status-summary'].textContent==='The selected batch was not found.' && ids['report-download'].disabled,'Invalid batch cannot display or download another batch?s report');
   const html=fs.readFileSync('Views/Admin/Reports.html','utf8');
   const css=fs.readFileSync('wwwroot/css/abec-reports.css','utf8');
-  check(html.includes('Applicant Profile Statistics') && !html.includes('>Demographics</button>'),'Top navigation uses the requested section name');
+  check(html.includes('Profile statistics') && !html.includes('>Demographics</button>'),'Top navigation uses the requested section name');
   check(html.includes('<h3 id="report-status-title" class="report-chart-title">Applicant and Student Status Distribution</h3>'), 'Overview graph has a visible descriptive title');
   check(html.includes('report-batch-actions') && !html.includes('report-print'),'Download icon remains beside the batch dropdown');
   check(css.includes('repeat(4, minmax(0, 1fr))') && css.includes('repeat(2, minmax(0, 1fr))'),'Course graph grid supports four-across and two-by-two layouts');
   check(!fs.readFileSync('wwwroot/js/abec-reports.js','utf8').includes('scrollIntoView'),'Report switching remains in place');
-  check(css.includes('body.reports-page .report-breakdown tbody tr + tr { border-top: 1px solid var(--abec-border-soft); }') && css.includes('.report-breakdown-count-col { width: 4rem; }'), 'All breakdown tables share column widths and one divider across each row');
+  check(css.includes('body.reports-page .report-breakdown tbody tr + tr { border-top: 1px solid var(--abec-border-soft); }') && css.includes('.report-breakdown-count-col { width: 5.5rem; }'), 'All breakdown tables share column widths and one divider across each row');
   applicants.splice(0,applicants.length,...Array.from({length:23},(_,i)=>({applicantId:i+100,batchId:1,courseId:1,applicationStatus:i<3?'Pending':i<9?'Approved':'Rejected',applicationDate:'2026-11-01'})));
   students.splice(0,students.length);
   ids['report-batch'].value='1';ids['report-batch'].emit('change',{target:ids['report-batch']});await flush();
@@ -409,7 +410,7 @@ async function main() {
     buttons[2].emit('click');
     check(!root.innerHTML.includes('data-report-entrance') && !root.innerHTML.includes('report-archive-fill'), 'Returning to Archives keeps its entrance pending during loading');
     await flush();
-    check(root.innerHTML.includes('data-report-entrance="true"') && (root.innerHTML.match(/report-archive-fill is-entering/g)||[]).length===7, 'Archives replays horizontal bars on every return after the data loads');
+    check(root.innerHTML.includes('data-report-entrance="true"') && (root.innerHTML.match(/report-archive-fill is-entering/g)||[]).length===3, 'Archives replays horizontal bars on every return after the data loads');
   }
   check(css.includes('.report-donut-rotation { transform-origin: 60px 60px; }') && css.includes('.report-donut-rotation.is-spinning { animation: report-overview-spin 1400ms'), 'The Overview speed change preserves the profile donut timing and center');
   check(css.includes('report-archive-grow 900ms') && css.includes('transform-origin: left center') && css.includes('from { transform: scaleX(0); } to { transform: scaleX(1); }'), 'Horizontal archive bars grow from zero to their saved widths');
@@ -431,7 +432,7 @@ async function main() {
   document.hidden=true;document.emit('visibilitychange');document.hidden=false;document.emit('visibilitychange');
   check(root.innerHTML.includes('Loading archive categories') && !root.innerHTML.includes('data-report-entrance'), 'Browser-tab return also waits for Archives data');
   await flush();
-  check((root.innerHTML.match(/report-archive-fill is-entering/g)||[]).length===7, 'Archives animates the refreshed bars when the browser tab returns');
+  check((root.innerHTML.match(/report-archive-fill is-entering/g)||[]).length===3, 'Archives animates the refreshed bars when the browser tab returns');
   buttons[0].emit('click');
   const beforeVisibilitySpin=spinCount();
   document.hidden=true;document.emit('visibilitychange');document.hidden=false;document.emit('visibilitychange');
@@ -447,7 +448,7 @@ async function main() {
   archiveFilter('batch','8');await flush();
   check(!root.innerHTML.includes('data-report-entrance') && !root.innerHTML.includes('is-entering'), 'Archive data arriving while hidden preserves the entrance for the next visible visit');
   document.hidden=false;document.emit('visibilitychange');await flush();
-  check(root.innerHTML.includes('data-report-entrance="true"') && (root.innerHTML.match(/report-archive-fill is-entering/g)||[]).length===7, 'The pending archive entrance plays when the tab becomes visible after a hidden response');
+  check(root.innerHTML.includes('data-report-entrance="true"') && (root.innerHTML.match(/report-archive-fill is-entering/g)||[]).length===3, 'The pending archive entrance plays when the tab becomes visible after a hidden response');
   archiveFilter('batch',''); archiveFilter('course',''); await flush();
   check(!ids['report-download'].disabled && ids['report-batch-picker'].hidden, 'Download stays available for Archives while the unrelated top batch selector is hidden');
   ids['report-download'].emit('click'); await flush();

@@ -83,7 +83,7 @@ public class AuthService : IAuthService
                 return ApiResponse<AuthResultDto>.Fail("Enter your registered email address and security PIN.");
             var pin = (dto.SecurityPin ?? string.Empty).Trim().ToUpperInvariant();
             if (string.IsNullOrEmpty(pin)) return ApiResponse<AuthResultDto>.Fail("Enter your security PIN.");
-            if (pin.Length > 20 || pin.Any(c => !char.IsAsciiLetterOrDigit(c) && c != '-'))
+            if (pin.Length > 20 || pin.Any(c => !char.IsLetterOrDigit(c) && c != '-'))
                 return ApiResponse<AuthResultDto>.Fail("Invalid login details.");
             student = await FindStudentByPinAsync(pin, cancellationToken);
             if (student?.Applicant is not null && !string.IsNullOrWhiteSpace(dto.Email)
@@ -125,7 +125,7 @@ public class AuthService : IAuthService
             return ApiResponse<AuthResultDto>.Fail("Password and confirm password do not match.");
 
         var pin = (dto.SecurityPin ?? string.Empty).Trim().ToUpperInvariant();
-        if (pin.Length is < 1 or > 20 || pin.Any(c => !char.IsAsciiLetterOrDigit(c) && c != '-'))
+        if (pin.Length is < 1 or > 20 || pin.Any(c => !char.IsLetterOrDigit(c) && c != '-'))
             return ApiResponse<AuthResultDto>.Fail("Invalid login details.");
         var student = await FindStudentByPinAsync(pin, cancellationToken);
 

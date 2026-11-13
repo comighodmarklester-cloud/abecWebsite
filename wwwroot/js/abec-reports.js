@@ -3,7 +3,7 @@
   'use strict';
   if (!window.AbecApi) return;
 
-  var ARCHIVE_CATEGORIES = ['Graduated', 'Deactivated', 'Academic Dismissal', 'Withdrawal', 'Inactive Lead', 'Rejected Slots', 'Others'];
+  var ARCHIVE_CATEGORIES = ['Deactivated', 'Rejected Slots', 'Graduated'];
   var overviewInteraction = { slices: [], total: 0, defaultText: '', hovered: '', focused: '', selected: '', active: '', pointer: null };
   function responseLabel(value) { var text = String(value == null ? '' : value).trim(); return text || 'Not recorded'; }
   function yesNo(value) { return value === true ? 'Yes' : value === false ? 'No' : 'Not recorded'; }
@@ -185,7 +185,7 @@
     var max = Math.max.apply(null, rows.map(function (row) { return row.value; }).concat([1]));
     return '<table class="report-breakdown" aria-label="' + esc(options.description || 'Category counts and percentages') + '">' +
       '<colgroup><col class="report-breakdown-name-col"><col class="report-breakdown-count-col"><col class="report-breakdown-percent-col"></colgroup>' +
-      '<thead><tr><th scope="col">' + esc(options.label || 'Status') + '</th><th scope="col">Number of Applicants</th><th scope="col">Percentage</th></tr></thead><tbody>' +
+      '<thead><tr><th scope="col">' + esc(options.label || 'Status') + '</th><th scope="col">Count</th><th scope="col">Percentage</th></tr></thead><tbody>' +
       rows.map(function (row, index) {
         var percentage = row.percentage == null ? shares[index] : row.percentage;
         var attribute = options.attribute ? ' ' + options.attribute + '="' + esc(row.label) + '"' : '';
@@ -693,9 +693,9 @@
         archiveCategoryGraph(animateEntrance) + '<p class="report-note" role="status">' + (state.archiveReport ? state.archiveReport.totalAccounts : 0) +
         (state.archiveReport && state.archiveReport.totalAccounts === 1 ? ' account &middot; ' : ' accounts &middot; ') + esc(state.archiveReport ? courseLabel(state.archiveReport.courseName) : 'All Courses') + ' &middot; ' +
         esc(state.archiveReport ? state.archiveReport.batchName : 'All Batches') +
-        '. Each student is counted once under their saved archive reason. Rejected Slots also includes rejected applications and declined slot offers without an enrolled student account.</p>';
+        '. This view shows Deactivated, Rejected Slots, and Graduated only. Graduated includes students whose full batch is completed. Other saved archive reasons remain in the system. Rejected Slots includes rejected applications and declined slot offers without an enrolled student account.</p>';
     } else if (state.view === 'demographics') {
-      title = 'Applicant Profile Statistics';
+      title = 'Profile statistics';
       var field = PROFILE_FIELDS.find(function (row) { return row.key === state.profileField; }) || PROFILE_FIELDS[0];
       controls = reportSelect('report-profile-field', 'Registration field', PROFILE_FIELDS.map(function (row) { return [row.key, row.label]; }), field.key);
       var order = (PROFILE_CATEGORIES[field.key] || []).slice();
@@ -758,6 +758,7 @@
     var batchId = state.archiveBatchId;
     var courseId = state.archiveCourseId;
     var params = new URLSearchParams();
+    params.set('studentStatusOnly', 'true');
     if (batchId) params.set('batchId', batchId);
     if (courseId) params.set('courseId', courseId);
     state.archiveLoading = true; state.archiveError = ''; state.archiveReport = null;

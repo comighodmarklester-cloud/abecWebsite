@@ -79,7 +79,8 @@ internal static class StrictSecurityChecks
         {
             var generated = await activation.GeneratePinAsync(student.StudentId);
             var pin = generated.Data?.SecurityPin ?? "";
-            Check(generated.Success && System.Text.RegularExpressions.Regex.IsMatch(pin, "^[0-9]{16}$") && issued.Add(pin), "PIN regeneration must use fresh numeric values within the storage limit.");
+            var prefix = "ABEC" + char.ToUpperInvariant(applicant.FirstName.Trim()[0]) + char.ToUpperInvariant(applicant.LastName.Trim()[0]);
+            Check(generated.Success && pin.StartsWith(prefix, StringComparison.Ordinal) && System.Text.RegularExpressions.Regex.IsMatch(pin, @"^ABEC\p{Lu}{2}[0-9]{4}$") && issued.Add(pin), "Authorized PIN regeneration uses registered initials and four fresh random digits.");
         }
         var tooLong = await new AdminProfileService(db, new NotificationService(db)).ChangePasswordAsync(admin.AdminId,
             new() { CurrentPassword = VerificationAccounts.Password, NewPassword = new string('x', 73) });

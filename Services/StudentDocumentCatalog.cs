@@ -13,6 +13,15 @@ public sealed class StudentDocumentCatalog(ApplicationDbContext db)
         var verified = await db.StudentDocumentEligibilities.AsNoTracking().SingleOrDefaultAsync(e => e.StudentId == studentId, ct);
         var requests = await db.DocumentRequests.AsNoTracking().Where(r => r.StudentId == studentId).OrderByDescending(r => r.RequestDate).ThenByDescending(r => r.RequestId).ToListAsync(ct);
         var documents = await db.StudentCourseDocuments.AsNoTracking().Where(d => d.StudentId == studentId).ToListAsync(ct);
+        var enrollment = await db.Students.AsNoTracking().Where(s => s.StudentId == studentId)
+            .Select(s => new { s.Batch!.EndDate, s.Batch.AssessmentDate }).SingleOrDefaultAsync(ct);
+        var today = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTime.UtcNow, "Asia/Manila").Date;
+        var nationalCertificateBlocked = verified?.TrainingCompletedAt is null || verified.AssessmentCompletedAt is null
+            ? "The registrar must verify your training and assessment completion."
+            : enrollment is null || !enrollment.AssessmentDate.HasValue
+                ? "Your batch assessment date must be recorded before requesting this document."
+                : today <= enrollment.EndDate.Date || today <= enrollment.AssessmentDate.Value.Date
+                    ? "Your training and assessment period must end before requesting this document." : null;
         return SystemConstants.DocumentStatuses.PostCourseCredentials.Select(type =>
         {
             var related = requests.Where(r => SystemConstants.DocumentStatuses.SameCourseDocument(r.DocumentType, type)).ToList();
@@ -22,12 +31,15 @@ public sealed class StudentDocumentCatalog(ApplicationDbContext db)
             var open = related.Any(r => r.RequestStatus is not ("Released" or "Rejected"));
             var blocked = releasedRequest is not null || releasedDocument is not null ? "This document has already been released."
                 : open ? "You already have an open request for this document."
+                : type == "National Certificate (TESDA)" && nationalCertificateBlocked is not null ? nationalCertificateBlocked
                 : type == "Payment Receipt" && verified?.FeesPaidAt is null ? "The registrar must verify that all required fees have been paid."
                 : type == "Certificate of Completion" && (verified?.TrainingCompletedAt is null || verified.AssessmentCompletedAt is null)
                     ? "The registrar must verify your individual training and assessment completion." : null;
             return new StudentDocumentCatalogItemDto
             {
-                DocumentType = type, Description = type, CanRequest = blocked is null, RequestBlockedMessage = blocked,
+                DocumentType = type, Description = type == "National Certificate (TESDA)"
+                    ? "This document can be released after you complete your training and the assessment period has ended." : type,
+                CanRequest = blocked is null, RequestBlockedMessage = blocked,
                 RequestId = latest?.RequestId, Status = releasedRequest is not null || releasedDocument is not null ? "Released" : latest?.RequestStatus ?? "Not Requested",
                 Reason = latest?.Reason, SpecificReason = latest?.SpecificReason, HoldReason = latest?.HoldReason,
                 RequestDate = latest?.RequestDate, ReleaseDate = releasedDocument?.ReleasedAt ?? releasedRequest?.ReleaseDate,

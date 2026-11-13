@@ -44,7 +44,6 @@ public static partial class DbSeeder
         await EnsureCourseHistorySchemaAsync(db, cancellationToken);
         await EnsureBatchIntegritySchemaAsync(db, cancellationToken);
         await SlotOfferDeadlineUpgrade.ApplyAsync(db, cancellationToken);
-        await EnsureMissingStudentPinsAsync(db, cancellationToken);
 
         if (!await db.Courses.AnyAsync(cancellationToken))
         {
@@ -83,21 +82,6 @@ public static partial class DbSeeder
 
         await ApplyOfficialCourseProgramsAsync(db, cancellationToken);
         await EnsureTrainingRoomsAsync(db, cancellationToken);
-    }
-
-    private static async Task EnsureMissingStudentPinsAsync(ApplicationDbContext db, CancellationToken ct)
-    {
-        // Startup must never replace issued credentials with a value derived from personal data.
-        var students = await db.Students.Where(s => s.SecurityPin == null || s.SecurityPin == "").ToListAsync(ct);
-        foreach (var student in students)
-        {
-            string pin;
-            do { pin = SecurityPinGenerator.Generate(); }
-            while (students.Any(s => s != student && s.SecurityPin == pin)
-                || await db.Students.AnyAsync(s => s.SecurityPin == pin, ct));
-            student.SecurityPin = pin;
-        }
-        if (students.Count > 0) await db.SaveChangesAsync(ct);
     }
 
     /// <summary>

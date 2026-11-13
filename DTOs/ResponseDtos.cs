@@ -196,7 +196,9 @@ public class StudentDto
     public string BatchName { get; set; } = string.Empty;
     public DateTime? BatchStartDate { get; set; }
     public DateTime? BatchEndDate { get; set; }
+    [System.Text.Json.Serialization.JsonIgnore]
     public string SecurityPin { get; set; } = string.Empty;
+    public bool HasSecurityPin => !string.IsNullOrEmpty(SecurityPin);
     public string AccountStatus { get; set; } = string.Empty;
     public string ApplicationStatus { get; set; } = string.Empty;
     public string ConfirmationStatus { get; set; } = string.Empty;
