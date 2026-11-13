@@ -81,6 +81,7 @@ internal static class CodeSecurityChecks
             var saved = await config.SaveSettingsAsync(new() { Username = options.CurrentValue.Username, Enabled = true });
             Check(saved.Success && File.Exists(Path.Combine(root, "smtp.local.json")), "Valid local settings must still save.");
             Check(configLog.Entries.All(e => !e.Contains(options.CurrentValue.Username) && !e.Contains(options.CurrentValue.Password)), "Settings logs must omit credentials and usernames.");
+            checks += await SmtpDiagnosticChecks.Run();
             checks += await StrictPolicyChecks.Run(environment, root);
             Console.WriteLine($"PASS {checks} privacy, input, cross-origin, response, upload and schema security checks. No external requests or email sent.");
         }

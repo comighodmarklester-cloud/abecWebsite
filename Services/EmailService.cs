@@ -85,6 +85,7 @@ public class EmailService : IEmailService
 
         // Independent of HTTP request cancellation — Approve must finish SMTP even if the browser times out.
         using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(90));
+        var deliveryStage = "prepare";
 
         try
         {
@@ -105,6 +106,7 @@ public class EmailService : IEmailService
             message.Body = builder.ToMessageBody();
 
             using var client = new SmtpClient { Timeout = 90_000 };
+            deliveryStage = "connect";
             _logger.LogInformation(
                 "Email {DeliveryId}: connecting to SMTP (TLS={Tls}).", deliveryId, settings.UseSsl);
 
@@ -113,8 +115,14 @@ public class EmailService : IEmailService
                 port,
                 settings.UseSsl ? (port == 465 ? SecureSocketOptions.SslOnConnect : SecureSocketOptions.StartTls) : SecureSocketOptions.Auto,
                 timeoutCts.Token);
+            _logger.LogInformation("Email {DeliveryId}: SMTP connection established.", deliveryId);
+            deliveryStage = "authenticate";
             await client.AuthenticateAsync(username, password, timeoutCts.Token);
+            _logger.LogInformation("Email {DeliveryId}: SMTP authentication completed.", deliveryId);
+            deliveryStage = "send";
             await client.SendAsync(message, timeoutCts.Token);
+            _logger.LogInformation("Email {DeliveryId}: SMTP message accepted.", deliveryId);
+            deliveryStage = "disconnect";
             await client.DisconnectAsync(true, timeoutCts.Token);
 
             _logger.LogInformation("Email {DeliveryId}: SMTP delivery completed.", deliveryId);
@@ -124,10 +132,11 @@ public class EmailService : IEmailService
         {
             // Provider exceptions can contain recipients, SMTP credentials and response text.
             // Log only a code-defined type and a random reference, never the exception itself.
-            _logger.LogError("Email {DeliveryId}: SMTP delivery failed ({ErrorType}).", deliveryId, ex.GetType().Name);
+            _logger.LogError("Email {DeliveryId}: SMTP delivery failed during {Stage} ({ErrorType}).", deliveryId, deliveryStage, ex.GetType().Name);
             var reason = ex switch
             {
                 MailKit.Security.AuthenticationException => "SMTP authentication failed. Verify the configured SMTP username and app password.",
+                SmtpProtocolException => $"SMTP communication failed during {deliveryStage}. Check the mail provider connection.",
                 OperationCanceledException => "SMTP delivery timed out. Check the mail provider connection.",
                 System.Net.Sockets.SocketException => "Could not connect to the SMTP server. Check the host, port and network connection.",
                 _ => "SMTP delivery failed. Check the mail provider configuration and try again."
