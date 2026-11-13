@@ -41,7 +41,9 @@
       'data-registered="' + esc(registered) + '" ' +
       'data-confirmed-at="' + esc(confirmedAt) + '" ' +
       'data-pin="' + esc(pin) + '" ' +
-      'data-pin-date="' + esc(created) + '" ' +
+      'data-pin-version="' + (s.securityPinVersion || 0) + '" ' +
+      'data-pin-current="' + (s.hasCurrentSecurityPinFormat ? '1' : '0') + '" ' +
+      'data-pin-date="' + esc(AbecApi.formatDate(s.securityPinGeneratedAt || s.createdAt)) + '" ' +
       'data-activation-date="' + (status === 'activated' ? esc(created) : '') + '" ' +
       'data-created="' + esc(created) + '" ' +
       'onclick="handleRowClick(this)">' +
@@ -179,17 +181,65 @@
     await loadAccounts();
   };
 
+  var pinUpdateInProgress = false;
+  async function updateSecurityPins(rows, bulk) {
+    if (pinUpdateInProgress) return;
+    if (!rows.length) { alert('Please select at least one active account.'); return; }
+    if (rows.some(function (row) {
+      return row.getAttribute('data-status') !== 'activated' || row.getAttribute('data-archived') === '1';
+    })) { alert('Select active, non-archived accounts to update their PINs.'); return; }
+    if (bulk) rows = rows.filter(function (row) { return row.getAttribute('data-pin-current') !== '1'; });
+    if (!rows.length) { alert('All selected accounts already use the required PIN format. Download their current Activation Notices.'); return; }
+    var accounts = rows.map(function (row) {
+      return { id: row.getAttribute('data-id'), name: row.getAttribute('data-display-name') || 'Student', version: row.getAttribute('data-pin-version') || '0' };
+    });
+    if (!confirm('Replace Security PINs for ' + accounts.length + ' selected account(s)?\n\n' + accounts.map(function (a) { return a.name; }).join('\n')
+      + '\n\nEach account will receive ABEC + its registered uppercase initials + four random digits. Current PINs will stop working. Download fresh Activation Notices after the update.')) return;
+    pinUpdateInProgress = true;
+    var controls = Array.from(document.querySelectorAll('[data-bulk="pin"], #btn-regenerate-pin')).map(function (control) {
+      var state = { control: control, disabled: control.disabled }; control.disabled = true; return state;
+    });
+    var updated = 0, unchanged = 0, failures = [], singlePin = '';
+    try {
+      // Reuse the existing authorized backend issuer, locks and unique index.
+      // Sequential requests make partial completion explicit and avoid retries
+      // silently replacing a successfully issued credential a second time.
+      for (var account of accounts) {
+        try {
+          var result = await AbecApi.request('/api/activations/' + encodeURIComponent(account.id) + '/generate-pin?pinVersion=' + encodeURIComponent(account.version)
+            + (bulk ? '&onlyLegacy=true' : ''), { method: 'POST', attempts: 1, body: {} });
+          if (result.success) {
+            if (result.data && result.data.pinChanged === false) unchanged++; else updated++;
+            if (!bulk) singlePin = result.data && result.data.securityPin;
+          }
+          else failures.push(account.name + ': ' + (result.cause
+            ? 'Result could not be confirmed. Check the Activation Notice before retrying.'
+            : result.message || 'Update was rejected.'));
+        } catch (_) {
+          failures.push(account.name + ': Result could not be confirmed. Check the Activation Notice before retrying.');
+        }
+      }
+      if (typeof closeDetailsModal === 'function') closeDetailsModal();
+      if (typeof exitSelectionMode === 'function') exitSelectionMode();
+      await loadAccounts();
+      var message = updated + ' Security PIN(s) updated. Download fresh Activation Notices for these accounts; previously downloaded copies keep the old PIN.';
+      if (unchanged) message += '\n' + unchanged + ' account(s) already used the required format and were left unchanged.';
+      if (!bulk && singlePin) message = 'Security PIN: ' + singlePin + '\n\n' + message;
+      if (failures.length) message += '\n\nAccounts needing review:\n' + failures.join('\n') + '\n\nReview only these accounts before retrying.';
+      alert(message);
+    } finally {
+      pinUpdateInProgress = false;
+      controls.forEach(function (state) { state.control.disabled = state.disabled; });
+    }
+  }
+
   window.modalRegeneratePin = async function () {
     var row = window.activeModalRow;
-    if (!row) return;
-    var id = row.getAttribute('data-id');
-    var result = await AbecApi.post('/api/activations/' + id + '/generate-pin');
-    if (!result.success) {
-      alert(result.message || 'Unable to generate PIN.');
-      return;
-    }
-    alert('Security PIN: ' + (result.data && result.data.securityPin));
-    await loadAccounts();
+    if (row) await updateSecurityPins([row], false);
+  };
+
+  window.bulkRegeneratePins = async function () {
+    await updateSecurityPins(typeof getSelectedRows === 'function' ? getSelectedRows() : [], true);
   };
 
   window.modalPrintNotice = async function () {

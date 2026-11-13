@@ -388,6 +388,7 @@
         <span id="selected-count" class="hidden text-xs text-slate-500 font-medium">0 selected</span>
       </div>
       <div id="bulk-actions" class="hidden flex flex-wrap items-center gap-2">
+        <button type="button" data-bulk="pin" onclick="bulkRegeneratePins()" class="bulk-action-btn hidden text-xs font-bold bg-abec-navy hover:bg-[#2563EB] text-white px-4 py-2 rounded-md transition-colors">Update Security PINs</button>
         <button type="button" data-bulk="activate" onclick="bulkUpdateStatus('activated')" class="bulk-action-btn hidden text-xs font-bold bg-abec-navy hover:bg-[#2563EB] text-white px-4 py-2 rounded-md transition-colors">Activate Account</button>
         <button type="button" data-bulk="deactivate" onclick="bulkUpdateStatus('deactivated')" class="bulk-action-btn hidden text-xs font-bold bg-abec-navy hover:bg-[#2563EB] text-white px-4 py-2 rounded-md transition-colors">Deactivate Account</button>
         <button type="button" data-bulk="reactivate" onclick="bulkUpdateStatus('activated')" class="bulk-action-btn hidden text-xs font-bold bg-abec-navy hover:bg-[#2563EB] text-white px-4 py-2 rounded-md transition-colors">Reactivate Account</button>
@@ -602,7 +603,7 @@
   var selectableTabs = ['pending', 'activated', 'deactivated'];
   var bulkActionsByTab = {
     pending: ['activate', 'archive'],
-    activated: ['deactivate'],
+    activated: ['pin', 'deactivate'],
     deactivated: ['reactivate', 'archive']
   };
   var statusMeta = {
@@ -898,6 +899,7 @@
     var disabledBtnClass = 'w-full py-3 px-4 rounded-lg text-sm font-semibold border-2 border-slate-300 text-slate-400 bg-slate-100 cursor-not-allowed flex items-center justify-center gap-2';
     var disabledPrintClass = 'w-full py-3 px-4 rounded-lg text-sm font-semibold bg-slate-300 text-white cursor-not-allowed flex items-center justify-center gap-2';
     var enabledPrintClass = 'w-full py-3 px-4 rounded-lg text-sm font-semibold bg-abec-navy text-white hover:bg-[#2563EB] transition-colors flex items-center justify-center gap-2';
+    var enabledPinClass = 'w-full py-3 px-4 rounded-lg text-sm font-semibold border-2 border-abec-navy text-abec-navy hover:bg-abec-navy hover:text-white transition-colors flex items-center justify-center gap-2';
 
     if (status === 'pending') {
       pinLabel.textContent = 'Security PIN Status';
@@ -919,8 +921,8 @@
       pinDateEl.textContent = pinDate || '--';
       activationDateEl.textContent = activationDate || '--';
 
-      regenerateBtn.disabled = true;
-      regenerateBtn.className = disabledBtnClass;
+      regenerateBtn.disabled = false;
+      regenerateBtn.className = enabledPinClass;
       printBtn.disabled = false;
       printBtn.className = enabledPrintClass;
       deactivateBtn.classList.remove('hidden');
@@ -991,27 +993,9 @@
   }
 
   function modalRegeneratePin() {
-    if (!activeModalRow) return;
-    var btn = document.getElementById('btn-regenerate-pin');
-    if (btn.disabled) return;
-
-    var newPin = 'ABEC-' + String(Math.floor(100000 + Math.random() * 900000));
-    activeModalRow.setAttribute('data-pin', newPin);
-    activeModalRow.setAttribute('data-pin-date', 'Just now');
-
-    var pinCell = activeModalRow.children[2];
-    if (pinCell) {
-      pinCell.textContent = newPin;
-      pinCell.className = 'px-6 py-4 text-sm font-medium text-slate-700 pin-value';
-    }
-
-    document.getElementById('modal-pin-display').textContent = newPin;
-    document.getElementById('modal-pin-date').textContent = 'Just now';
-    document.getElementById('modal-copy-pin').classList.remove('hidden');
-    document.getElementById('modal-pin-label').textContent =
-      activeModalRow.getAttribute('data-status') === 'activated'
-        ? 'Generated Security PIN'
-        : 'Security PIN Status';
+    // The backend script replaces this handler. Never fabricate a local credential
+    // if that script failed to load.
+    alert('The PIN service is unavailable. Refresh the page and try again.');
   }
 
   function modalUpdateStatus(newStatus) {
@@ -1040,6 +1024,6 @@
 <script src="../../wwwroot/js/abec-other-reason.js"></script>
 <script src="../../wwwroot/js/abec-admin.js?v=20261108nobatchbanner1"></script>
 <script src="../../wwwroot/js/abec-archive-dialog.js?v=20261110archivereasons1"></script>
-<script src="../../wwwroot/js/abec-activation.js?v=20261114updates1"></script>
+<script src="../../wwwroot/js/abec-activation.js?v=20261114enrolledpins1"></script>
 </body>
 </html>

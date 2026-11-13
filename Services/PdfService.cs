@@ -241,7 +241,9 @@ public class PdfService : IPdfService
         var studentId = $"ABEC-{student.CreatedAt:yyyy}-{student.StudentId:D4}";
         var isActive = string.Equals(student.AccountStatus, SystemConstants.AccountStatuses.Active, StringComparison.OrdinalIgnoreCase);
         var accountStatus = isActive ? "Activated" : "Pending Activation";
-        var pinGenerated = student.CreatedAt.ToString("MMMM dd, yyyy");
+        var pinGenerated = (student.Notifications.Where(n => n.Title == "Security PIN Generated")
+            .OrderByDescending(n => n.CreatedAt).Select(n => (DateTime?)n.CreatedAt).FirstOrDefault() ?? student.CreatedAt)
+            .ToString("MMMM dd, yyyy");
         var issuedDate = DateTime.Now.ToString("MMMM dd, yyyy");
         var logoBytes = TryLoadLogo();
 
@@ -327,10 +329,9 @@ public class PdfService : IPdfService
 
                     CompactSectionTitle(col, "Account Activation Procedure");
                     CompactNumbered(col, 1, "Go to the ABEC Student Login page.");
-                    CompactNumbered(col, 2, "Select Activate Account (or the account activation option).");
-                    CompactNumbered(col, 3, "Enter your registered email address and the Security PIN shown above.");
-                    CompactNumbered(col, 4, "Create your permanent password when prompted.");
-                    CompactNumbered(col, 5, "Sign in to access your student dashboard.");
+                    CompactNumbered(col, 2, "Enter your registered email address and the Security PIN shown above.");
+                    CompactNumbered(col, 3, "Sign in after the ABEC registrar activates your account.");
+                    CompactNumbered(col, 4, "You may configure username and password login in User Settings after signing in.");
 
                     CompactSectionTitle(col, "Important Security Reminders");
                     CompactBullet(col, "Keep this Security PIN confidential at all times.");

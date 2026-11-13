@@ -26,13 +26,14 @@ public class ActivationController : ControllerBase
         => Ok(await _activationService.GetAccountsAsync(status, courseId, search, cancellationToken, batchId));
 
     [HttpPost("{id:int}/generate-pin")]
-    public async Task<IActionResult> GeneratePin(int id, CancellationToken cancellationToken)
+    public async Task<IActionResult> GeneratePin(int id, CancellationToken cancellationToken, [FromQuery] int? pinVersion = null, [FromQuery] bool onlyLegacy = false)
     {
-        var result = await _activationService.GeneratePinAsync(id, cancellationToken);
+        var result = await _activationService.GeneratePinAsync(id, cancellationToken, pinVersion, onlyLegacy);
         // Only this explicit administrative reissue exposes the newly issued code.
         Response.Headers.CacheControl = "no-store";
         return result.Success && result.Data is not null
-            ? Ok(ApiResponse<object>.Ok(new { result.Data.StudentId, result.Data.SecurityPin }, result.Message))
+            ? Ok(ApiResponse<object>.Ok(new { result.Data.StudentId, result.Data.SecurityPin,
+                PinChanged = !onlyLegacy || result.Data.SecurityPinVersion != pinVersion }, result.Message))
             : Ok(ApiResponse<object>.Fail(result.Message));
     }
 

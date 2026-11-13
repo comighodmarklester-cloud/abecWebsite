@@ -74,6 +74,7 @@ public class ActivationService : IActivationService
         var query = _db.Students.AsNoTracking()
             .Include(s => s.Applicant)!.ThenInclude(a => a!.Course)
             .Include(s => s.Batch)
+            .Include(s => s.Notifications.Where(n => n.Title == "Security PIN Generated"))
             .AsQueryable();
 
         var selectedBatchId = await _db.ResolveReadBatchIdAsync(batchId, cancellationToken);
@@ -121,7 +122,7 @@ public class ActivationService : IActivationService
         return ApiResponse<IReadOnlyList<StudentDto>>.Ok(list.Select(s => Map(s, archivedSet)).ToList());
     }
 
-    public async Task<ApiResponse<StudentDto>> GeneratePinAsync(int studentId, CancellationToken cancellationToken = default)
+    public async Task<ApiResponse<StudentDto>> GeneratePinAsync(int studentId, CancellationToken cancellationToken = default, int? expectedPinVersion = null, bool onlyLegacy = false)
     {
         await using var workflowLock = await SlotWorkflowLock.AcquireAsync(_db, "student:" + studentId, cancellationToken);
         var student = await LoadStudentAsync(studentId, cancellationToken);
@@ -131,6 +132,18 @@ public class ActivationService : IActivationService
         if (await IsArchivedAsync(studentId, cancellationToken))
             return ApiResponse<StudentDto>.Fail("This student is archived. Reactivate the account before generating a PIN.");
 
+        if (onlyLegacy && !expectedPinVersion.HasValue)
+            return ApiResponse<StudentDto>.Fail("Refresh the accounts before updating their PIN format.");
+        if (expectedPinVersion.HasValue)
+        {
+            var currentVersion = await _db.Notifications.Where(n => n.StudentId == studentId && n.Title == "Security PIN Generated")
+                .MaxAsync(n => (int?)n.NotificationId, cancellationToken) ?? 0;
+            if (expectedPinVersion < 0 || expectedPinVersion != currentVersion)
+                return ApiResponse<StudentDto>.Fail("This account's PIN changed since this page was loaded. Refresh the account and download its current Activation Notice before requesting another update.");
+        }
+
+        if (onlyLegacy && SecurityPinGenerator.MatchesRegisteredName(student.SecurityPin, student.Applicant))
+            return ApiResponse<StudentDto>.Ok(await MapAsync(student, cancellationToken), "Security PIN already uses the required format. Download the current Activation Notice.");
         await SecurityPinGenerator.AssignAndSaveAsync(_db, student, student.Applicant!, cancellationToken);
 
         await _notifications.CreateAsync(
@@ -288,6 +301,7 @@ public class ActivationService : IActivationService
         => await _db.Students
             .Include(s => s.Applicant)!.ThenInclude(a => a!.Course)
             .Include(s => s.Batch)
+            .Include(s => s.Notifications.Where(n => n.Title == "Security PIN Generated"))
             .FirstOrDefaultAsync(s => s.StudentId == studentId, cancellationToken);
 
     private async Task EnsurePinAsync(Models.Student student, CancellationToken ct)
@@ -322,6 +336,11 @@ public class ActivationService : IActivationService
         BatchId = s.BatchId,
         BatchName = s.Batch?.BatchName ?? string.Empty,
         SecurityPin = s.SecurityPin,
+        HasCurrentSecurityPinFormat = SecurityPinGenerator.MatchesRegisteredName(s.SecurityPin, s.Applicant),
+        SecurityPinVersion = s.Notifications.Where(n => n.Title == "Security PIN Generated")
+            .Select(n => n.NotificationId).DefaultIfEmpty(0).Max(),
+        SecurityPinGeneratedAt = s.Notifications.Where(n => n.Title == "Security PIN Generated")
+            .OrderByDescending(n => n.CreatedAt).Select(n => (DateTime?)n.CreatedAt).FirstOrDefault() ?? s.CreatedAt,
         AccountStatus = s.AccountStatus,
         ApplicationStatus = s.Applicant?.ApplicationStatus ?? string.Empty,
         ConfirmationStatus = SystemConstants.ApplicationStatuses.IsConfirmedSlot(s.Applicant?.ApplicationStatus)

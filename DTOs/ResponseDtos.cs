@@ -199,6 +199,9 @@ public class StudentDto
     [System.Text.Json.Serialization.JsonIgnore]
     public string SecurityPin { get; set; } = string.Empty;
     public bool HasSecurityPin => !string.IsNullOrEmpty(SecurityPin);
+    public int SecurityPinVersion { get; set; }
+    public bool HasCurrentSecurityPinFormat { get; set; }
+    public DateTime? SecurityPinGeneratedAt { get; set; }
     public string AccountStatus { get; set; } = string.Empty;
     public string ApplicationStatus { get; set; } = string.Empty;
     public string ConfirmationStatus { get; set; } = string.Empty;

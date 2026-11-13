@@ -321,6 +321,51 @@ internal static class SlotWorkflowChecks
             var beforeFailureReplay = smtp.Messages.Count;
             await Activate(failedStudent.StudentId);
             Check(smtp.Messages.Count == beforeFailureReplay, "Retrying the activation request cannot duplicate an already completed transition.");
+
+            var pinAccounts = await Data($"/api/activations?batchId={batch.BatchId}");
+            var pinAccount = pinAccounts.EnumerateArray().Single(a => a.GetProperty("studentId").GetInt32() == firstStudent.StudentId);
+            var pinVersion = pinAccount.GetProperty("securityPinVersion").GetInt32();
+            var pinPath = $"/api/activations/{firstStudent.StudentId}/generate-pin?pinVersion={pinVersion}&onlyLegacy=true";
+            using (var anonymousPin = https.Client(new Uri(origin)))
+            using (var response = await anonymousPin.PostAsync(pinPath, Json(new { })))
+                Check(response.StatusCode == HttpStatusCode.Unauthorized, "Anonymous requests cannot update enrolled students' PIN formats.");
+            using (var response = await browser.PostAsync(pinPath, Json(new { })))
+                Check(response.StatusCode == HttpStatusCode.Forbidden, "A student cannot update another student's PIN format.");
+            using (var response = await admin.PostAsync(pinPath, Json(new { })))
+            {
+                response.EnsureSuccessStatusCode();
+                using var result = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+                Check(result.RootElement.GetProperty("success").GetBoolean() && !result.RootElement.GetProperty("data").GetProperty("pinChanged").GetBoolean()
+                    && response.Headers.CacheControl?.NoStore == true, "Authorized format updates preserve an already-correct PIN with a private no-store response.");
+            }
+            // Synthetic legacy credentials only, in this isolated verification DB.
+            await db.Database.ExecuteSqlInterpolatedAsync($"UPDATE students SET security_pin={"legacy-http-pin"} WHERE student_id={firstStudent.StudentId}");
+            var pinMailCount = smtp.Messages.Count;
+            string replacement;
+            using (var response = await admin.PostAsync(pinPath, Json(new { })))
+            {
+                response.EnsureSuccessStatusCode();
+                using var result = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+                replacement = result.RootElement.GetProperty("data").GetProperty("securityPin").GetString()!;
+                Check(result.RootElement.GetProperty("success").GetBoolean() && result.RootElement.GetProperty("data").GetProperty("pinChanged").GetBoolean()
+                    && Regex.IsMatch(replacement, "^ABECWA[0-9]{4}$"), "The authenticated Admin endpoint converts the enrolled legacy PIN using registered initials.");
+            }
+            using (var response = await admin.PostAsync(pinPath, Json(new { })))
+            {
+                response.EnsureSuccessStatusCode();
+                using var result = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+                Check(!result.RootElement.GetProperty("success").GetBoolean()
+                    && (await db.Students.AsNoTracking().SingleAsync(s => s.StudentId == firstStudent.StudentId)).SecurityPin == replacement,
+                    "Replaying the same HTTP update cannot replace the newly saved credential again.");
+            }
+            using (var response = await admin.GetAsync($"/api/activations/{firstStudent.StudentId}/activation-notice"))
+            {
+                var bytes = await response.Content.ReadAsByteArrayAsync();
+                Check(response.IsSuccessStatusCode && response.Content.Headers.ContentType?.MediaType == "application/pdf"
+                    && response.Headers.CacheControl?.NoStore == true && bytes.AsSpan(0, 5).SequenceEqual("%PDF-"u8),
+                    "Fresh Activation Notices are available from the authorized PDF endpoint after updating an enrolled PIN.");
+            }
+            Check(smtp.Messages.Count == pinMailCount, "PIN-format updates do not send unrequested external email.");
             if (Environment.GetEnvironmentVariable("ABEC_SLOT_BROWSER_CHECKS") == "1")
                 await RunEmailBrowserChecks(db, admin, smtp, origin, batch.BatchId, https);
             Console.WriteLine($"PASS: {checks} end-to-end approval, slot response and activation-email checks using HTTPS, isolated MySQL and a loopback SMTP inbox. No external email sent.");

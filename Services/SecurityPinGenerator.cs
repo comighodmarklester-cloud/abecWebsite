@@ -8,6 +8,17 @@ namespace ABEC_System.Services;
 
 internal static class SecurityPinGenerator
 {
+    public static bool MatchesRegisteredName(string pin, Applicant? applicant)
+    {
+        if (applicant is null || pin.Length != 10) return false;
+        try
+        {
+            return pin.StartsWith(Prefix(applicant.FirstName, applicant.LastName), StringComparison.Ordinal)
+                && pin.Skip(6).All(c => c is >= '0' and <= '9');
+        }
+        catch (BatchIntegrityException) { return false; }
+    }
+
     private static string Prefix(string firstName, string surname)
     {
         var first = firstName.Trim();
