@@ -415,28 +415,26 @@
   </div>
 
   <div class="overflow-x-auto max-h-[560px] overflow-y-auto">
-    <table class="w-full text-left table-fixed min-w-[960px]">
+    <table class="w-full text-left table-fixed min-w-[760px]">
       <colgroup>
+        <col class="w-[28%]">
         <col class="w-[24%]">
-        <col class="w-[20%]">
-        <col class="w-[14%]">
         <col class="w-[18%]">
-        <col class="w-[12%]">
-        <col class="w-[12%]">
+        <col class="w-[14%]">
+        <col class="w-[16%]">
       </colgroup>
       <thead class="bg-slate-50 text-[10px] uppercase font-bold text-slate-500 border-b border-slate-100 sticky top-0 z-10">
         <tr>
           <th class="px-6 py-3.5">Applicant Name</th>
           <th class="px-6 py-3.5">Course</th>
           <th class="px-6 py-3.5">Confirmation</th>
-          <th class="px-6 py-3.5">Security PIN</th>
           <th class="px-6 py-3.5">Status</th>
           <th class="px-6 py-3.5">Date Created</th>
         </tr>
       </thead>
       <tbody id="activation-table-body" class="divide-y divide-slate-100">
         <tr id="activation-empty-row">
-          <td colspan="6" class="px-6 py-16 text-center text-sm text-slate-400">No accounts pending activation.</td>
+          <td colspan="5" class="px-6 py-16 text-center text-sm text-slate-400">No accounts pending activation.</td>
         </tr>
       </tbody>
     </table>
@@ -782,29 +780,6 @@
       badge.className = 'status-badge inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase ' + meta.badge;
     }
 
-    var pinCell = row.children[2];
-    if (pinCell) {
-      if (meta.pin === 'Not Generated') {
-        pinCell.textContent = 'Not Generated';
-        pinCell.className = 'px-6 py-4 text-sm text-slate-500';
-        row.setAttribute('data-pin', '');
-        row.setAttribute('data-pin-date', '');
-        row.setAttribute('data-activation-date', '');
-      } else {
-        var existingPin = row.getAttribute('data-pin') || '';
-        if (!existingPin || existingPin === 'Not Generated') {
-          existingPin = 'ABEC-' + String(Math.floor(100000 + Math.random() * 900000));
-          row.setAttribute('data-pin', existingPin);
-          row.setAttribute('data-pin-date', 'Just now');
-        }
-        if (newStatus === 'activated') {
-          row.setAttribute('data-activation-date', 'Today');
-        }
-        pinCell.textContent = existingPin;
-        pinCell.className = 'px-6 py-4 text-sm font-medium text-slate-700 pin-value';
-      }
-    }
-
     var note = row.querySelector('.date-note');
     if (note) note.textContent = meta.note;
   }
@@ -1034,6 +1009,6 @@
 <script src="../../wwwroot/js/abec-other-reason.js"></script>
 <script src="../../wwwroot/js/abec-admin.js?v=20261108nobatchbanner1"></script>
 <script src="../../wwwroot/js/abec-archive-dialog.js?v=20261110archivereasons1"></script>
-<script src="../../wwwroot/js/abec-activation.js?v=20261114pineye1"></script>
+<script src="../../wwwroot/js/abec-activation.js?v=20261114pindetailsonly1"></script>
 </body>
 </html>

@@ -69,36 +69,52 @@ const fixture = fixtureHttps((req, res) => {
     await page.locator('.activation-row').first().waitFor();
     const row = id => page.locator('.activation-row[data-id="' + id + '"]');
     const modal = page.locator('#details-modal');
-    const eye = id => row(id).getByRole('button', { name: 'Show Security PIN', exact: true });
-    const value = id => row(id).locator('[data-pin-value]');
-    check(revealReads === 0 && !(await page.content()).includes('legacy-one') && !(await page.content()).includes('legacy-two'), 'Initial table masks PINs without fetching or embedding credentials.');
-    await eye(1).click();
-    await row(1).locator('[aria-pressed="true"]').waitFor();
-    check(await value(1).textContent() === 'legacy-one' && !(await modal.isVisible()) && writes.length === 0, 'Table eye reveals only the selected saved PIN without opening details or generating another PIN.');
-    await row(1).getByRole('button', { name: 'Hide Security PIN' }).click();
+    const table = page.locator('#activation-table-body').locator('..');
+    const eye = () => modal.getByRole('button', { name: 'Show Security PIN', exact: true });
+    const value = () => modal.locator('[data-pin-value]');
+    const hideEye = () => modal.getByRole('button', { name: 'Hide Security PIN', exact: true });
+    const closeDetails = () => modal.getByRole('button', { name: 'Close', exact: true }).click();
+    async function reveal() { await eye().click(); await modal.locator('[aria-pressed="true"]').waitFor(); }
+    async function checkTable(label) {
+      check(JSON.stringify(await table.locator('thead th').allTextContents()) === JSON.stringify(['Applicant Name', 'Course', 'Confirmation', 'Status', 'Date Created'])
+        && await table.locator('colgroup col').count() === 5
+        && await table.locator('#activation-empty-row td').getAttribute('colspan') === '5'
+        && await table.locator('.activation-row').evaluateAll(rows => rows.every(row => row.cells.length === 5
+          && row.cells[2].textContent === 'Confirmed Slot' && row.cells[3].querySelector('.status-badge') && row.cells[4].querySelector('.date-note')))
+        && await table.locator('[data-pin-view], .pin-eye, [data-pin-value]').count() === 0
+        && !(await table.textContent()).match(/Security PIN|Issued|Not Generated|ABEC|legacy|synthetic-current-pin/i), label);
+    }
+    await checkTable('Table has five aligned columns with no PIN header, values, masks or reveal controls.');
+    check(revealReads === 0 && !(await page.content()).includes('legacy-one') && !(await page.content()).includes('legacy-two'), 'Initial table does not fetch or embed saved credentials.');
+    await row(1).click();
+    check(await eye().isVisible() && !(await page.locator('#modal-copy-pin').isVisible()) && revealReads === 0, 'Student Activation Details retains its initially masked PIN and eye button.');
+    await reveal();
+    check(await value().textContent() === 'legacy-one' && writes.length === 0, 'Admin details reveal only the selected saved PIN without generating another PIN.');
+    await checkTable('Table stays free of PIN values while a PIN is revealed in Student Activation Details.');
+    await hideEye().click();
     check(!(await page.content()).includes('legacy-one'), 'Hide removes the PIN from the DOM.');
     pins.set(1, 'synthetic-current-pin');
-    await eye(1).press('Enter'); await row(1).locator('[aria-pressed="true"]').waitFor();
-    check(await value(1).textContent() === 'synthetic-current-pin' && revealReads === 2, 'Each reveal retrieves the current saved PIN instead of a cached credential.');
+    await eye().press('Enter'); await modal.locator('[aria-pressed="true"]').waitFor();
+    check(await value().textContent() === 'synthetic-current-pin' && revealReads === 2, 'Each reveal retrieves the current saved PIN instead of a cached credential.');
+    await closeDetails();
+    check(!(await page.content()).includes('synthetic-current-pin'), 'Closing Student Activation Details removes the revealed credential.');
     await page.locator('#activation-search').fill('Mina');
-    check(!(await page.content()).includes('synthetic-current-pin'), 'Filtering removes revealed credentials.');
+    await checkTable('Filtering preserves the five-column table without PIN information.');
     await page.locator('#activation-search').fill('');
+    await row(1).click();
     holdReveal = true;
-    await eye(1).click(); await row(1).locator('[aria-busy="true"]').waitFor();
-    await row(1).getByRole('button', { name: 'Hide Security PIN' }).click();
+    await eye().click(); await modal.locator('[aria-busy="true"]').waitFor();
+    await hideEye().click();
     const cancelled = page.waitForResponse(r => r.url().includes('/security-pin'));
     releaseReveal(); await cancelled; holdReveal = false;
     check(!(await page.content()).includes('synthetic-current-pin'), 'Hiding during a request prevents a delayed response from exposing the PIN.');
     failReveal = true;
-    await eye(1).click();
+    await eye().click();
     await page.locator('.abec-toast-text').filter({ hasText: 'Synthetic reveal rejection' }).waitFor();
-    check(await eye(1).isVisible() && !(await page.content()).includes('synthetic-current-pin'), 'Failed reveal stays masked and reports the error.');
+    check(await eye().isVisible() && !(await page.content()).includes('synthetic-current-pin'), 'Failed reveal stays masked and reports the error.');
     failReveal = false;
     await page.evaluate(() => document.querySelectorAll('.abec-toast-close').forEach(b => b.click()));
-    await row(1).click();
-    const modalEye = modal.getByRole('button', { name: 'Show Security PIN', exact: true });
-    check(await modalEye.isVisible() && !(await page.locator('#modal-copy-pin').isVisible()), 'Generated Security PIN in details starts hidden with an accessible eye button.');
-    await modalEye.click(); await modal.locator('[aria-pressed="true"]').waitFor();
+    await reveal();
     await page.evaluate(() => { navigator.clipboard.writeText = async value => { window.testCopiedPin = value; }; });
     await page.locator('#modal-copy-pin').click();
     check(await page.evaluate(() => window.testCopiedPin) === 'synthetic-current-pin', 'Copy PIN copies the revealed saved value, not the mask or an issuance label.');
@@ -106,25 +122,24 @@ const fixture = fixtureHttps((req, res) => {
     await row(2).click();
     check(!(await page.content()).includes('synthetic-current-pin') && await modal.getByRole('button', { name: 'Show Security PIN' }).isVisible(), 'Closing or switching students clears the previously revealed PIN.');
     await modal.getByRole('button', { name: 'Close', exact: true }).click();
-    await eye(1).click(); await row(1).locator('[aria-pressed="true"]').waitFor();
+    await row(1).click(); await reveal();
     await page.evaluate(() => window.dispatchEvent(new Event('blur')));
     check(!(await page.content()).includes('synthetic-current-pin'), 'Leaving the window immediately masks revealed PINs.');
     await page.clock.install();
-    await eye(1).click(); await row(1).locator('[aria-pressed="true"]').waitFor();
+    await reveal();
     await page.clock.fastForward(30001);
     check(!(await page.content()).includes('synthetic-current-pin'), 'Revealed PIN automatically hides after thirty seconds.');
-    check(await row(3).locator('.pin-eye').count() === 0 && await row(4).locator('.pin-eye').count() === 0, 'Pending and archived rows retain their PIN access restrictions.');
+    await closeDetails();
     await page.evaluate(() => document.querySelectorAll('.abec-toast-close').forEach(b => b.click()));
     await page.screenshot({ path: path.join(root, 'artifacts/pin-eye-desktop.png'), fullPage: true });
     await page.setViewportSize({ width: 390, height: 900 });
-    await eye(1).click(); await row(1).locator('[aria-pressed="true"]').waitFor();
-    check(await row(1).getByRole('button', { name: 'Hide Security PIN' }).isVisible() && await value(1).textContent() === 'synthetic-current-pin', 'Eye control works on a mobile viewport.');
-    check(await row(1).locator('[data-pin-view]').evaluate(view => {
-      const cell = view.closest('td'), padding = parseFloat(getComputedStyle(cell).paddingRight);
-      return view.getBoundingClientRect().right <= cell.getBoundingClientRect().right - padding + 1;
-    }), 'PIN and eye stay inside their table cell on mobile, including long legacy credentials.');
+    await checkTable('Mobile table preserves its five columns without PIN information.');
+    await row(1).click(); await reveal();
+    check(await hideEye().isVisible() && await value().textContent() === 'synthetic-current-pin', 'Admin can still reveal the saved PIN inside details on mobile.');
     // Mask synthetic credentials before capturing the layout artifact.
-    await row(1).getByRole('button', { name: 'Hide Security PIN' }).click();
+    await hideEye().click();
+    await page.screenshot({ path: path.join(root, 'artifacts/pin-details-mobile.png'), fullPage: true });
+    await closeDetails();
     await page.screenshot({ path: path.join(root, 'artifacts/pin-eye-mobile.png'), fullPage: true });
     await page.setViewportSize({ width: 1366, height: 900 });
     pins.set(1, 'legacy-one');
@@ -146,6 +161,7 @@ const fixture = fixtureHttps((req, res) => {
     for (const id of [3, 4]) {
       await row(id).click();
       check(await page.locator('#btn-regenerate-pin').isDisabled(), 'Pending/archived account retains its existing operation restrictions: ' + id);
+      check(await modal.locator('.pin-eye').count() === 0, 'Pending/archived details retain PIN viewing restrictions: ' + id);
       await modal.getByRole('button', { name: 'Close', exact: true }).click();
     }
     await page.getByRole('button', { name: /^Active Accounts/i }).click();
@@ -159,6 +175,7 @@ const fixture = fixtureHttps((req, res) => {
     await page.waitForFunction(() => !selectionMode);
     check(writes.length === before + 1 && writes.at(-1) === 2, 'Bulk update preserves already-correct PINs, updates the selected legacy account once, and blocks duplicate clicks.');
     check(!await page.locator('#activation-table-body').textContent().then(text => text.includes(pins.get(1))), 'Bulk update keeps PIN values out of the routine account table.');
+    await checkTable('PIN reset and account reload cannot reintroduce the removed table column.');
     failSecond = true;
     pins.set(1, 'synthetic-legacy-one'); pins.set(2, 'synthetic-legacy-two');
     await page.reload({ waitUntil: 'networkidle' });

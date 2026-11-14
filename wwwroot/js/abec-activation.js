@@ -123,8 +123,6 @@
       '</label>' + esc(s.fullName) + '</td>' +
       '<td class="px-6 py-4 text-sm text-slate-600">' + esc(courseLabel(s.courseName)) + '</td>' +
       '<td class="px-6 py-4 text-sm text-slate-600">' + esc(confirmation) + '</td>' +
-      '<td class="px-6 py-4 text-sm font-mono text-slate-700">' +
-        (pin ? (status === 'activated' && !s.isArchived ? pinControl(s.studentId, s.batchId) : pinMask) : 'Not Generated') + '</td>' +
       '<td class="px-6 py-4"><span class="status-badge inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase ' + metaBadge + '">' + label + '</span></td>' +
       '<td class="px-6 py-4 text-sm text-slate-500"><span class="date-note">' + esc(created) + '</span></td>' +
       '</tr>'
