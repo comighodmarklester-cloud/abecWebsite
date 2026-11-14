@@ -1157,6 +1157,7 @@ public class ApplicantService : IApplicantService
                 <li>Honorable Dismissal</li>
                 <li>Certificate of Good Moral Character</li>
                 <li>Form 138</li>
+                <li>Birth Certificate (PSA)</li>
                 <li>Printed Application Form</li>
               </ul>
               <p style='margin:0;font-size:13px;color:#64748b'><strong>Note:</strong> Photocopies of the required documents may be submitted.</p>

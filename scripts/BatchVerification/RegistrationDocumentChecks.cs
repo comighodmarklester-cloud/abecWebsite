@@ -115,6 +115,9 @@ internal static class RegistrationDocumentChecks
         var blocked = false;
         try { await storage.UploadFollowUpAsync(all.Data.ApplicantId, lastPending.DocumentId, Pdf()); } catch (BatchIntegrityException) { blocked = true; }
         Check(blocked, "Completed-batch registration records retain existing write protection.");
+        var applicationPdf = new PdfService(env).GenerateApplicationFormPdf(original);
+        await File.WriteAllBytesAsync("artifacts/registration-update/application-checklist.pdf", applicationPdf);
+        Check(applicationPdf.AsSpan().StartsWith("%PDF-"u8), "Updated application checklist generates a valid PDF for visual verification.");
         Console.WriteLine($"PASS {checks} registration document checks (isolated database, synthetic files and email).");
 
         async Task VerifyHttp(EnrollApplicantDto request)

@@ -72,6 +72,7 @@ public class PdfService : IPdfService
                     col.Item().PaddingTop(3).Text(
                         "[ ] Form 138     [ ] Honorable Dismissal     [ ] Transcript of Records     [ ] Certificate of Good Moral Character")
                         .FontSize(8);
+                    col.Item().PaddingTop(2).Text("[ ] Birth Certificate (PSA)").FontSize(8);
 
                     // Personal data
                     col.Item().PaddingTop(8).Text("Personal Data").Bold().FontSize(9.5f);

@@ -173,7 +173,8 @@ public static class SystemConstants
             "Transcript of Records",
             "Honorable Dismissal",
             "Certificate of Good Moral Character",
-            "Form 138"
+            "Form 138",
+            "Birth Certificate (PSA)"
         ];
     }
 

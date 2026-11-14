@@ -10,6 +10,7 @@ The existing ASP.NET Core / EF Core / MySQL registration workflow now accepts fi
 - `ApplicantService`: validate documents before creating an applicant, then save enrollment and document metadata in one transaction. Invalid submissions do not leave a partial applicant record. Confirmation email remains after commit.
 - `ApplicantController` and `BatchWriteFilter`: authenticated admin multipart follow-up uploads use the service's own transaction; existing batch ownership, active-batch and archived-record restrictions remain in place.
 - `abec-documents.js`, `abec-profile-details.js`, and `abec-add-applicant.js`: PSA is included in admin document reviews and registration profiles; pending records show Pending (Follow up), without a fake download or an uploaded count. Admins can upload a pending PDF from Documents. Historical batches remain read-only.
+- The application PDF checklist, approval email, privacy notice, and applicant-submitted document catalog also include Birth Certificate (PSA). Registration credentials remain separate from requestable course certificates. The updated PDF is rendered and visually checked with synthetic applicant data.
 - Shared document/responsive CSS and affected asset references retain the existing design, with a keyboard-accessible upload control that fits narrow cards.
 - Registration body limits in the existing constant and IIS `web.config` allow five credentials plus one ID at the existing 100 MB per-file limit. Deployment workflow, hosting connections, SMTP configuration, credentials, and database connection settings are unchanged.
 
@@ -27,7 +28,7 @@ ALTER TABLE applicant_registration_documents
 ## Verification
 
 - Release build: zero warnings/errors.
-- `--registration-documents-only`: 36 isolated database and real local HTTPS checks, including PSA multipart submission, follow-up persistence, invalid/duplicate prevention, authorized later upload/download, rejected anonymous access, archived/completed guards, and repeated startup preservation. Synthetic files/accounts; email disabled.
+- `--registration-documents-only`: 37 isolated database, real local HTTPS, and PDF checks, including PSA multipart submission, follow-up persistence, invalid/duplicate prevention, authorized later upload/download, rejected anonymous access, archived/completed guards, and repeated startup preservation. Synthetic files/accounts; email disabled.
 - `scripts/check-registration-updates.cjs`: 55 browser checks at 1366 px and 390 px, covering partial native dates, invalid dates, age reset, email timing, blank ZIP, aligned Brgy., initial/remaining Missing indicators, follow-up continuation/submission, PSA upload, state reset, and admin pending-to-uploaded refresh. Synthetic APIs only; screenshots under ignored `artifacts/registration-ui`.
 - Existing registration loader/retry/privacy checks and strict account/upload security checks remain in place. The full batch/enrollment/HTTP regression harness verifies the surrounding workflows.
 
