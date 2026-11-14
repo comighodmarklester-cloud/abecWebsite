@@ -188,6 +188,9 @@
       return '<option value="' + Number(batch.batchId) + '">' + esc(batch.batchName) + ' (' + esc(batch.status) + ')</option>';
     }).join('');
     select.value = selectedDocumentBatchId ? String(selectedDocumentBatchId) : '';
+    var selected = batches.find(function (batch) { return Number(batch.batchId) === Number(selectedDocumentBatchId); });
+    var field = select.closest('label');
+    if (field) field.hidden = !!selected && String(selected.batchName).replace(/\s+/g, '').toLowerCase() === 'batch2026-101';
   }
 
   async function viewBatchDocuments(value, focus) {

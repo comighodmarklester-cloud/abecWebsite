@@ -3,19 +3,6 @@
   'use strict';
   if (!window.AbecApi) return;
 
-  var PURPOSE_LABELS = {
-    job: 'Job Application',
-    school: 'Further Studies',
-    personal: 'Personal Records',
-    other: 'Other'
-  };
-
-  var DOC_OPTIONS = [
-    { value: 'National Certificate (TESDA)', label: 'National Certificate (TESDA)' },
-    { value: 'Payment Receipt', label: 'Payment Receipt' },
-    { value: 'Certificate of Completion', label: 'Certificate of Completion' }
-  ];
-
   var coursePack = null;
   var requestRows = [];
   var currentStudentId = 0;
@@ -65,18 +52,6 @@
     return 'bg-slate-100 text-slate-600 border border-slate-200';
   }
 
-  function statusHint(status) {
-    switch (normalizeStatus(status)) {
-      case 'Not Requested': return 'You have not requested this document yet.';
-      case 'Pending': return 'Your request was submitted and is waiting for admin action.';
-      case 'Processing': return 'The admin is currently processing this document.';
-      case 'On Hold': return 'This request is temporarily on hold.';
-      case 'Released': return 'Officially released and ready for collection.';
-      case 'Rejected': return 'This request was rejected. You can submit a new request.';
-      default: return '';
-    }
-  }
-
   function iconFor(docType) {
     var lower = String(docType || '').toLowerCase();
     if (lower.indexOf('payment') !== -1 || lower.indexOf('receipt') !== -1) {
@@ -92,39 +67,6 @@
       return 'M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z';
     }
     return 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z';
-  }
-
-  function timelineSteps(status) {
-    var current = normalizeStatus(status);
-    var order = ['Pending', 'Processing', 'On Hold', 'Released'];
-    if (current === 'Not Requested') {
-      return order.map(function (label) { return { label: label, state: 'pending' }; });
-    }
-    if (current === 'Rejected') {
-      return [
-        { label: 'Pending', state: 'done' },
-        { label: 'Rejected', state: 'current' }
-      ];
-    }
-
-    return order.map(function (label) {
-      if (label === 'On Hold' && current !== 'On Hold') {
-        return { label: label, state: 'skipped' };
-      }
-      if (current === 'On Hold') {
-        if (label === 'Pending' || label === 'Processing') return { label: label, state: 'done' };
-        if (label === 'On Hold') return { label: label, state: 'current' };
-        return { label: label, state: 'pending' };
-      }
-      var linear = ['Pending', 'Processing', 'Released'];
-      var eIdx = linear.indexOf(current);
-      var labelIdx = linear.indexOf(label);
-      if (label === 'On Hold') return { label: label, state: 'skipped' };
-      if (labelIdx < 0) return { label: label, state: 'pending' };
-      if (labelIdx < eIdx) return { label: label, state: 'done' };
-      if (labelIdx === eIdx) return { label: label, state: 'current' };
-      return { label: label, state: 'pending' };
-    });
   }
 
   function releaseNote(status) {
@@ -173,16 +115,6 @@
     return matches[0] || null;
   }
 
-  function requestIsActive(request) {
-    if (!request) return false;
-    var status = normalizeStatus(request.requestStatus);
-    return status === 'Pending' || status === 'Processing' || status === 'On Hold';
-  }
-
-  function eligibleDocumentTypes() {
-    return (coursePack && coursePack.catalog || []).filter(function (doc) { return doc.canRequest; }).map(function (doc) { return doc.documentType; });
-  }
-
   function renderReleaseBoard() {
     var host = document.getElementById('doc-release-info');
     if (!host) return;
@@ -191,14 +123,10 @@
       host.textContent = 'Release information is not available yet.';
       return;
     }
-    var course = (window.AbecApi && AbecApi.displayCourseName)
-      ? (AbecApi.displayCourseName(timeline.courseName) || 'Your course')
-      : (timeline.courseName || 'Your course');
-    var lines = ['<p class="font-bold text-abec-navy">' + esc(course) + ' — Document Release Information</p>'];
+    var lines = ['<p class="font-bold text-abec-navy">Document Release Information</p>'];
     if (timeline.programSummary) lines.push('<p class="mt-1">Course program: ' + esc(timeline.programSummary) + '</p>');
     if (timeline.batchName) lines.push('<p class="mt-1">Batch: ' + esc(timeline.batchName) + '</p>');
     lines.push('<p class="mt-1">' + esc(timeline.studentReleaseMessage || 'The release date has not yet been determined.') + '</p>');
-    lines.push('<p class="mt-2">Each document has its own eligibility rule. Individual payment and completion must be verified by the registrar.</p>');
     if (timeline.trainingCompletionDisplay) lines.push('<p class="mt-1">Training completion: ' + esc(timeline.trainingCompletionDisplay) + '</p>');
     if (timeline.assessmentDisplay) lines.push('<p class="mt-1">Assessment date: ' + esc(timeline.assessmentDisplay) + '</p>');
     host.innerHTML = lines.join('');
@@ -208,11 +136,6 @@
     var host = document.getElementById('credentials-grid');
     if (!host) return;
     var existing = coursePack && coursePack.documents || [];
-    var national = (coursePack && coursePack.catalog || []).find(function (item) { return item.documentType === 'National Certificate (TESDA)'; });
-    var requestButton = document.getElementById('btn-request-document');
-    if (requestButton) requestButton.disabled = !national || !national.canRequest;
-    var requestHint = document.getElementById('request-document-hint');
-    if (requestHint) requestHint.textContent = national ? (national.requestBlockedMessage || 'Request your National Certificate for your enrolled course.') : 'Loading document eligibility...';
     var documents = (coursePack && coursePack.catalog || []).map(function (item) {
       var stored = existing.find(function (d) { return sameDocument(d.documentType, item.documentType); }) || {};
       return Object.assign({}, stored, item, { preparationStatus: item.status === 'Released' ? 'Released' : stored.preparationStatus || 'Not Prepared' });
@@ -227,18 +150,13 @@
       var request = latestRequest(doc.documentType);
       var requestStatus = request ? normalizeStatus(request.requestStatus) : '';
       var released = prep === 'Released';
-      var active = requestIsActive(request);
-      var canRequest = doc.canRequest;
       var action = '';
-      if (canRequest) {
-        action = '<button type="button" class="doc-request-btn mt-3 w-full bg-abec-navy hover:bg-[#1A4B7A] text-white text-xs font-bold px-3 py-2.5 rounded-md transition-colors" data-doc-type="' + esc(doc.documentType) + '">' +
-          (requestStatus === 'Rejected' ? 'Request Again' : 'Request Document') + '</button>';
-      } else if (released) {
+      if (released) {
         action = doc.downloadUrl
           ? '<div class="mt-3 flex gap-2"><a class="doc-link" href="' + esc(doc.downloadUrl) + '?inline=true" target="_blank" rel="noopener">View</a><a class="doc-link" href="' + esc(doc.downloadUrl) + '">Download</a></div>'
           : '<p class="mt-3 text-xs">Released. Contact the registrar if a soft copy is unavailable.</p>';
-      } else {
-        action = '<button type="button" disabled class="doc-request-btn mt-3 w-full bg-abec-navy text-white text-xs font-bold px-3 py-2.5 rounded-md">Request Document</button><p class="mt-2 text-xs text-slate-600">' + esc(doc.requestBlockedMessage || 'Not currently eligible.') + '</p>';
+      } else if (doc.requestBlockedMessage && !/already have an open request for this document/i.test(doc.requestBlockedMessage)) {
+        action = '<p class="mt-2 text-xs text-slate-600">' + esc(doc.requestBlockedMessage) + '</p>';
       }
       var requestBlock = '';
       if (request && !released && requestStatus !== 'Released') {
@@ -277,11 +195,6 @@
       );
     }).join('');
 
-    host.querySelectorAll('.doc-request-btn').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        openModal(btn.getAttribute('data-doc-type') || '');
-      });
-    });
   }
 
   function purposeDisplay(r) {
@@ -294,64 +207,15 @@
 
   function renderRecent(list) {
     var tbody = document.getElementById('recent-requests-body');
-    var trackHost = document.getElementById('request-tracking-list');
     if (!tbody) return;
-
-    var rows = (list || []).map(function (r) {
-      return Object.assign({}, r, { requestStatus: normalizeStatus(r.requestStatus) });
-    }).sort(function (a, b) { return new Date(b.requestDate) - new Date(a.requestDate); });
-
-    if (!rows.length) {
-      tbody.innerHTML = '<tr><td colspan="4" class="px-6 py-10 text-center text-sm text-slate-500">No recent document requests.</td></tr>';
-      if (trackHost) {
-        trackHost.innerHTML = '<p class="text-sm text-slate-500 px-1 py-4">Submit a request to start tracking progress.</p>';
-      }
-      return;
-    }
-
-    tbody.innerHTML = rows.slice(0, 3).map(function (r) {
-      return (
-        '<tr class="hover:bg-slate-50/80" data-request-id="' + esc(r.requestId) + '" data-document-type="' + esc(r.documentType) + '">' +
-          '<td data-label="Document" class="px-6 py-4 text-slate-800">' + esc(r.documentType) + '</td>' +
-          '<td data-label="Requested" class="px-6 py-4 text-slate-600">' + esc(AbecApi.formatDate(r.requestDate)) + '</td>' +
-          '<td data-label="Status" class="px-6 py-4">' + statusBadgeHtml(r.requestStatus) + '</td>' +
-          '<td data-label="Purpose" class="px-6 py-4 text-slate-600">' + esc(purposeDisplay(r)) + '</td>' +
-        '</tr>'
-      );
-    }).join('');
-
-    if (trackHost) {
-      trackHost.innerHTML = rows.map(function (r) {
-        var steps = timelineSteps(r.requestStatus);
-        return (
-          '<article data-document-type="' + esc(r.documentType) + '" class="rounded-xl border border-slate-200 p-4">' +
-            '<div class="flex flex-wrap items-center justify-between gap-2 mb-3">' +
-              '<div>' +
-                '<p class="text-sm font-bold text-abec-navy">' + esc(r.documentType) + '</p>' +
-                '<p class="text-xs text-slate-500 mt-0.5">' + esc(AbecApi.formatDate(r.requestDate)) + '</p>' +
-                '<p class="text-xs text-slate-600 mt-1">Purpose: ' + esc(purposeDisplay(r)) + '</p>' +
-                releaseNote(r.requestStatus) +
-              '</div>' +
-              statusBadgeHtml(r.requestStatus, 'lg') +
-            '</div>' +
-            (r.requestStatus === 'Released' ? '' : '<p class="text-xs text-slate-600 mb-3">' + esc(statusHint(r.requestStatus)) + '</p>') +
-            (r.holdReason && r.requestStatus === 'On Hold'
-              ? '<p class="text-xs text-orange-700 mb-3">Hold reason: ' + esc(r.holdReason) + '</p>'
-              : '') +
-            '<ol class="grid grid-cols-2 sm:grid-cols-4 gap-2">' +
-              steps.map(function (step) {
-                var cls = 'rounded-lg border px-2 py-2 text-center text-[10px] font-bold ';
-                if (step.state === 'done') cls += 'border-emerald-200 bg-emerald-50 text-emerald-700';
-                else if (step.state === 'current') cls += 'border-abec-navy bg-abec-navy text-white';
-                else if (step.state === 'skipped') cls += 'border-slate-100 bg-slate-50 text-slate-300';
-                else cls += 'border-slate-200 bg-white text-slate-400';
-                return '<li class="' + cls + '">' + esc(step.label) + '</li>';
-              }).join('') +
-            '</ol>' +
-          '</article>'
-        );
-      }).join('');
-    }
+    var rows = (list || []).slice().sort(function (a, b) { return new Date(b.requestDate) - new Date(a.requestDate); });
+    tbody.innerHTML = rows.length ? rows.map(function (r) {
+      return '<tr class="hover:bg-slate-50/80" tabindex="-1" data-request-id="' + esc(r.requestId) + '" data-document-type="' + esc(r.documentType) + '">' +
+        '<td data-label="Document" class="px-6 py-4 text-slate-800">' + esc(r.documentType) + '</td>' +
+        '<td data-label="Requested" class="px-6 py-4 text-slate-600">' + esc(AbecApi.formatDate(r.requestDate)) + '</td>' +
+        '<td data-label="Status" class="px-6 py-4">' + statusBadgeHtml(r.requestStatus) + '</td>' +
+        '<td data-label="Purpose" class="px-6 py-4 text-slate-600">' + esc(purposeDisplay(r)) + '</td></tr>';
+    }).join('') : '<tr><td colspan="4" class="px-6 py-10 text-center text-sm text-slate-500">No document requests yet.</td></tr>';
   }
 
   var notificationTargetApplied = false;
@@ -361,12 +225,12 @@
     if (params.has('requestType')) params = AbecApi.consumePageAction(['requestType']);
     var requestType = (params.get('requestType') || '').trim().toLowerCase();
     if (!requestType) return;
-    var row = Array.from(document.querySelectorAll('#request-tracking-list [data-document-type]')).find(function (el) {
+    var row = Array.from(document.querySelectorAll('#recent-requests-body [data-document-type]')).find(function (el) {
       return (el.getAttribute('data-document-type') || '').trim().toLowerCase() === requestType;
     });
     if (!row) return;
     notificationTargetApplied = true;
-    openStudentDialog('request-tracking-modal');
+    row.focus({ preventScroll: true });
     row.classList.add('abec-notification-highlight');
     row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     window.setTimeout(function () { row.classList.remove('abec-notification-highlight'); }, 5600);
@@ -401,48 +265,6 @@
 
   }
 
-  function openModal(docType) {
-    var modal = document.getElementById('new-request-modal');
-    if (!modal || eligibleDocumentTypes().indexOf(docType) < 0) return;
-    populateDocumentSelect(docType || DOC_OPTIONS[0].value);
-    var purposeEl = document.getElementById('req-purpose');
-    var purposeOtherEl = document.getElementById('req-purpose-other');
-    if (purposeEl) purposeEl.value = 'job';
-    if (purposeOtherEl) purposeOtherEl.value = '';
-    if (window.AbecOtherReason) {
-      AbecOtherReason.bindOtherReason('#req-purpose', '#req-purpose-other-wrap', '#req-purpose-other');
-    }
-    openStudentDialog('new-request-modal');
-  }
-
-  var dialogTrigger = null;
-  var activeDialogId = '';
-
-  function openStudentDialog(id) {
-    var modal = document.getElementById(id);
-    if (!modal) return;
-    if (activeDialogId) closeStudentDialog();
-    dialogTrigger = document.activeElement;
-    activeDialogId = id;
-    modal.classList.remove('hidden');
-    document.body.classList.add('student-dialog-open');
-    var title = modal.querySelector('[tabindex="-1"]');
-    if (title) title.focus();
-  }
-
-  function closeStudentDialog() {
-    var modal = document.getElementById(activeDialogId);
-    if (modal) modal.classList.add('hidden');
-    activeDialogId = '';
-    document.body.classList.remove('student-dialog-open');
-    if (dialogTrigger && dialogTrigger.isConnected) dialogTrigger.focus();
-    dialogTrigger = null;
-  }
-
-  function closeModal() {
-    if (activeDialogId === 'new-request-modal') closeStudentDialog();
-  }
-
   async function refreshStatuses(session, includeProfile) {
     if (includeProfile) {
       var profileRes = await AbecApi.get('/api/student/' + session.userId + '/profile');
@@ -473,115 +295,12 @@
     applyNotificationTarget();
   }
 
-  async function submitRequest(session, form) {
-    var docEl = form.querySelector('#req-document');
-    var purposeEl = form.querySelector('#req-purpose');
-    var purposeOtherEl = form.querySelector('#req-purpose-other');
-    var documentType = (docEl && docEl.value) || '';
-    var purposeKey = (purposeEl && purposeEl.value) || 'other';
-    var reason = PURPOSE_LABELS[purposeKey] || purposeKey || 'Document request';
-    var specificReason = null;
-
-    if (!documentType) {
-      alert('Please select a document type.');
-      return;
-    }
-    if (eligibleDocumentTypes().indexOf(documentType) < 0) {
-      alert('This document has already been released or already has an open request.');
-      return;
-    }
-
-    if (window.AbecOtherReason) {
-      var check = AbecOtherReason.requireIfOther(reason, purposeOtherEl && purposeOtherEl.value, 'specific reason');
-      if (!check.ok) {
-        alert(check.message);
-        if (purposeOtherEl) purposeOtherEl.focus();
-        return;
-      }
-      specificReason = check.specificReason;
-    } else if (String(reason).toLowerCase() === 'other') {
-      var detail = (purposeOtherEl && purposeOtherEl.value || '').trim();
-      if (!detail) {
-        alert('Please enter a specific reason when Other is selected.');
-        return;
-      }
-      specificReason = detail;
-    }
-
-    var payload = {
-      documentType: documentType,
-      reason: reason
-    };
-    if (specificReason) payload.specificReason = specificReason;
-
-    var result = await AbecApi.request('/api/document-requests/student/' + session.userId, { method: 'POST', body: payload, attempts: 1 });
-
-    alert(result.message || (result.success ? 'Request submitted. Status is now Pending.' : 'Unable to submit request.'));
-    if (result.success) {
-      closeModal();
-      form.reset();
-      if (window.AbecOtherReason) {
-        AbecOtherReason.bindOtherReason('#req-purpose', '#req-purpose-other-wrap', '#req-purpose-other');
-      }
-      await refreshStatuses(session, true);
-    }
-  }
-
   document.addEventListener('DOMContentLoaded', function () {
     var path = (window.location.pathname || '').toLowerCase();
     if (path.indexOf('documentrequest') === -1) return;
 
     var session = AbecApi.requireRole('Student');
     if (!session) return;
-
-    var modal = document.getElementById('new-request-modal');
-    var trackingBtn = document.getElementById('btn-view-request-history');
-    var requestBtn = document.getElementById('btn-request-document');
-    if (requestBtn) requestBtn.addEventListener('click', function () { openModal('National Certificate (TESDA)'); });
-    var trackingModal = document.getElementById('request-tracking-modal');
-    var form = document.getElementById('new-request-form');
-
-    if (trackingBtn) trackingBtn.addEventListener('click', function () {
-      openStudentDialog('request-tracking-modal');
-    });
-    if (trackingModal) trackingModal.querySelectorAll('[data-close-tracking]').forEach(function (el) {
-      el.addEventListener('click', closeStudentDialog);
-    });
-    if (modal) {
-      modal.querySelectorAll('[data-close-modal]').forEach(function (el) {
-        el.addEventListener('click', closeModal);
-      });
-    }
-    document.addEventListener('keydown', function (e) {
-      if (!activeDialogId) return;
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        closeStudentDialog();
-      }
-      if (e.key !== 'Tab') return;
-      var dialog = document.getElementById(activeDialogId);
-      var focusable = Array.from(dialog.querySelectorAll('button, a[href], input, select, textarea, [tabindex="0"]')).filter(function (el) {
-        return !el.disabled && el.getClientRects().length;
-      });
-      if (!focusable.length) { e.preventDefault(); return; }
-      var first = focusable[0];
-      var last = focusable[focusable.length - 1];
-      if (e.shiftKey && (document.activeElement === first || focusable.indexOf(document.activeElement) < 0)) {
-        e.preventDefault(); last.focus();
-      } else if (!e.shiftKey && (document.activeElement === last || focusable.indexOf(document.activeElement) < 0)) {
-        e.preventDefault(); first.focus();
-      }
-    });
-    if (form) {
-      form.addEventListener('submit', async function (e) {
-        e.preventDefault();
-        await submitRequest(session, form);
-      });
-    }
-
-    if (window.AbecOtherReason) {
-      AbecOtherReason.bindOtherReason('#req-purpose', '#req-purpose-other-wrap', '#req-purpose-other');
-    }
 
     refreshStatuses(session, true);
     // Keep student statuses in sync with admin DB updates.

@@ -751,7 +751,7 @@
     }
   }
 </script>
-<link href="../../wwwroot/css/abec-responsive.css?v=20261114registration2" rel="stylesheet"/>
+<link href="../../wwwroot/css/abec-responsive.css?v=20261114interface1" rel="stylesheet"/>
 </head>
 <body class="abec-public-surface abec-landing-page font-sans text-slate-800">
 <!-- BEGIN: MainHeader -->
@@ -1325,7 +1325,7 @@ Log in
             </div>
             <div>
               <label class="block text-xs font-medium text-slate-700 mb-1" for="enroll-age">Age</label>
-              <input class="w-full enroll-input rounded-lg py-2.5 px-3 text-sm bg-slate-100" id="enroll-age" name="age" type="text" readonly tabindex="-1" placeholder="Calculated from date of birth">
+              <input class="w-full enroll-input rounded-lg py-2.5 px-3 text-sm bg-slate-100" id="enroll-age" name="age" type="text" readonly tabindex="-1">
               <p class="enroll-field-error" id="enroll-age-error"></p>
             </div>
             <div class="sm:col-span-2">
@@ -1471,6 +1471,7 @@ Log in
             <p class="text-[11px] text-slate-500 mt-1">PDF only · Max 100 MB · Transcript of Records, Form 138, Honorable Dismissal, Certificate of Good Moral Character, and Birth Certificate (PSA)</p>
           </div>
           <input type="file" id="enroll-credential-input" class="hidden" accept="application/pdf,.pdf" multiple>
+          <p id="enroll-credential-error" class="enroll-field-error" role="alert" hidden></p>
           <div id="enroll-credential-list" class="mt-3 space-y-2"></div>
           <div class="mt-6 border-t border-slate-200 pt-5">
             <p class="enroll-section-label">Valid ID</p>
@@ -1659,7 +1660,7 @@ Log in
 <script src="../../wwwroot/js/abec-enroll-modal.js?v=20261112security1"></script>
 <script src="../../wwwroot/js/abec-api.js?v=20261112features1"></script>
 <script src="../../wwwroot/js/abec-landing.js?v=20261114registration2"></script>
-<script src="../../wwwroot/js/abec-enroll-wizard.js?v=20261114registration2"></script>
+<script src="../../wwwroot/js/abec-enroll-wizard.js?v=20261114interface1"></script>
 <!-- END: EnrollModal --><section id="courses" class="bg-white abec-section">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10">
     <div class="text-center mb-12">

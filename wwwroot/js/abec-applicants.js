@@ -16,7 +16,7 @@
   function displayStatus(app) {
     var s = app.applicationStatus || 'Pending';
     if (s === 'Confirmed' || s === 'Confirmed Slot' || app.isSlotConfirmed) {
-      return 'Confirmed Slot';
+      return 'Confirmed';
     }
     if (s === 'Declined' || (s === 'Rejected' && (app.declinedAt || app.slotResponse === 'Declined'))) {
       return 'Declined by Applicant';

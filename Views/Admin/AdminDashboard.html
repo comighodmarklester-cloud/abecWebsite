@@ -315,7 +315,7 @@
     }
     .dash-pair .dashboard-applicant-row .min-w-0 {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
+      grid-template-columns: minmax(0, 1fr);
       column-gap: 0.75rem;
       align-items: baseline;
     }
@@ -579,7 +579,7 @@
       }
     }
   </style>
-<link href="../../wwwroot/css/abec-responsive.css?v=20261114registration2" rel="stylesheet"/>
+<link href="../../wwwroot/css/abec-responsive.css?v=20261114interface1" rel="stylesheet"/>
 </head>
 <body class="abec-app dash-look bg-surface font-sans text-slate-800">
 <div class="flex min-h-screen">
@@ -710,7 +710,6 @@
     <span id="dashboard-active-batch" class="dash-active-batch" role="status" aria-live="polite" hidden></span>
   </div>
   <h2 id="dash-greeting-name">Admin</h2>
-  <p class="dash-hero-sub">Here's what's happening with ABEC today.</p>
 </section>
 <!-- BEGIN: Dashboard statistics -->
 <section class="dash-stat-grid" data-purpose="stats-grid" aria-label="Dashboard statistics">
@@ -768,7 +767,7 @@
 <script src="../../wwwroot/js/abec-api.js?v=20261112features1"></script>
 <script src="../../wwwroot/js/abec-admin.js?v=20261108nobatchbanner1"></script>
 <p id="abec-system-assistant" class="abec-system-assistant" role="status" hidden><span id="abec-assistant-line">Hi Admin!</span></p>
-<script src="../../wwwroot/js/abec-dashboard.js?v=20261108activebadge1"></script>
+<script src="../../wwwroot/js/abec-dashboard.js?v=20261114interface1"></script>
 <script>
   document.addEventListener('DOMContentLoaded', function () {
     var greet = document.getElementById('dash-greeting');

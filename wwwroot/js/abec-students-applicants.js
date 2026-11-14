@@ -38,7 +38,7 @@
     if (key === 'approved') return { label: status, cls: 'bg-emerald-50 text-emerald-700' };
     if (key === 'rejected' || key === 'declined') return { label: status, cls: 'bg-rose-50 text-rose-700' };
     if (key === 'waitlisted') return { label: status, cls: 'bg-violet-50 text-violet-700' };
-    if (record.studentId || key.indexOf('confirm') >= 0) return { label: record.studentId ? 'Enrolled' : status, cls: 'bg-emerald-50 text-emerald-700' };
+    if (record.studentId || key.indexOf('confirm') >= 0) return { label: record.studentId ? 'Enrolled' : 'Confirmed', cls: 'bg-emerald-50 text-emerald-700' };
     return { label: status || '—', cls: 'bg-slate-100 text-slate-600' };
   }
 

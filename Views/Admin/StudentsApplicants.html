@@ -431,7 +431,7 @@
   }
 
 </style>
-<link href="../../wwwroot/css/abec-responsive.css?v=20261114registration2" rel="stylesheet"/>
+<link href="../../wwwroot/css/abec-responsive.css?v=20261114interface1" rel="stylesheet"/>
 </head>
 <body class="abec-app records-page bg-surface font-sans text-slate-800">
 <div class="flex min-h-screen">
@@ -643,7 +643,7 @@
   <div id="bulk-actions" class="hidden flex flex-wrap items-center gap-2">
     <button type="button" data-bulk="approve" onclick="bulkUpdateStatus('approved')" class="bulk-action-btn hidden text-xs font-bold bg-abec-navy hover:bg-[#2563EB] text-white px-4 py-2 rounded-md transition-colors">Approve Selected</button>
     <button type="button" data-bulk="waitlist" onclick="bulkUpdateStatus('waitlisted')" class="bulk-action-btn hidden text-xs font-bold bg-abec-navy hover:bg-[#2563EB] text-white px-4 py-2 rounded-md transition-colors">Add to Waitlisted</button>
-    <button type="button" data-bulk="add-slot" onclick="bulkAddToSlot()" class="bulk-action-btn hidden text-xs font-bold bg-abec-navy hover:bg-[#2563EB] text-white px-4 py-2 rounded-md transition-colors">Add to Slot</button>
+    <button type="button" data-bulk="add-slot" onclick="bulkAddToSlot()" class="bulk-action-btn hidden text-xs font-bold bg-abec-navy hover:bg-[#2563EB] text-white px-4 py-2 rounded-md transition-colors">Confirm</button>
     <button type="button" data-bulk="reject" onclick="bulkUpdateStatus('rejected')" class="bulk-action-btn hidden text-xs font-bold bg-red-700 hover:bg-red-800 text-white px-4 py-2 rounded-md transition-colors">Reject Selected</button>
     <button type="button" data-bulk="restore" onclick="bulkUpdateStatus('pending')" class="bulk-action-btn hidden text-xs font-bold bg-abec-navy hover:bg-[#2563EB] text-white px-4 py-2 rounded-md transition-colors">Restore to Pending</button>
   </div>
@@ -713,7 +713,7 @@
           Approve Applicant
         </button>
         <button type="button" data-action="waitlist" class="modal-action-btn hidden">Add to Waitlisted</button>
-        <button type="button" data-action="add-slot" class="modal-action-btn hidden">Add to Slot</button>
+        <button type="button" data-action="add-slot" class="modal-action-btn hidden">Confirm</button>
         <button type="button" data-action="reject" class="modal-action-btn hidden">Reject Applicant</button>
         <button type="button" data-action="restore" onclick="restoreToPending()" class="modal-action-btn hidden">Restore to Pending</button>
       </div>
@@ -1032,10 +1032,10 @@
 <script src="../../wwwroot/js/sidebar-auto-hide.js?v=20261112features1"></script>
 <script src="../../wwwroot/js/abec-api.js?v=20261112features1"></script>
 <script src="../../wwwroot/js/abec-admin.js?v=20261108nobatchbanner1"></script>
-<script src="../../wwwroot/js/abec-profile-details.js?v=20261114registration2"></script>
-<script src="../../wwwroot/js/abec-applicants.js?v=20261112features1"></script>
+<script src="../../wwwroot/js/abec-profile-details.js?v=20261114interface1"></script>
+<script src="../../wwwroot/js/abec-applicants.js?v=20261114interface1"></script>
 <script src="../../wwwroot/js/abec-archive-dialog.js?v=20261110archivereasons1"></script>
-<script src="../../wwwroot/js/abec-students-applicants.js?v=20261112onetime1"></script>
-<script src="../../wwwroot/js/abec-add-applicant.js?v=20261114registration2"></script>
+<script src="../../wwwroot/js/abec-students-applicants.js?v=20261114interface1"></script>
+<script src="../../wwwroot/js/abec-add-applicant.js?v=20261114interface1"></script>
 </body>
 </html>

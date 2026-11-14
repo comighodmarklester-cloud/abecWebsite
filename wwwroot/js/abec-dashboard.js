@@ -109,7 +109,7 @@
       var id = a.applicantId;
       var name = a.fullName || ((a.firstName || '') + ' ' + (a.lastName || '')).trim() || '—';
       var course = a.courseName || '—';
-      var status = a.applicationStatus || '—';
+      var status = /^(confirmed|confirmed slot)$/i.test(a.applicationStatus || '') ? 'Confirmed' : (a.applicationStatus || '—');
       var initials = AbecApi.initials(name);
       return (
         '<button type="button" class="dashboard-applicant-row w-full text-left px-5 py-3 flex items-center gap-3 hover:bg-slate-50 transition-colors group" ' +
@@ -118,7 +118,6 @@
           '<span class="min-w-0 flex-1">' +
             '<span class="block text-sm font-semibold text-slate-800 truncate group-hover:text-abec-blue">' + esc(name) + '</span>' +
             '<span class="block text-[12px] text-slate-600 mt-0.5 leading-snug">' + esc(courseLabel(course)) + '</span>' +
-            '<span class="block text-[11px] text-slate-400 mt-0.5">' + esc(AbecApi.formatDate(a.applicationDate)) + '</span>' +
           '</span>' +
           '<span class="inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 ' + statusBadge(status) + '">' + esc(status) + '</span>' +
           '<svg class="w-4 h-4 text-slate-300 group-hover:text-abec-blue shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>' +

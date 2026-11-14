@@ -131,6 +131,8 @@
     if (window.AbecStudentBatch) window.AbecStudentBatch.apply(profile);
     var name = profile.fullName || session.displayName || 'Student';
     setText('[data-bind="student-name"]', name);
+    var welcome = document.getElementById('welcome-name');
+    if (welcome) welcome.textContent = profile.lastName || '';
     var nameEl = document.getElementById('sidebar-name');
     if (nameEl) nameEl.textContent = name;
     var initialsEl = document.getElementById('sidebar-initials');
@@ -453,9 +455,7 @@
     }
 
     if (courseEl) {
-      var batch = first.batchName || (profile && profile.batchName) || '';
-      courseEl.textContent = courseLabel(first.courseName || (profile && profile.courseName), 'Course Schedule') +
-        (batch ? ' · ' + batch : '');
+      courseEl.textContent = courseLabel(first.courseName || (profile && profile.courseName), 'Course Schedule');
     }
     if (badge) {
       badge.textContent = first.status || 'Active';
@@ -517,7 +517,8 @@
     var targetKey = toDateKey(targetDate);
     var target = classSchedules.find(function (s) { return toDateKey(s.scheduleDate) === targetKey; });
     if (!target) return;
-    selectedDayKey = targetKey;
+    // Deep links highlight the matching session without filtering out other sessions.
+    selectedDayKey = '';
     renderClassScheduleTable();
     renderDayView();
     renderClassCalendar();
@@ -535,7 +536,7 @@
 
     var items = (list || []).filter(function (n) {
       var text = ((n.title || '') + ' ' + (n.message || '')).toLowerCase();
-      return text.indexOf('schedule') !== -1 || text.indexOf('class') !== -1 || text.indexOf('trainer') !== -1 || text.indexOf('instructor') !== -1 || text.indexOf('room') !== -1;
+      return /schedule|class|trainer|instructor|room|announcement|important|assessment|training/.test(text) && !n.requestId && !n.courseDocumentId;
     }).sort(function (a, b) {
       return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
     });

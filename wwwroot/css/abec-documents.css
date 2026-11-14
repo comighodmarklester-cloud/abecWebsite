@@ -207,7 +207,8 @@
     .doc-file-actions { margin-top: 0.15rem; }
   }
   #doc-course-release[hidden] { display: none !important; }
-  #doc-course-wrap { display: none !important; }
+  #doc-course-wrap { display: block; }
+  .batch-document-field[hidden] { display: none !important; }
   .doc-enrolled-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.45rem; margin-bottom: 0.55rem; }
   .doc-course-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; }
   .doc-enrolled-controls { display: flex; flex-wrap: nowrap; align-items: center; gap: 0.35rem; margin-left: auto; }

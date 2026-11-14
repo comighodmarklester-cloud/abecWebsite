@@ -388,7 +388,7 @@
     var select = document.getElementById('doc-course');
     if (!select) return;
     var current = state.filters.course || select.value;
-    select.innerHTML = '<option value="">All courses</option>' + state.courses.map(function (course) {
+    select.innerHTML = '<option value="">All Courses</option>' + state.courses.map(function (course) {
       return '<option value="' + esc(course.courseId) + '">' + esc(courseLabel(course.courseName)) + '</option>';
     }).join('');
     select.value = current;
@@ -629,13 +629,11 @@
     var courses = state.courses.slice().sort(function (a, b) {
       return courseOrder(a.courseName) - courseOrder(b.courseName) || courseLabel(a.courseName).localeCompare(courseLabel(b.courseName));
     });
-    var enrollment = sectionCourseCounts();
     var allActive = !state.filters.course;
-    filters.innerHTML = '<button type="button" class="doc-course-btn' + (allActive ? ' is-active' : '') + '" data-course-filter="" aria-pressed="' + (allActive ? 'true' : 'false') + '">All Courses (' + enrollment.total + ')</button>' +
+    filters.innerHTML = '<button type="button" class="doc-course-btn' + (allActive ? ' is-active' : '') + '" data-course-filter="" aria-pressed="' + (allActive ? 'true' : 'false') + '">All Courses</button>' +
       courses.map(function (course) {
       var active = String(state.filters.course) === String(course.courseId);
-      var count = enrollment.counts[String(course.courseId)] || 0;
-      return '<button type="button" class="doc-course-btn' + (active ? ' is-active' : '') + '" data-course-filter="' + esc(course.courseId) + '" aria-pressed="' + (active ? 'true' : 'false') + '">' + esc(courseLabel(course.courseName)) + ' (' + count + ')</button>';
+      return '<button type="button" class="doc-course-btn' + (active ? ' is-active' : '') + '" data-course-filter="' + esc(course.courseId) + '" aria-pressed="' + (active ? 'true' : 'false') + '">' + esc(courseLabel(course.courseName)) + '</button>';
     }).join('');
 
   }

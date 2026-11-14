@@ -15,8 +15,12 @@
       var main = document.querySelector('main.abec-main');
       if (!main) return;
       var status = document.getElementById('student-batch-status');
-      if (!status) { status = document.createElement('section'); status.id = 'student-batch-status'; status.setAttribute('role','status'); main.prepend(status); }
-      status.textContent = 'Batch: ' + (profile.batchName || 'Unassigned') + (completed ? ' — Your batch has completed its training and assessment period. You can view and download your available documents on the Documents page.' : '');
+      if (document.body.hasAttribute('data-abec-hide-batch-banner')) {
+        if (status) status.remove();
+      } else {
+        if (!status) { status = document.createElement('section'); status.id = 'student-batch-status'; status.setAttribute('role','status'); main.prepend(status); }
+        status.textContent = 'Batch: ' + (profile.batchName || 'Unassigned') + (completed ? ' — Your batch has completed its training and assessment period. You can view and download your available documents on the Documents page.' : '');
+      }
       if (completed && location.pathname.toLowerCase().indexOf('classschedule') >= 0) location.replace('/Views/Student/StudentDashboard.html');
     }
   };

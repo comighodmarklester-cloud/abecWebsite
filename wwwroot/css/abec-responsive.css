@@ -1,5 +1,6 @@
 /* Requested course tools and mobile overrides, loaded after each page's styles. */
 .barangay-input { position: relative; }
+body.settings-page .abec-back-btn, body.settings-desk .abec-back-btn { display: inline-flex; align-items: center; padding: .5rem .85rem; border: 1px solid #cbd5e1; border-radius: .375rem; background: #fff; color: #0b2747; font-size: .8125rem; font-weight: 600; box-shadow: none; text-decoration: none; }
 .barangay-input > span { position: absolute; left: .8rem; top: 50%; transform: translateY(-50%); font-size: .75rem; line-height: 1.25rem; color: #475569; pointer-events: none; z-index: 1; }
 .barangay-input input { padding-left: 3.7rem !important; }
 .review-history-link { align-self: flex-start; color: #2563eb; font-size: .875rem; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }

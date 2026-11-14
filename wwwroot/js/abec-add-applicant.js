@@ -143,7 +143,7 @@
     };
 
     await loadScript('../../wwwroot/js/abec-landing.js?v=20261114registration2');
-    await loadScript('../../wwwroot/js/abec-enroll-wizard.js?v=20261114registration2');
+    await loadScript('../../wwwroot/js/abec-enroll-wizard.js?v=20261114interface1');
     if (window.AbecEnrollWizard) {
       window.AbecEnrollWizard.onSubmitted = function (result) {
         refreshAfterClose = true;

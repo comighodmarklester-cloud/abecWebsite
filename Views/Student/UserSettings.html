@@ -50,14 +50,15 @@
     body.settings-page .settings-grid { grid-template-columns: 1fr; }
   }
 </style>
-<link href="../../wwwroot/css/abec-responsive.css?v=20261114registration2" rel="stylesheet"/>
+<link href="../../wwwroot/css/abec-responsive.css?v=20261114interface1" rel="stylesheet"/>
 <link rel="stylesheet" href="../../wwwroot/css/abec-student-refinements.css?v=20261114updates1">
 </head>
-<body class="abec-app student-module student-desk settings-page bg-surface font-sans text-slate-800" data-abec-shell="secondary" data-abec-back="StudentDashboard.html" data-abec-back-label="Back to Dashboard">
+<body data-abec-hide-batch-banner class="abec-app student-module student-desk settings-page bg-surface font-sans text-slate-800" data-abec-shell="secondary" data-abec-back="StudentDashboard.html" data-abec-back-label="Back">
 
 <div class="student-frame">
 
 <main class="abec-main student-content">
+  <a href="StudentDashboard.html" data-abec-back-btn="true" class="abec-back-btn">Back</a>
   <header class="mb-2 flex items-center justify-between gap-3">
     <h2 class="text-lg font-bold text-abec-navy tracking-tight">User Settings</h2>
     <p id="set-account" class="text-xs font-semibold text-slate-500"></p>
@@ -168,8 +169,8 @@
 </div>
 
 <script src="../../wwwroot/js/abec-api.js?v=20261112features1"></script>
-<script src="../../wwwroot/js/abec-student-shell.js?v=20261107batchsdd1"></script>
-<script src="../../wwwroot/js/abec-student.js?v=20261114updates1"></script>
+<script src="../../wwwroot/js/abec-student-shell.js?v=20261114interface1"></script>
+<script src="../../wwwroot/js/abec-student.js?v=20261114interface1"></script>
 <script src="../../wwwroot/js/abec-student-settings.js?v=20261108messages1"></script>
 </body>
 </html>

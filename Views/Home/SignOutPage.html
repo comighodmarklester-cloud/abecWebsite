@@ -20,7 +20,7 @@
     }
   }
 </script>
-<link href="../../wwwroot/css/abec-responsive.css?v=20261114registration2" rel="stylesheet"/>
+<link href="../../wwwroot/css/abec-responsive.css?v=20261114interface1" rel="stylesheet"/>
 </head>
 <body class="abec-public-surface min-h-screen flex items-center justify-center p-4">
   <div class="w-full max-w-md abec-card abec-card-static px-8 py-10 text-center">
@@ -31,26 +31,26 @@
     </div>
 
     <h1 class="text-2xl font-bold text-abec-navy tracking-tight leading-snug mb-3">
-      You have been successfully signed out
+      Sign out of ABEC?
     </h1>
     <p class="text-sm text-slate-500 leading-relaxed mb-8">
-      Thank you for using the ABEC Training &amp; Assessment Center portal. Your session has been ended securely to protect your data.
+      Select Return to Log In to end your session, or Cancel to return to your dashboard.
     </p>
 
     <div class="space-y-3 mb-8">
-      <a id="return-login" href="LoginPage.html" class="abec-btn abec-btn-primary w-full">
-        Return to Login
+      <button type="button" id="return-login" class="abec-btn abec-btn-primary w-full">
+        Return to Log In
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
         </svg>
-      </a>
+      </button>
       <a href="LandingPage.html" class="abec-btn abec-btn-secondary w-full">
         Home
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
         </svg>
       </a>
-      <button type="button" onclick="cancelSignOut()" class="abec-btn abec-btn-ghost w-full">
+      <button type="button" id="cancel-signout" onclick="cancelSignOut()" class="abec-btn abec-btn-ghost w-full">
         Cancel
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M6 18L18 6M6 6l12 12"></path>
@@ -58,44 +58,11 @@
       </button>
     </div>
 
-    <div class="border-t border-slate-100 pt-5 flex items-center justify-center gap-2 text-xs text-slate-400">
-      <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
-      </svg>
-      <span>Session terminated: <span id="session-time">—</span></span>
-    </div>
+    <p id="signout-message" class="mt-4 text-sm text-red-600" role="alert" hidden></p>
+
   </div>
 
-  <script>
-    (function () {
-      var now = new Date();
-      var time = now.toLocaleTimeString('en-US', {
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: true
-      });
-      document.getElementById('session-time').textContent = time;
-    })();
-
-    function cancelSignOut() {
-      if (window.history.length > 1) {
-        window.history.back();
-        return;
-      }
-      window.location.href = '../Admin/AdminDashboard.html';
-    }
-
-    var signOutRole = '';
-    try {
-      var signedOutSession = JSON.parse(sessionStorage.getItem('abec-session') || 'null');
-      signOutRole = signedOutSession && signedOutSession.role || sessionStorage.getItem('abec-signout-role') || '';
-      if (signOutRole === 'Admin' || signOutRole === 'Student') sessionStorage.setItem('abec-signout-role', signOutRole);
-      sessionStorage.removeItem('abec-session');
-    } catch (e) { /* ignore */ }
-    document.getElementById('return-login').href = signOutRole === 'Admin' ? 'AdminLoginPage.html' : 'LoginPage.html';
-  </script>
 <script src="../../wwwroot/js/abec-api.js?v=20261112features1"></script>
-<script>AbecApi.post('/api/auth/student-logout', {});</script>
+<script src="../../wwwroot/js/abec-signout.js?v=20261114interface1"></script>
 </body>
 </html>

@@ -107,7 +107,7 @@
 
   function applicationLabel(applicant, record) {
     var key = applicationKey(applicant, record);
-    if (key === 'confirmed') return 'Confirmed Slot';
+    if (key === 'confirmed') return 'Confirmed';
     if (key === 'declined') return 'Declined by Applicant';
     if (key === 'expired') return 'Response Expired';
     var raw = text((applicant && applicant.applicationStatus) || (record && record.applicationStatus));

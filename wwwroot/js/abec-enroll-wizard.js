@@ -265,14 +265,29 @@
   }
 
   function inferDocType(fileName) {
-    var stem = String(fileName || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-    if (!stem) return '';
-    if (stem === 'tor' || stem.indexOf('transcript') >= 0) return 'TOR';
-    if (stem === 'form138' || stem.indexOf('form138') >= 0) return 'Form138';
-    if (stem.indexOf('honorable') >= 0 || stem.indexOf('dismissal') >= 0) return 'HonorableDismissal';
-    if (stem.indexOf('goodmoral') >= 0 || stem.indexOf('moralcharacter') >= 0) return 'GoodMoral';
-    if (stem.indexOf('birthcertificate') >= 0 || stem === 'psa') return 'BirthCertificate';
+    var stem = String(fileName || '').replace(/\.[^.]+$/, '').trim().replace(/\s+/g, ' ').toLowerCase();
+    var aliases = {
+      TOR: ['Transcript of Records (TOR)', 'Transcript of Records', 'TOR'],
+      Form138: ['Form 138', 'Form138'],
+      HonorableDismissal: ['Honorable Dismissal', 'HonorableDismissal', 'HD'],
+      GoodMoral: ['Certificate of Good Moral Character', 'Certificate of Good Moral', 'Good Moral Character', 'Good Moral', 'GoodMoral', 'GMC', 'CGMC', 'COGMC'],
+      BirthCertificate: ['Birth Certificate (PSA)', 'Birth Certificate', 'PSA Birth Certificate', 'BirthCertificate', 'PSA']
+    };
+    var matched = DOC_TYPES.find(function (type) {
+      return aliases[type.id].some(function (name) { return name.toLowerCase() === stem; });
+    });
+    if (matched) return matched.id;
     return '';
+  }
+
+  function credentialError(message) {
+    var error = $('enroll-credential-error');
+    if (!error) return;
+    error.textContent = message || '';
+    error.hidden = !message;
+    error.classList.toggle('is-visible', !!message);
+    var input = $('enroll-credential-input');
+    if (input) input.setAttribute('aria-invalid', message ? 'true' : 'false');
   }
 
   function missingDocTypes() {
@@ -284,6 +299,7 @@
   function addCredentialFiles(fileList) {
     var files = Array.prototype.slice.call(fileList || []);
     if (!files.length) return;
+    credentialError('');
     state.documentsTouched = true;
     renderCredentialList();
     var missing = missingDocTypes();
@@ -301,20 +317,25 @@
       if (err) { showFormMessage(err, 'error'); return; }
       accepted.push(files[i]);
     }
-    var assigned = {};
-    var planned = accepted.map(function (file) {
-      var guessed = inferDocType(file.name);
-      var typeId = guessed && missing.some(function (type) { return type.id === guessed; }) && !assigned[guessed] ? guessed : '';
-      if (typeId) assigned[typeId] = true;
-      return { file: file, typeId: typeId };
-    });
-    planned.forEach(function (item) {
-      if (item.typeId) return;
-      var next = missing.filter(function (type) { return !assigned[type.id]; })[0];
-      if (!next) return;
-      item.typeId = next.id;
-      assigned[next.id] = true;
-    });
+    var assigned = {}, planned = [];
+    for (var j = 0; j < accepted.length; j++) {
+      var typeId = inferDocType(accepted[j].name);
+      if (!typeId) {
+        var hint = accepted[j].name.toLowerCase().replace(/[^a-z0-9]/g, '');
+        var suggestedId = /tor|transcript/.test(hint) ? 'TOR' : /form138/.test(hint) ? 'Form138' :
+          /honorable|dismissal/.test(hint) ? 'HonorableDismissal' : /moral/.test(hint) ? 'GoodMoral' : /birth|psa/.test(hint) ? 'BirthCertificate' : missing[0].id;
+        var suggested = docType(suggestedId);
+        var title = suggested.id === 'TOR' ? 'Transcript of Records' : suggested.label;
+        credentialError('Invalid filename for ' + title + '. Rename the file to ‘' + suggested.label + '’ and upload it again.');
+        return;
+      }
+      if (assigned[typeId] || !missing.some(function (type) { return type.id === typeId; })) {
+        credentialError(docLabel(typeId) + ' is already selected. Remove it before uploading a replacement.');
+        return;
+      }
+      assigned[typeId] = true;
+      planned.push({ file: accepted[j], typeId: typeId });
+    }
     planned.forEach(function (item) {
       if (!item.typeId) return;
       state.credentialFiles = state.credentialFiles.filter(function (existing) { return existing.type !== item.typeId; });
@@ -649,6 +670,7 @@
   }
 
   function resetWizard() {
+    credentialError('');
     state.credentialFiles = [];
     state.followUps = {};
     state.documentsTouched = false;
