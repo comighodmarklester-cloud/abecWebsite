@@ -67,18 +67,13 @@ public static partial class DbSeeder
 
         // Admin accounts are managed outside self-registration (no public create-admin flow).
 
-        if (!await db.Batches.AnyAsync(cancellationToken))
-        {
-            var year = DateTime.Now.Year;
-            db.Batches.Add(new Batch
-            {
-                BatchName = $"Batch {year}-A",
-                StartDate = new DateTime(year, 1, 1),
-                EndDate = new DateTime(year, 12, 31),
-                Status = SystemConstants.BatchStatuses.Active
-            });
-            await db.SaveChangesAsync(cancellationToken);
-        }
+        // Batches are created through Batch Management, never as sample startup data.
+        var backupRoot = Path.Combine(scope.ServiceProvider.GetService<IWebHostEnvironment>()?.ContentRootPath
+            ?? AppContext.BaseDirectory, "App_Data", "database-backups", "legacy-seed-batch");
+        var cleanup = await LegacySeedBatchCleanup.ApplyAsync(db, backupRoot, cancellationToken);
+        if (cleanup != "Absent")
+            scope.ServiceProvider.GetService<ILoggerFactory>()?.CreateLogger("LegacySeedBatchCleanup")
+                .LogInformation("Legacy seed batch cleanup: {Outcome}", cleanup);
 
         await ApplyOfficialCourseProgramsAsync(db, cancellationToken);
         await EnsureTrainingRoomsAsync(db, cancellationToken);

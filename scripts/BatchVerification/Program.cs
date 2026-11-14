@@ -103,6 +103,11 @@ try
  var originalPin = $"ABECHN{oldApplicant.Birthdate.Day:00}89{oldApplicant.ApplicationDate.Day:00}";
  var oldStudent = new Student { ApplicantId = oldApplicant.ApplicantId, BatchId = oldId, SecurityPin = originalPin, AccountStatus = "Active", CreatedAt = DateTime.Now };
  db.Students.Add(oldStudent); await db.SaveChangesAsync();
+ if (args.Contains("--legacy-seed-batch-only"))
+ {
+  await LegacySeedBatchChecks.Run(db, oldApplicant, env);
+  return;
+ }
  if (args.Contains("--strict-security-only"))
  {
   await StrictSecurityChecks.Run(db, oldApplicant, oldStudent, admin, env);

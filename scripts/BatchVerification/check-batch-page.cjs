@@ -15,7 +15,8 @@ for (const file of fs.readdirSync('Views/Admin').filter(f => f.endsWith('.html')
   const links = [...sidebar.matchAll(/<a\b[^>]*href="([^"]+)"/g)].map(match => match[1]);
   check(links.indexOf('BatchManagement.html') === links.indexOf('DocumentManagement.html') + 1, file + ' places Batch Management immediately after Document Management');
 }
-check(/abec-nav-link-active" aria-current="page" href="BatchManagement.html"/.test(batchHtml), 'new page marks its own sidebar entry active');
+const activeBatchLink = batchHtml.match(/<a\b[^>]*href="BatchManagement.html"[^>]*>/)?.[0] || '';
+check(/\babec-nav-link-active\b/.test(activeBatchLink) && /aria-current="page"/.test(activeBatchLink), 'new page marks its own sidebar entry active');
 check(!dashboardHtml.includes('data-purpose="current-active-batch"') && !dashboardHtml.includes('id="modal-'), 'dashboard no longer owns batch controls or dialogs');
 check(batchHtml.includes('abec-batches.js?') && !batchHtml.includes('abec-dashboard.js'), 'batch page loads its dedicated controller');
 check(!batchHtml.includes('id="btn-complete-batch"') && !batchHtml.includes('>Mark as Complete</button>'), 'Mark as Complete button is removed');
