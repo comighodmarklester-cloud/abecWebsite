@@ -58,6 +58,7 @@ public interface ICourseService
 
 public interface IActivationService
 {
+    Task<ApiResponse<SecurityPinDto>> GetSecurityPinAsync(int studentId, CancellationToken cancellationToken = default);
     Task<ApiResponse<ActivationSummaryDto>> GetSummaryAsync(CancellationToken cancellationToken = default, int? batchId = null);
     Task<ApiResponse<IReadOnlyList<StudentDto>>> GetAccountsAsync(string? status = null, int? courseId = null, string? search = null, CancellationToken cancellationToken = default, int? batchId = null);
     Task<ApiResponse<StudentDto>> GeneratePinAsync(int studentId, CancellationToken cancellationToken = default, int? expectedPinVersion = null, bool onlyLegacy = false);

@@ -2,6 +2,8 @@ using ABEC_System.Constants;
 
 namespace ABEC_System.DTOs;
 
+public sealed record SecurityPinDto(int StudentId, string SecurityPin);
+
 public class DashboardStatsDto
 {
     public int TotalApplicants { get; set; }

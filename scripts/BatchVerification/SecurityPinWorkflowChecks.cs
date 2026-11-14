@@ -118,12 +118,20 @@ internal static class SecurityPinWorkflowChecks
         originalStudent.AccountStatus = "Inactive"; await db.SaveChangesAsync();
         Check(!(await activation.GeneratePinAsync(originalStudent.StudentId)).Success && originalStudent.SecurityPin == originalPin,
             "Archived students retain their PIN and cannot receive an unauthorized archive reset.");
+        Check(!(await activation.GetSecurityPinAsync(originalStudent.StudentId)).Success,
+            "Archived accounts cannot reveal their saved PIN.");
+        originalStudent.AccountStatus = "Active"; await db.SaveChangesAsync();
+        Check(!(await activation.GetSecurityPinAsync(originalStudent.StudentId)).Success,
+            "An archive record prevents PIN viewing even if account status is inconsistent.");
+        originalStudent.AccountStatus = "Inactive"; await db.SaveChangesAsync();
         Check(!(await new AuthService(db).StudentLoginAsync(new() { Email = original.Email, SecurityPin = originalPin })).Success,
             "Archived inactive accounts remain unable to sign in.");
         Check((await activation.ReactivateAsync(originalStudent.StudentId)).Success && originalStudent.SecurityPin == originalPin,
             "Authorized reactivation preserves the legacy PIN and existing student record.");
         Check((await new AuthService(db).StudentLoginAsync(new() { Email = original.Email, SecurityPin = originalPin })).Success,
             "Reactivated legacy account remains accessible.");
+        Check((await activation.GetSecurityPinAsync(originalStudent.StudentId)).Data?.SecurityPin == originalPin,
+            "Admin viewing returns the actual saved legacy credential without converting it.");
 
         foreach (var cancel in new[] { false, true })
         {

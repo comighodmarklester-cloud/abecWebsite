@@ -122,6 +122,22 @@ public class ActivationService : IActivationService
         return ApiResponse<IReadOnlyList<StudentDto>>.Ok(list.Select(s => Map(s, archivedSet)).ToList());
     }
 
+    public async Task<ApiResponse<SecurityPinDto>> GetSecurityPinAsync(int studentId, CancellationToken cancellationToken = default)
+    {
+        var student = await _db.Students.AsNoTracking()
+            .Where(s => s.StudentId == studentId)
+            .Select(s => new { s.StudentId, s.AccountStatus, s.SecurityPin })
+            .SingleOrDefaultAsync(cancellationToken);
+        if (student is null)
+            return ApiResponse<SecurityPinDto>.Fail("Student account not found.");
+        if (student.AccountStatus != SystemConstants.AccountStatuses.Active || await IsArchivedAsync(studentId, cancellationToken))
+            return ApiResponse<SecurityPinDto>.Fail("Security PIN viewing is available for active student accounts only.");
+        if (string.IsNullOrWhiteSpace(student.SecurityPin))
+            return ApiResponse<SecurityPinDto>.Fail("Security PIN has not been generated yet.");
+        // Reading a credential never issues or changes one, including legacy PINs.
+        return ApiResponse<SecurityPinDto>.Ok(new(student.StudentId, student.SecurityPin));
+    }
+
     public async Task<ApiResponse<StudentDto>> GeneratePinAsync(int studentId, CancellationToken cancellationToken = default, int? expectedPinVersion = null, bool onlyLegacy = false)
     {
         await using var workflowLock = await SlotWorkflowLock.AcquireAsync(_db, "student:" + studentId, cancellationToken);

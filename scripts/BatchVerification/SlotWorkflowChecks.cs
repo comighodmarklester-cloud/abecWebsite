@@ -366,6 +366,50 @@ internal static class SlotWorkflowChecks
                     "Fresh Activation Notices are available from the authorized PDF endpoint after updating an enrolled PIN.");
             }
             Check(smtp.Messages.Count == pinMailCount, "PIN-format updates do not send unrequested external email.");
+            var revealPath = $"/api/activations/{firstStudent.StudentId}/security-pin?batchId={batch.BatchId}";
+            using (var anonymousPin = https.Client(new Uri(origin)))
+            using (var response = await anonymousPin.GetAsync(revealPath))
+                Check(response.StatusCode == HttpStatusCode.Unauthorized, "Anonymous callers cannot reveal a student's PIN.");
+            using (var response = await browser.GetAsync(revealPath))
+                Check(response.StatusCode == HttpStatusCode.Forbidden, "Students cannot reveal PINs through the Admin endpoint.");
+            var noticeCount = await db.Notifications.CountAsync();
+            for (var read = 0; read < 2; read++)
+            {
+                using var response = await admin.GetAsync(revealPath);
+                response.EnsureSuccessStatusCode();
+                using var result = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+                var data = result.RootElement.GetProperty("data");
+                Check(result.RootElement.GetProperty("success").GetBoolean()
+                    && data.GetProperty("studentId").GetInt32() == firstStudent.StudentId
+                    && data.GetProperty("securityPin").GetString() == replacement
+                    && response.Headers.CacheControl?.NoStore == true,
+                    "Authorized reveal returns only the selected saved PIN with no-store headers.");
+            }
+            Check(await db.Notifications.CountAsync() == noticeCount
+                && (await db.Students.AsNoTracking().SingleAsync(s => s.StudentId == firstStudent.StudentId)).SecurityPin == replacement,
+                "Repeated viewing creates no PIN, notification or account change.");
+            using (var response = await admin.GetAsync($"/api/activations/{firstStudent.StudentId}/security-pin?batchId={batch.BatchId + 10000}"))
+                Check(response.StatusCode == HttpStatusCode.Conflict && !(await response.Content.ReadAsStringAsync()).Contains(replacement),
+                    "A mismatched selected batch cannot expose a PIN.");
+            using (var response = await admin.GetAsync("/api/activations/2147483647/security-pin"))
+            {
+                using var result = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+                Check(!result.RootElement.GetProperty("success").GetBoolean(), "A missing account cannot return a PIN.");
+            }
+            await db.Database.ExecuteSqlInterpolatedAsync($"UPDATE students SET account_status={"Inactive"} WHERE student_id={firstStudent.StudentId}");
+            using (var response = await admin.GetAsync(revealPath))
+            {
+                using var result = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+                Check(!result.RootElement.GetProperty("success").GetBoolean() && !(await response.Content.ReadAsStringAsync()).Contains(replacement),
+                    "Inactive accounts do not expose their PIN.");
+            }
+            await db.Database.ExecuteSqlInterpolatedAsync($"UPDATE students SET account_status={"Active"}, security_pin={""} WHERE student_id={firstStudent.StudentId}");
+            using (var response = await admin.GetAsync(revealPath))
+            {
+                using var result = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+                Check(!result.RootElement.GetProperty("success").GetBoolean(), "Missing PINs return a controlled error instead of a fabricated value.");
+            }
+            await db.Database.ExecuteSqlInterpolatedAsync($"UPDATE students SET security_pin={replacement} WHERE student_id={firstStudent.StudentId}");
             if (Environment.GetEnvironmentVariable("ABEC_SLOT_BROWSER_CHECKS") == "1")
                 await RunEmailBrowserChecks(db, admin, smtp, origin, batch.BatchId, https);
             Console.WriteLine($"PASS: {checks} end-to-end approval, slot response and activation-email checks using HTTPS, isolated MySQL and a loopback SMTP inbox. No external email sent.");

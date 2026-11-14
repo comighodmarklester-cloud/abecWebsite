@@ -16,11 +16,21 @@ const accounts = [
 const pins = new Map([[1, 'legacy-one'], [2, 'legacy-two']]);
 const versions = new Map();
 let writes = [], failSecond = false, loseResponse = false;
+let revealReads = 0, failReveal = false, holdReveal = false, releaseReveal;
 const fixture = fixtureHttps((req, res) => {
   const url = new URL(req.url, 'https://localhost'), p = url.pathname;
   if (p.startsWith('/api/')) {
     const reset = p.match(/^\/api\/activations\/(\d+)\/generate-pin$/);
     const notice = p.match(/^\/api\/activations\/(\d+)\/activation-notice$/);
+    const reveal = p.match(/^\/api\/activations\/(\d+)\/security-pin$/);
+    if (reveal) {
+      revealReads++;
+      const send = () => { res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+        res.end(JSON.stringify({ success: !failReveal, message: failReveal ? 'Synthetic reveal rejection' : '',
+          data: failReveal ? null : { studentId: Number(reveal[1]), securityPin: pins.get(Number(reveal[1])) } })); };
+      if (holdReveal) releaseReveal = send; else send();
+      return;
+    }
     if (notice) { res.writeHead(200, { 'Content-Type': 'application/pdf', 'Cache-Control': 'no-store' }); res.end('%PDF-1.4\n' + pins.get(Number(notice[1]))); return; }
     let data = [], success = true, message = '';
     if (reset && req.method === 'POST') {
@@ -59,6 +69,65 @@ const fixture = fixtureHttps((req, res) => {
     await page.locator('.activation-row').first().waitFor();
     const row = id => page.locator('.activation-row[data-id="' + id + '"]');
     const modal = page.locator('#details-modal');
+    const eye = id => row(id).getByRole('button', { name: 'Show Security PIN', exact: true });
+    const value = id => row(id).locator('[data-pin-value]');
+    check(revealReads === 0 && !(await page.content()).includes('legacy-one') && !(await page.content()).includes('legacy-two'), 'Initial table masks PINs without fetching or embedding credentials.');
+    await eye(1).click();
+    await row(1).locator('[aria-pressed="true"]').waitFor();
+    check(await value(1).textContent() === 'legacy-one' && !(await modal.isVisible()) && writes.length === 0, 'Table eye reveals only the selected saved PIN without opening details or generating another PIN.');
+    await row(1).getByRole('button', { name: 'Hide Security PIN' }).click();
+    check(!(await page.content()).includes('legacy-one'), 'Hide removes the PIN from the DOM.');
+    pins.set(1, 'synthetic-current-pin');
+    await eye(1).press('Enter'); await row(1).locator('[aria-pressed="true"]').waitFor();
+    check(await value(1).textContent() === 'synthetic-current-pin' && revealReads === 2, 'Each reveal retrieves the current saved PIN instead of a cached credential.');
+    await page.locator('#activation-search').fill('Mina');
+    check(!(await page.content()).includes('synthetic-current-pin'), 'Filtering removes revealed credentials.');
+    await page.locator('#activation-search').fill('');
+    holdReveal = true;
+    await eye(1).click(); await row(1).locator('[aria-busy="true"]').waitFor();
+    await row(1).getByRole('button', { name: 'Hide Security PIN' }).click();
+    const cancelled = page.waitForResponse(r => r.url().includes('/security-pin'));
+    releaseReveal(); await cancelled; holdReveal = false;
+    check(!(await page.content()).includes('synthetic-current-pin'), 'Hiding during a request prevents a delayed response from exposing the PIN.');
+    failReveal = true;
+    await eye(1).click();
+    await page.locator('.abec-toast-text').filter({ hasText: 'Synthetic reveal rejection' }).waitFor();
+    check(await eye(1).isVisible() && !(await page.content()).includes('synthetic-current-pin'), 'Failed reveal stays masked and reports the error.');
+    failReveal = false;
+    await page.evaluate(() => document.querySelectorAll('.abec-toast-close').forEach(b => b.click()));
+    await row(1).click();
+    const modalEye = modal.getByRole('button', { name: 'Show Security PIN', exact: true });
+    check(await modalEye.isVisible() && !(await page.locator('#modal-copy-pin').isVisible()), 'Generated Security PIN in details starts hidden with an accessible eye button.');
+    await modalEye.click(); await modal.locator('[aria-pressed="true"]').waitFor();
+    await page.evaluate(() => { navigator.clipboard.writeText = async value => { window.testCopiedPin = value; }; });
+    await page.locator('#modal-copy-pin').click();
+    check(await page.evaluate(() => window.testCopiedPin) === 'synthetic-current-pin', 'Copy PIN copies the revealed saved value, not the mask or an issuance label.');
+    await modal.getByRole('button', { name: 'Close', exact: true }).click();
+    await row(2).click();
+    check(!(await page.content()).includes('synthetic-current-pin') && await modal.getByRole('button', { name: 'Show Security PIN' }).isVisible(), 'Closing or switching students clears the previously revealed PIN.');
+    await modal.getByRole('button', { name: 'Close', exact: true }).click();
+    await eye(1).click(); await row(1).locator('[aria-pressed="true"]').waitFor();
+    await page.evaluate(() => window.dispatchEvent(new Event('blur')));
+    check(!(await page.content()).includes('synthetic-current-pin'), 'Leaving the window immediately masks revealed PINs.');
+    await page.clock.install();
+    await eye(1).click(); await row(1).locator('[aria-pressed="true"]').waitFor();
+    await page.clock.fastForward(30001);
+    check(!(await page.content()).includes('synthetic-current-pin'), 'Revealed PIN automatically hides after thirty seconds.');
+    check(await row(3).locator('.pin-eye').count() === 0 && await row(4).locator('.pin-eye').count() === 0, 'Pending and archived rows retain their PIN access restrictions.');
+    await page.evaluate(() => document.querySelectorAll('.abec-toast-close').forEach(b => b.click()));
+    await page.screenshot({ path: path.join(root, 'artifacts/pin-eye-desktop.png'), fullPage: true });
+    await page.setViewportSize({ width: 390, height: 900 });
+    await eye(1).click(); await row(1).locator('[aria-pressed="true"]').waitFor();
+    check(await row(1).getByRole('button', { name: 'Hide Security PIN' }).isVisible() && await value(1).textContent() === 'synthetic-current-pin', 'Eye control works on a mobile viewport.');
+    check(await row(1).locator('[data-pin-view]').evaluate(view => {
+      const cell = view.closest('td'), padding = parseFloat(getComputedStyle(cell).paddingRight);
+      return view.getBoundingClientRect().right <= cell.getBoundingClientRect().right - padding + 1;
+    }), 'PIN and eye stay inside their table cell on mobile, including long legacy credentials.');
+    // Mask synthetic credentials before capturing the layout artifact.
+    await row(1).getByRole('button', { name: 'Hide Security PIN' }).click();
+    await page.screenshot({ path: path.join(root, 'artifacts/pin-eye-mobile.png'), fullPage: true });
+    await page.setViewportSize({ width: 1366, height: 900 });
+    pins.set(1, 'legacy-one');
     await row(1).click();
     check(await page.locator('#btn-regenerate-pin').isEnabled(), 'Existing active account exposes the authorized PIN update.');
     await page.locator('#btn-regenerate-pin').click();

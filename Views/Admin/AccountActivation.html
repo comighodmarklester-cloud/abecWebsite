@@ -25,6 +25,11 @@
   }
 </script>
 <style>
+  .pin-view { display: inline-flex; align-items: center; gap: 0.5rem; max-width: 100%; }
+  .pin-view [data-pin-value] { min-width: 0; overflow-wrap: anywhere; }
+  .pin-eye { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 2rem; height: 2rem; border: 1px solid currentColor; border-radius: 0.5rem; background: transparent; color: inherit; cursor: pointer; }
+  .pin-eye:hover { background: rgba(100,116,139,0.12); }
+  .pin-eye:focus-visible { outline: 2px solid #60a5fa; outline-offset: 2px; }
   .custom-scrollbar::-webkit-scrollbar { width: 4px; }
   .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
   .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.18); border-radius: 10px; }
@@ -410,12 +415,12 @@
   </div>
 
   <div class="overflow-x-auto max-h-[560px] overflow-y-auto">
-    <table class="w-full text-left table-fixed min-w-[760px]">
+    <table class="w-full text-left table-fixed min-w-[960px]">
       <colgroup>
-        <col class="w-[26%]">
-        <col class="w-[22%]">
+        <col class="w-[24%]">
+        <col class="w-[20%]">
         <col class="w-[14%]">
-        <col class="w-[14%]">
+        <col class="w-[18%]">
         <col class="w-[12%]">
         <col class="w-[12%]">
       </colgroup>
@@ -648,6 +653,7 @@
   }
 
   function filterActivationTable() {
+    if (window.hideSecurityPins) window.hideSecurityPins();
     var query = document.getElementById('activation-search').value.trim().toLowerCase();
     var course = document.getElementById('activation-course-filter').value;
     var rows = document.querySelectorAll('.activation-row');
@@ -828,6 +834,7 @@
   }
 
   function openDetailsModal(row) {
+    if (window.hideSecurityPins) window.hideSecurityPins();
     activeModalRow = row;
     window.activeModalRow = row;
     var status = row.getAttribute('data-status') || 'pending';
@@ -915,8 +922,7 @@
       activateBtn.classList.remove('hidden');
     } else if (status === 'activated') {
       pinLabel.textContent = 'Generated Security PIN';
-      pinDisplay.textContent = pin || 'ABEC-000000';
-      copyBtn.classList.remove('hidden');
+      pinDisplay.textContent = pin ? '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022' : 'Not Generated';
       pinDateLabel.textContent = 'PIN Generation Date';
       pinDateEl.textContent = pinDate || '--';
       activationDateEl.textContent = activationDate || '--';
@@ -929,8 +935,7 @@
     } else {
       // deactivated — Generate PIN & Print stay visible but disabled
       pinLabel.textContent = 'Security PIN Status';
-      pinDisplay.textContent = pin || 'ABEC-000000';
-      copyBtn.classList.remove('hidden');
+      pinDisplay.textContent = pin ? '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022' : 'Not Generated';
       pinDateLabel.textContent = 'PIN Generation Date';
       pinDateEl.textContent = pinDate || '--';
       activationDateEl.textContent = activationDate || '--';
@@ -942,6 +947,7 @@
       reactivateBtn.classList.remove('hidden');
     }
 
+    if (status !== 'pending' && window.renderModalSecurityPin) window.renderModalSecurityPin(row);
     document.getElementById('details-modal').classList.remove('hidden');
     document.body.style.overflow = 'hidden';
   }
@@ -973,6 +979,7 @@
   }
 
   function closeDetailsModal() {
+    if (window.hideSecurityPins) window.hideSecurityPins();
     closeActivationProfile();
     document.getElementById('details-modal').classList.add('hidden');
     document.body.style.overflow = '';
@@ -981,8 +988,11 @@
   }
 
   function copyModalPin() {
-    var pin = document.getElementById('modal-pin-display').textContent;
-    if (!pin || pin === 'Pending Activation') return;
+    var display = document.getElementById('modal-pin-display');
+    var eye = display.querySelector('.pin-eye[aria-pressed="true"]');
+    var value = display.querySelector('[data-pin-value]');
+    if (!eye || !value) return;
+    var pin = value.textContent;
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(pin).then(function () {
         alert('PIN copied to clipboard.');
@@ -1024,6 +1034,6 @@
 <script src="../../wwwroot/js/abec-other-reason.js"></script>
 <script src="../../wwwroot/js/abec-admin.js?v=20261108nobatchbanner1"></script>
 <script src="../../wwwroot/js/abec-archive-dialog.js?v=20261110archivereasons1"></script>
-<script src="../../wwwroot/js/abec-activation.js?v=20261114enrolledpins1"></script>
+<script src="../../wwwroot/js/abec-activation.js?v=20261114pineye1"></script>
 </body>
 </html>

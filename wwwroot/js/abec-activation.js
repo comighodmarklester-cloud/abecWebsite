@@ -3,6 +3,76 @@
   'use strict';
   if (!window.AbecApi) return;
 
+  var pinViews = new WeakMap();
+  var pinMask = '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022';
+  function eyeIcon(revealed) {
+    return '<svg aria-hidden="true" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">' +
+      '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>' +
+      (revealed ? '<path d="m3 3 18 18"/>' : '') + '</svg>';
+  }
+  function pinControl(id, batchId) {
+    return '<span class="pin-view" data-pin-view data-student-id="' + esc(id) + '" data-batch-id="' + esc(batchId) + '">' +
+      '<span data-pin-value>' + pinMask + '</span>' +
+      '<button type="button" class="pin-eye" aria-label="Show Security PIN" aria-pressed="false" title="Show Security PIN" onclick="event.stopPropagation(); toggleSecurityPin(this)">' + eyeIcon(false) + '</button></span>';
+  }
+  function hidePin(view) {
+    var previous = pinViews.get(view);
+    if (previous) clearTimeout(previous.timer);
+    pinViews.delete(view); // Invalidate any response still in flight, without caching the PIN.
+    view.querySelector('[data-pin-value]').textContent = pinMask;
+    var button = view.querySelector('.pin-eye');
+    button.setAttribute('aria-pressed', 'false');
+    button.removeAttribute('aria-busy');
+    button.setAttribute('aria-label', 'Show Security PIN');
+    button.title = 'Show Security PIN';
+    button.innerHTML = eyeIcon(false);
+    var copy = document.getElementById('modal-copy-pin');
+    if (view.closest('#modal-pin-display') && copy) copy.classList.add('hidden');
+  }
+  window.hideSecurityPins = function () {
+    document.querySelectorAll('[data-pin-view]').forEach(hidePin);
+  };
+  window.renderModalSecurityPin = function (row) {
+    var display = document.getElementById('modal-pin-display');
+    var hasPin = !!row.getAttribute('data-pin');
+    display.textContent = hasPin ? pinMask : 'Not Generated';
+    if (hasPin && row.getAttribute('data-status') === 'activated' && row.getAttribute('data-archived') !== '1')
+      display.innerHTML = pinControl(row.getAttribute('data-id'), row.getAttribute('data-batch-id'));
+    document.getElementById('modal-copy-pin').classList.add('hidden');
+  };
+  window.toggleSecurityPin = async function (button) {
+    var view = button.closest('[data-pin-view]');
+    if (!view) return;
+    if (pinViews.has(view)) { hidePin(view); return; }
+    var pending = {};
+    pinViews.set(view, pending);
+    button.setAttribute('aria-busy', 'true');
+    button.setAttribute('aria-label', 'Hide Security PIN');
+    button.title = 'Hide Security PIN';
+    button.innerHTML = eyeIcon(true);
+    var id = view.getAttribute('data-student-id');
+    var batchId = view.getAttribute('data-batch-id');
+    var result = await AbecApi.request('/api/activations/' + encodeURIComponent(id) + '/security-pin' +
+      (batchId ? '?batchId=' + encodeURIComponent(batchId) : ''), { attempts: 1 });
+    if (!view.isConnected || pinViews.get(view) !== pending || document.hidden) return;
+    if (!result.success || !result.data || String(result.data.studentId) !== id || !result.data.securityPin) {
+      hidePin(view);
+      // The shared API client already reports failed reads when feedback is loaded.
+      if (result.success || !result.message || !window.AbecFeedback)
+        alert(result.message || 'Unable to display the saved Security PIN.');
+      return;
+    }
+    view.querySelector('[data-pin-value]').textContent = result.data.securityPin;
+    button.removeAttribute('aria-busy');
+    button.setAttribute('aria-pressed', 'true');
+    var copy = document.getElementById('modal-copy-pin');
+    if (view.closest('#modal-pin-display') && copy) copy.classList.remove('hidden');
+    pending.timer = setTimeout(function () { hidePin(view); }, 30000);
+  };
+  window.addEventListener('blur', window.hideSecurityPins);
+  window.addEventListener('pagehide', window.hideSecurityPins);
+  document.addEventListener('visibilitychange', function () { if (document.hidden) window.hideSecurityPins(); });
+
   function mapUiStatus(accountStatus, isArchived) {
     if (accountStatus === 'Active') return 'activated';
     if (isArchived) return 'deactivated';
@@ -53,7 +123,8 @@
       '</label>' + esc(s.fullName) + '</td>' +
       '<td class="px-6 py-4 text-sm text-slate-600">' + esc(courseLabel(s.courseName)) + '</td>' +
       '<td class="px-6 py-4 text-sm text-slate-600">' + esc(confirmation) + '</td>' +
-      '<td class="px-6 py-4 text-sm font-mono text-slate-700">' + (pin || 'Not Generated') + '</td>' +
+      '<td class="px-6 py-4 text-sm font-mono text-slate-700">' +
+        (pin ? (status === 'activated' && !s.isArchived ? pinControl(s.studentId, s.batchId) : pinMask) : 'Not Generated') + '</td>' +
       '<td class="px-6 py-4"><span class="status-badge inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase ' + metaBadge + '">' + label + '</span></td>' +
       '<td class="px-6 py-4 text-sm text-slate-500"><span class="date-note">' + esc(created) + '</span></td>' +
       '</tr>'
@@ -90,6 +161,7 @@
   }
 
   async function loadAccounts() {
+    window.hideSecurityPins();
     var result = await AbecApi.get('/api/activations');
     if (!result.success) {
       alert(result.message || 'Unable to load accounts.');

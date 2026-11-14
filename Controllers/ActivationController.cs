@@ -37,6 +37,14 @@ public class ActivationController : ControllerBase
             : Ok(ApiResponse<object>.Fail(result.Message));
     }
 
+    [HttpGet("{id:int}/security-pin")]
+    public async Task<ActionResult<ApiResponse<SecurityPinDto>>> SecurityPin(int id, CancellationToken cancellationToken)
+    {
+        // BatchAccessFilter restricts Activation actions to authenticated Admins.
+        Response.Headers.CacheControl = "no-store";
+        return Ok(await _activationService.GetSecurityPinAsync(id, cancellationToken));
+    }
+
     [HttpPost("{id:int}/activate")]
     public async Task<ActionResult<ApiResponse<StudentDto>>> Activate(int id, CancellationToken cancellationToken)
         => Ok(await _activationService.ActivateAsync(id, cancellationToken));
