@@ -10,12 +10,15 @@
     { id: 'TOR', label: 'Transcript of Records (TOR)', fileName: 'TOR.pdf' },
     { id: 'Form138', label: 'Form 138', fileName: 'Form138.pdf' },
     { id: 'HonorableDismissal', label: 'Honorable Dismissal', fileName: 'HonorableDismissal.pdf' },
-    { id: 'GoodMoral', label: 'Certificate of Good Moral Character', fileName: 'GoodMoral.pdf' }
+    { id: 'GoodMoral', label: 'Certificate of Good Moral Character', fileName: 'GoodMoral.pdf' },
+    { id: 'BirthCertificate', label: 'Birth Certificate (PSA)', fileName: 'BirthCertificate.pdf' }
   ];
 
   var state = {
     current: 1,
     credentialFiles: [],
+    followUps: {},
+    documentsTouched: false,
     identityFile: null,
     submitting: false,
     submitted: false,
@@ -268,6 +271,7 @@
     if (stem === 'form138' || stem.indexOf('form138') >= 0) return 'Form138';
     if (stem.indexOf('honorable') >= 0 || stem.indexOf('dismissal') >= 0) return 'HonorableDismissal';
     if (stem.indexOf('goodmoral') >= 0 || stem.indexOf('moralcharacter') >= 0) return 'GoodMoral';
+    if (stem.indexOf('birthcertificate') >= 0 || stem === 'psa') return 'BirthCertificate';
     return '';
   }
 
@@ -280,9 +284,11 @@
   function addCredentialFiles(fileList) {
     var files = Array.prototype.slice.call(fileList || []);
     if (!files.length) return;
+    state.documentsTouched = true;
+    renderCredentialList();
     var missing = missingDocTypes();
     if (!missing.length) {
-      showFormMessage('All four required documents are already uploaded. Remove one to replace it.', 'error');
+      showFormMessage('All required documents are already uploaded. Remove one to replace it.', 'error');
       return;
     }
     if (files.length > missing.length) {
@@ -313,6 +319,7 @@
       if (!item.typeId) return;
       state.credentialFiles = state.credentialFiles.filter(function (existing) { return existing.type !== item.typeId; });
       state.credentialFiles.push({ file: item.file, type: item.typeId, status: 'Ready' });
+      delete state.followUps[item.typeId];
     });
     showFormMessage('', '');
     renderCredentialList();
@@ -342,8 +349,10 @@
       });
       if (index < 0) {
         return '<div class="flex items-center justify-between gap-2 border border-dashed border-slate-300 rounded-lg px-3 py-2 text-xs">' +
-          '<div><p class="font-semibold text-slate-800">' + escapeHtml(type.label) + '</p><p class="text-slate-500">Still needed</p></div>' +
-          '<span class="text-[11px] font-semibold text-amber-700">Missing</span></div>';
+          '<div><p class="font-semibold text-slate-800">' + escapeHtml(type.label) + '</p></div>' +
+          (state.documentsTouched ? '<div class="flex flex-wrap items-center justify-end gap-2"><span class="text-[11px] font-semibold text-amber-700">Missing</span>' +
+            '<label class="inline-flex items-center gap-1 text-slate-600"><input type="checkbox" class="enroll-doc-follow-up" data-type="' + type.id + '" aria-label="Follow up ' + escapeHtml(type.label) + '"' + (state.followUps[type.id] ? ' checked' : '') + '> Follow up</label>' +
+            (state.followUps[type.id] ? '<span class="text-[11px] text-amber-700">Pending</span>' : '') + '</div>' : '') + '</div>';
       }
       return '<div class="flex items-center justify-between gap-2 border border-slate-200 rounded-lg px-3 py-2 text-xs">' +
         '<div class="min-w-0"><p class="font-semibold text-slate-800">' + escapeHtml(type.label) + '</p>' +
@@ -367,11 +376,13 @@
   }
 
   function validateDocuments() {
+    state.documentsTouched = true;
+    renderCredentialList();
     var missing = DOC_TYPES.filter(function (type) {
-      return !state.credentialFiles.some(function (item) { return item.type === type.id; });
+      return !state.followUps[type.id] && !state.credentialFiles.some(function (item) { return item.type === type.id; });
     });
     if (missing.length) {
-      showFormMessage('Please upload: ' + missing.map(function (item) { return item.label; }).join(', ') + '.', 'error');
+      showFormMessage('Please upload or mark for follow up: ' + missing.map(function (item) { return item.label; }).join(', ') + '.', 'error');
       return false;
     }
     var idTypeErr = val('enroll-id-type') ? '' : 'Please select an ID type.';
@@ -419,6 +430,9 @@
         '</span><button type="button" class="enroll-doc-view text-[#1A4B7A] font-semibold" data-index="' + index + '">View</button></div>';
     }).join('');
     var qual = getRadio('enroll-qualification');
+    docs += DOC_TYPES.filter(function (item) { return state.followUps[item.id]; }).map(function (item) {
+      return reviewRow(item.label, 'Pending (Follow up)');
+    }).join('');
     host.innerHTML =
       section('Assessment and Applicant Information', 1,
         reviewRow('School / training center / company', val('enroll-school-name')) +
@@ -595,7 +609,8 @@
       tesdaScreeningSummary: state.screening.summary,
       privacyNoticeAcknowledged: !!($('enroll-privacy-ack') && $('enroll-privacy-ack').checked),
       identityIdType: val('enroll-id-type'),
-      credentialDocumentTypes: state.credentialFiles.map(function (item) { return item.type; })
+      credentialDocumentTypes: state.credentialFiles.map(function (item) { return item.type; }),
+      followUpDocumentTypes: DOC_TYPES.filter(function (item) { return state.followUps[item.id]; }).map(function (item) { return item.id; })
     };
     var formData = new FormData();
     formData.append('data', JSON.stringify(payload));
@@ -635,6 +650,8 @@
 
   function resetWizard() {
     state.credentialFiles = [];
+    state.followUps = {};
+    state.documentsTouched = false;
     state.identityFile = null;
     state.submitting = false;
     state.submitted = false;
@@ -700,7 +717,19 @@
       var err = validateIdentityFile(files[0]);
       if (err) { showFormMessage(err, 'error'); return; }
       state.identityFile = files[0];
+      state.documentsTouched = true;
+      renderCredentialList();
       renderIdentityFile();
+    });
+
+    $('enroll-wizard-form').addEventListener('change', function (e) {
+      if (!e.target.classList.contains('enroll-doc-follow-up')) return;
+      var type = e.target.getAttribute('data-type');
+      if (docType(type)) state.followUps[type] = e.target.checked;
+      window.AbecFeedback.dismissInline($('enroll-form-message'));
+      renderCredentialList();
+      var checkbox = document.querySelector('.enroll-doc-follow-up[data-type="' + type + '"]');
+      if (checkbox) checkbox.focus();
     });
 
     $('enroll-wizard-form').addEventListener('click', async function (e) {

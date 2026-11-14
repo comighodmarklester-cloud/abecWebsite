@@ -218,8 +218,8 @@ public static class SystemConstants
         /// <summary>Per-file limit for registration credentials and the identity ID.</summary>
         public const long MaxRegistrationFileBytes = 100L * 1024 * 1024;
 
-        /// <summary>Total registration request: five 100 MB files plus multipart overhead.</summary>
-        public const long MaxRegistrationRequestBytes = MaxRegistrationFileBytes * 5 + 20L * 1024 * 1024;
+        /// <summary>Total registration request: five credentials and one ID, plus multipart overhead.</summary>
+        public const long MaxRegistrationRequestBytes = MaxRegistrationFileBytes * 6 + 20L * 1024 * 1024;
 
         public static readonly string[] AllowedExtensions = [".pdf", ".jpg", ".jpeg", ".png"];
     }
@@ -276,7 +276,7 @@ public static class SystemConstants
             ("XIII", "Caraga (Region XIII)"),
             ("BARMM", "Bangsamoro Autonomous Region in Muslim Mindanao (BARMM)")
         ];
-        public static readonly string[] CredentialDocumentTypes = ["Form138", "TOR", "HonorableDismissal", "GoodMoral"];
+        public static readonly string[] CredentialDocumentTypes = ["Form138", "TOR", "HonorableDismissal", "GoodMoral", "BirthCertificate"];
     }
 
     public static class IdentityIdTypes

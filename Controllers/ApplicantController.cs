@@ -124,6 +124,12 @@ public class ApplicantController : ControllerBase
         CancellationToken cancellationToken)
         => Ok(await _applicantService.GetRegistrationDocumentsAsync(id, cancellationToken));
 
+    [HttpPost("{id:int}/registration-documents/{documentId:int}/file")]
+    [RequestSizeLimit(SystemConstants.RegistrationUploadLimits.MaxRegistrationRequestBytes)]
+    [RequestFormLimits(MultipartBodyLengthLimit = SystemConstants.RegistrationUploadLimits.MaxRegistrationRequestBytes)]
+    public async Task<ActionResult<ApiResponse<object>>> UploadFollowUp(int id, int documentId, IFormFile file, CancellationToken cancellationToken)
+        => Ok(await _registrationStorage.UploadFollowUpAsync(id, documentId, file, cancellationToken));
+
     [HttpGet("{id:int}/registration-documents/{documentId:int}/download")]
     public async Task<IActionResult> DownloadRegistrationDocument(
         int id,

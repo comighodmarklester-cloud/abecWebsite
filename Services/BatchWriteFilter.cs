@@ -69,7 +69,7 @@ public sealed class BatchWriteFilter(ApplicationDbContext db) : IAsyncActionFilt
             }
             // SMTP runs after approval commits; slot responses save one atomic decision.
             var action = context.RouteData.Values["action"]?.ToString();
-            var ownsTransaction = (controller == "Applicant" && action is "UpdateStatus" or "BulkStatus" or "ConfirmSlot" or "DeclineSlot")
+            var ownsTransaction = (controller == "Applicant" && action is "UpdateStatus" or "BulkStatus" or "ConfirmSlot" or "DeclineSlot" or "UploadFollowUp")
                 || (controller == "Activation" && action is "Activate" or "Reactivate" or "BulkStatus");
             await using var transaction = !ownsTransaction && batches.Count > 0 && db.Database.CurrentTransaction is null
                 ? await db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, ct) : null;

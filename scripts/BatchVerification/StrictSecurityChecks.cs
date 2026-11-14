@@ -58,11 +58,11 @@ internal static class StrictSecurityChecks
         Check(namedStudent.All(s => string.IsNullOrEmpty(s.SecurityPin)), "General course lists must not disclose login PINs.");
         Check((await activation.GetAccountsAsync(search: applicant.FirstName + " " + applicant.LastName, batchId: student.BatchId)).Data!.Any(s => s.StudentId == student.StudentId), "Activation search supports a student's combined name.");
 
-        var credentials = Enumerable.Range(0, 4).Select(_ => (IFormFile)new FormFile(new MemoryStream("%PDF-1.4\n<svg onload=alert(1)>"u8.ToArray()), 0, "%PDF-1.4\n<svg onload=alert(1)>"u8.Length, "credentialFiles", "upload.pdf")
+        var credentials = Enumerable.Range(0, 5).Select(_ => (IFormFile)new FormFile(new MemoryStream("%PDF-1.4\n<svg onload=alert(1)>"u8.ToArray()), 0, "%PDF-1.4\n<svg onload=alert(1)>"u8.Length, "credentialFiles", "upload.pdf")
             { Headers = new HeaderDictionary(), ContentType = "text/html" }).ToList();
         var identity = new FormFile(new MemoryStream("%PDF-1.4\n"u8.ToArray()), 0, "%PDF-1.4\n"u8.Length, "identityFile", "identity.pdf") { Headers = new HeaderDictionary(), ContentType = "text/html" };
         var storage = new ApplicantRegistrationStorageService(db, environment);
-        var labels = new[] { "TOR", "Form138", "HonorableDismissal", "GoodMoral" };
+        var labels = new[] { "TOR", "Form138", "HonorableDismissal", "GoodMoral", "BirthCertificate" };
         Check((await storage.SaveEnrollmentDocumentsAsync(applicant.ApplicantId, credentials, identity, labels)).Success, "Valid PDF bytes should be accepted independently of untrusted MIME metadata.");
         var record = await db.ApplicantRegistrationDocuments.FirstAsync(d => d.ApplicantId == applicant.ApplicantId);
         Check(record.ContentType == "application/pdf", "Upload metadata must store the canonical server-derived MIME type.");

@@ -26,7 +26,8 @@
     { key: 'Form138', name: 'Form 138' },
     { key: 'TOR', name: 'Transcript of Records' },
     { key: 'HonorableDismissal', name: 'Honorable Dismissal' },
-    { key: 'GoodMoral', name: 'Certificate of Good Moral Character' }
+    { key: 'GoodMoral', name: 'Certificate of Good Moral Character' },
+    { key: 'BirthCertificate', name: 'Birth Certificate (PSA)' }
   ];
   var REQUESTABLE = [
     'National Certificate (TESDA)',
@@ -111,6 +112,7 @@
     if (compact === 'tor' || compact.indexOf('transcript') >= 0) return 'TOR';
     if (compact.indexOf('honorable') >= 0 || compact.indexOf('dismissal') >= 0) return 'HonorableDismissal';
     if (compact.indexOf('goodmoral') >= 0) return 'GoodMoral';
+    if (compact.indexOf('birthcertificate') >= 0 || compact === 'psa') return 'BirthCertificate';
     return '';
   }
 
@@ -121,11 +123,12 @@
       var key = credentialKey(doc);
       if (!key) return;
       var current = found[key];
-      if (!current || String(doc.uploadedAt || '') > String(current.uploadedAt || '')) found[key] = doc;
+      if (!current || (current.isFollowUp && !doc.isFollowUp) ||
+          (!!current.isFollowUp === !!doc.isFollowUp && String(doc.uploadedAt || '') > String(current.uploadedAt || ''))) found[key] = doc;
     });
     return CREDENTIALS.map(function (item) {
       var doc = found[item.key] || null;
-      var status = !state.docsReady ? 'Unavailable' : (doc ? 'Submitted' : 'Missing');
+      var status = !state.docsReady ? 'Unavailable' : (doc ? (doc.isFollowUp ? 'Pending (Follow up)' : 'Submitted') : 'Missing');
       return { key: item.key, name: item.name, status: status, doc: doc };
     });
   }
@@ -255,7 +258,7 @@
 
   function statusTone(status) {
     var key = String(status || '').toLowerCase();
-    if (key === 'pending') return 'pending';
+    if (key === 'pending' || key === 'pending (follow up)') return 'pending';
     if (key === 'processing') return 'processing';
     if (key === 'on hold') return 'hold';
     if (key === 'ready for release') return 'ready';
@@ -476,6 +479,8 @@
     var docs = applicantId ? credentialSet(applicantId) : CREDENTIALS.map(function (item) { return { status: 'Missing' }; });
     var submitted = docs.filter(function (item) { return item.status === 'Submitted'; }).length;
     var docBadge = badge(submitted + ' of ' + CREDENTIALS.length + ' submitted', submitted === CREDENTIALS.length ? 'ok' : 'wait');
+    var pending = docs.filter(function (item) { return item.doc && item.doc.isFollowUp; }).length;
+    if (pending) docBadge += ' ' + badge(pending + ' pending follow up', 'wait');
     if (state.tab === 'applicants') {
       var status = row.applicant.applicationStatus || '—';
       return '<tr>' +
@@ -826,6 +831,11 @@
     var docRows = docs.map(function (item) {
       var actions = '<span class="doc-muted">Not submitted</span>';
       if (item.status === 'Unavailable') actions = '<span class="doc-muted">Records unavailable</span>';
+      else if (item.doc && item.doc.isFollowUp) {
+        actions = '<span class="doc-muted">Pending applicant submission</span>';
+        if (!state.readOnly && !(row.student && row.student.isArchived))
+          actions += '<label class="doc-link registration-follow-up-upload">Upload PDF<input type="file" class="registration-follow-up-file" accept="application/pdf,.pdf" data-applicant="' + applicantId + '" data-document="' + item.doc.documentId + '" aria-label="Upload ' + esc(item.name) + '"></label>';
+      }
       else if (item.doc) {
         var download = '<a class="doc-link" href="' + fileUrl(applicantId, item.doc.documentId, false) + '">Download</a>';
         actions = canPreview(item.doc)
@@ -1064,6 +1074,37 @@
     showToast(result.message || (result.success ? 'Document released.' : 'The document was not released.'), result.success ? 'ok' : 'error');
     if (result.success && state.openKey) openRecord(state.openKey);
     if (result.success) loadReleaseBoard();
+  }
+
+  async function uploadRegistrationFollowUp(input) {
+    var file = input.files && input.files[0];
+    if (!file || state.uploading || state.readOnly) return;
+    if (!/\.pdf$/i.test(file.name) || file.size > 100 * 1024 * 1024 || !file.size) {
+      showToast('Upload a non-empty PDF of 100 MB or smaller.', 'error');
+      input.value = '';
+      return;
+    }
+    var batch = state.batchId, key = state.openKey;
+    var data = new FormData();
+    data.append('file', file);
+    state.uploading = true;
+    input.disabled = true;
+    try {
+      var result = await scopedApi.postForm('/api/applicants/' + encodeURIComponent(input.getAttribute('data-applicant')) +
+        '/registration-documents/' + encodeURIComponent(input.getAttribute('data-document')) + '/file', data);
+      if (batch !== state.batchId) return;
+      showToast(result.message || (result.success ? 'Document uploaded.' : 'The document was not uploaded.'), result.success ? 'ok' : 'error');
+      if (result.success) {
+        await load();
+        if (state.openKey === key && batch === state.batchId) await openRecord(key);
+      }
+    } catch (e) {
+      showToast('Unable to upload the document. Refresh the record to check its status.', 'error');
+    } finally {
+      state.uploading = false;
+      input.disabled = false;
+      input.value = '';
+    }
   }
 
   async function uploadCourseFile(documentId, file) {
@@ -1565,6 +1606,10 @@
       if (download) openCourseFile(download.getAttribute('data-course-download'), false);
     });
     reviewModal.addEventListener('change', function (event) {
+      if (event.target.classList.contains('registration-follow-up-file')) {
+        uploadRegistrationFollowUp(event.target);
+        return;
+      }
       if (!event.target.classList.contains('course-doc-file')) return;
       var file = event.target.files && event.target.files[0];
       uploadCourseFile(event.target.getAttribute('data-course-file'), file);

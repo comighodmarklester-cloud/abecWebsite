@@ -11,6 +11,7 @@
     { label: 'TOR', name: 'Transcript of Records (TOR)', type: 'Educational certificate' },
     { label: 'HonorableDismissal', name: 'Honorable Dismissal', type: 'Educational certificate' },
     { label: 'GoodMoral', name: 'Certificate of Good Moral Character', type: 'Educational certificate' },
+    { label: 'BirthCertificate', name: 'Birth Certificate (PSA)', type: 'Registration document' },
     { label: 'IdentityID', name: 'Valid ID', type: 'Identification document' }
   ];
 
@@ -142,10 +143,10 @@
 
   function findDocument(documents, label) {
     var key = label.toLowerCase();
-    for (var i = 0; i < documents.length; i++) {
-      if (text(documents[i].documentLabel).toLowerCase() === key) return documents[i];
-    }
-    return null;
+    return documents.filter(function (doc) { return text(doc.documentLabel).toLowerCase() === key; })
+      .sort(function (a, b) {
+        return Number(!!a.isFollowUp) - Number(!!b.isFollowUp) || String(b.uploadedAt || '').localeCompare(String(a.uploadedAt || ''));
+      })[0] || null;
   }
 
   function documentRows(applicant, documents, applicantId) {
@@ -167,12 +168,12 @@
   }
 
   function documentRow(name, type, doc, applicantId) {
-    var status = doc
+    var status = doc && doc.isFollowUp ? '<span class="profile-doc-badge is-missing">Pending (Follow up)</span>' : doc
       ? '<span class="profile-doc-badge is-submitted">Submitted</span>'
       : '<span class="profile-doc-badge is-missing">Not Submitted</span>';
     var meta = type;
     var action = '';
-    if (doc) {
+    if (doc && !doc.isFollowUp) {
       var bits = [doc.originalFileName, fileSize(doc.sizeBytes), formatDate(doc.uploadedAt)].filter(Boolean);
       if (bits.length) meta += ' · ' + bits.join(' · ');
       var href = (window.AbecApi && AbecApi.baseUrl ? AbecApi.baseUrl : '') +
@@ -180,7 +181,7 @@
         '/registration-documents/' + encodeURIComponent(doc.documentId) + '/download';
       action = '<a class="profile-doc-link" href="' + esc(href) + '" target="_blank" rel="noopener">Download</a>';
     }
-    return '<article class="profile-doc ' + (doc ? 'is-submitted' : 'is-missing') + '"><svg class="profile-doc-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7 3.5h7l5 5V20a1.5 1.5 0 01-1.5 1.5h-10A1.5 1.5 0 016 20V5A1.5 1.5 0 017.5 3.5z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M14 3.5V9h5.5"/></svg><div><p class="profile-doc-name">' + esc(name) + '</p><p class="profile-doc-meta">' + esc(meta) + '</p></div>' + status + action + '</article>';
+    return '<article class="profile-doc ' + (doc && !doc.isFollowUp ? 'is-submitted' : 'is-missing') + '"><svg class="profile-doc-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7 3.5h7l5 5V20a1.5 1.5 0 01-1.5 1.5h-10A1.5 1.5 0 016 20V5A1.5 1.5 0 017.5 3.5z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M14 3.5V9h5.5"/></svg><div><p class="profile-doc-name">' + esc(name) + '</p><p class="profile-doc-meta">' + esc(meta) + '</p></div>' + status + action + '</article>';
   }
 
   function releaseRows(requests) {

@@ -72,6 +72,11 @@ try
   await using(var enable=new MySqlCommand("SET FOREIGN_KEY_CHECKS=1",target)) await enable.ExecuteNonQueryAsync();
  }
  await db.Database.OpenConnectionAsync();
+ await using (var column = db.Database.GetDbConnection().CreateCommand()) {
+  column.CommandText = "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='applicant_registration_documents' AND COLUMN_NAME='is_follow_up'";
+  if (Convert.ToInt32(await column.ExecuteScalarAsync()) == 0)
+   await db.Database.ExecuteSqlRawAsync(SchemaUpgradeSql.AddColumn("applicant_registration_documents", "is_follow_up", "TINYINT(1) NOT NULL DEFAULT 0"));
+ }
  foreach (var sql in BatchLifecycleUpgrade.Statements) await db.Database.ExecuteSqlRawAsync(sql);
  foreach (var sql in BatchLifecycleUpgrade.Statements) await db.Database.ExecuteSqlRawAsync(sql); // upgrade must be repeatable
  await db.Database.CloseConnectionAsync();
@@ -116,6 +121,11 @@ try
  if (args.Contains("--training-schedule-only"))
  {
   await TrainingScheduleChecks.Run(db, oldStudent, requests, notices, accessor);
+  return;
+ }
+ if (args.Contains("--registration-documents-only"))
+ {
+  await RegistrationDocumentChecks.Run(db, applicantService, oldApplicant, oldStudent, admin, env);
   return;
  }
  if (args.Contains("--requested-updates-only"))
@@ -600,7 +610,7 @@ static async Task VerifyHttp(string connection, string filesRoot, int studentId,
     var data=body.RootElement.GetProperty("data");var registeredId=data.GetProperty("applicantId").GetInt32();
     Check(data.GetProperty("batchId").GetInt32()==currentBatchId && data.GetProperty("applicationStatus").GetString()=="Pending","HTTP server ignores a forged body batch and assigns the active batch as Pending");
     Check((await AdminData($"/api/applicants/{registeredId}?batchId={currentBatchId}")).GetProperty("batchId").GetInt32()==currentBatchId,"HTTP saved applicant remains in the active batch");
-    if(mode==1) Check((await AdminData($"/api/applicants/{registeredId}/registration-documents?batchId={currentBatchId}")).GetArrayLength()==5,"HTTP wizard stores all four credentials and identity document under its active-batch applicant");
+    if(mode==1) Check((await AdminData($"/api/applicants/{registeredId}/registration-documents?batchId={currentBatchId}")).GetArrayLength()==SystemConstants.RegistrationChoices.CredentialDocumentTypes.Length+1,"HTTP wizard stores all five credentials and identity document under its active-batch applicant");
    }
   }
   var registeredStats=await AdminData("/api/applicants/stats");

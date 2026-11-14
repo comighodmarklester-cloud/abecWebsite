@@ -144,6 +144,16 @@
     var error = document.getElementById(errorId);
     if (input) input.classList.toggle('enroll-input-error', !!message);
     if (input) input.setAttribute('aria-invalid', message ? 'true' : 'false');
+    if (inputId === 'enroll-birthdate' || inputId === 'enroll-email') {
+      if (error) {
+        error.textContent = message || '';
+        error.hidden = !message;
+        error.classList.toggle('is-visible', !!message);
+        error.setAttribute('aria-live', 'polite');
+      }
+      if (input) input.setAttribute('aria-describedby', errorId);
+      return;
+    }
     window.AbecFeedback.inline(error, message, 'error');
   }
 
@@ -167,9 +177,11 @@
   }
 
   function calculateAgeFromBirthdate(value) {
-    if (!String(value || '').trim()) return null;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(value || ''))) return null;
     var d = new Date(value + 'T00:00:00');
     if (isNaN(d.getTime())) return null;
+    var parts = value.split('-').map(Number);
+    if (d.getFullYear() !== parts[0] || d.getMonth() + 1 !== parts[1] || d.getDate() !== parts[2]) return null;
     var today = new Date();
     today.setHours(0, 0, 0, 0);
     if (d > today) return null;
@@ -180,7 +192,7 @@
   }
 
   function validateBirthdate(value) {
-    if (!String(value || '').trim()) return 'Please enter your date of birth.';
+    if (calculateAgeFromBirthdate(value) == null) return 'Please enter a valid date of birth.';
     var d = new Date(value + 'T00:00:00');
     if (isNaN(d.getTime())) return 'Please enter a valid date of birth.';
     var today = new Date();
@@ -194,6 +206,7 @@
   }
 
   function validateAge(ageValue, birthdateValue) {
+    if (validateBirthdate(birthdateValue)) return ''; // DOB owns the error while age is blank.
     var raw = String(ageValue == null ? '' : ageValue).trim();
     if (!raw) return 'Please enter your age.';
     if (!/^\d+$/.test(raw)) return 'Please enter a valid age using numbers only.';
@@ -709,32 +722,37 @@
       // Max selectable DOB = 18th birthday today (must be at least 18).
       var maxAdult = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
       var min = new Date(today.getFullYear() - 100, today.getMonth(), today.getDate());
-      birthdateInput.setAttribute('max', maxAdult.toISOString().slice(0, 10));
-      birthdateInput.setAttribute('min', min.toISOString().slice(0, 10));
-      function syncBirthdateValidation() {
+      function localDate(date) {
+        return date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0') + '-' + String(date.getDate()).padStart(2, '0');
+      }
+      birthdateInput.setAttribute('max', localDate(maxAdult));
+      birthdateInput.setAttribute('min', localDate(min));
+      function syncBirthdateValidation(showError) {
         var value = birthdateInput.value;
         // Empty DOB: keep the field clean — required/age messages only on submit.
         if (!String(value || '').trim()) {
-          setError('enroll-birthdate', 'enroll-birthdate-error', '');
+          setError('enroll-birthdate', 'enroll-birthdate-error', showError && birthdateInput.validity.badInput ? 'Please enter a valid date of birth.' : '');
+          setError('enroll-age', 'enroll-age-error', '');
           var emptyAge = document.getElementById('enroll-age');
           if (emptyAge) emptyAge.value = '';
           var emptyDisplay = document.getElementById('enroll-birthdate-display');
           if (emptyDisplay) emptyDisplay.textContent = '';
           return;
         }
-        setError('enroll-birthdate', 'enroll-birthdate-error', validateBirthdate(value));
+        var error = validateBirthdate(value);
+        setError('enroll-birthdate', 'enroll-birthdate-error', showError ? error : '');
         var ageInput = document.getElementById('enroll-age');
-        var calculated = calculateAgeFromBirthdate(value);
+        var calculated = error ? null : calculateAgeFromBirthdate(value);
         if (ageInput) ageInput.value = calculated == null ? '' : String(calculated);
         var display = document.getElementById('enroll-birthdate-display');
         if (display) {
           var parts = String(value).split('-');
-          display.textContent = parts.length === 3 ? (parts[1] + '/' + parts[2] + '/' + parts[0]) : '';
+          display.textContent = calculated != null ? (parts[1] + '/' + parts[2] + '/' + parts[0]) : '';
         }
-        if (ageInput) setError('enroll-age', 'enroll-age-error', validateAge(ageInput.value, value));
+        setError('enroll-age', 'enroll-age-error', '');
       }
-      birthdateInput.addEventListener('change', syncBirthdateValidation);
-      birthdateInput.addEventListener('input', syncBirthdateValidation);
+      birthdateInput.addEventListener('blur', function () { syncBirthdateValidation(true); });
+      birthdateInput.addEventListener('input', function () { syncBirthdateValidation(false); });
       setError('enroll-birthdate', 'enroll-birthdate-error', '');
       setError('enroll-age', 'enroll-age-error', '');
     }
@@ -778,11 +796,7 @@
         setError('enroll-email', 'enroll-email-error', validateEmail(emailInput.value));
       });
       emailInput.addEventListener('input', function () {
-        if (!emailInput.value.trim()) {
-          setError('enroll-email', 'enroll-email-error', '');
-          return;
-        }
-        setError('enroll-email', 'enroll-email-error', validateEmail(emailInput.value));
+        setError('enroll-email', 'enroll-email-error', '');
       });
     }
 

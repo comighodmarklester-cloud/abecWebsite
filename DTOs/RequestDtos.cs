@@ -178,8 +178,10 @@ public class EnrollApplicantDto
     public string? AddressRegionCode { get; set; }
     public string? ZipCode { get; set; }
 
-    /// <summary>Document labels parallel to credentialFiles (Form138, TOR, HonorableDismissal, GoodMoral).</summary>
+    /// <summary>Document labels parallel to credentialFiles, including BirthCertificate.</summary>
     public List<string>? CredentialDocumentTypes { get; set; }
+
+    public List<string>? FollowUpDocumentTypes { get; set; }
 
     /// <summary>
     /// Applicant confirmed they read the Data Privacy Notice. This is not consent for every processing activity.

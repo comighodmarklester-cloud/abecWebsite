@@ -108,7 +108,7 @@ async function readyWizard() {
   f.el('enroll-credential-dropzone'); const credentials = f.el('enroll-credential-input');
   f.el('enroll-identity-dropzone'); const identity = f.el('enroll-identity-file');
   f.run('abec-enroll-wizard'); await flush();
-  credentials.files = ['TOR', 'Form138', 'HonorableDismissal', 'GoodMoral'].map(name => ({ name: name + '.pdf', type: 'application/pdf', size: 10 }));
+  credentials.files = ['TOR', 'Form138', 'HonorableDismissal', 'GoodMoral', 'BirthCertificate'].map(name => ({ name: name + '.pdf', type: 'application/pdf', size: 10 }));
   await credentials.emit('change');
   identity.files = [{ name: 'passport.pdf', type: 'application/pdf', size: 10 }]; await identity.emit('change');
   return { ...f, btn };

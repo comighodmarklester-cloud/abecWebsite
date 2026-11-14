@@ -89,6 +89,7 @@ public class ApplicantDto
 
 public class ApplicantRegistrationDocumentDto
 {
+    public bool IsFollowUp { get; set; }
     public int DocumentId { get; set; }
     public int ApplicantId { get; set; }
     public string Category { get; set; } = string.Empty;

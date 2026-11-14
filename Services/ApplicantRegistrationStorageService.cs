@@ -25,59 +25,121 @@ public class ApplicantRegistrationStorageService
         IReadOnlyList<IFormFile> credentialFiles,
         IFormFile? identityFile,
         IReadOnlyList<string>? credentialLabels = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        IReadOnlyList<string>? followUpLabels = null)
     {
         await _db.RequireActiveBatchAsync(await _db.Applicants.AsNoTracking()
             .Where(a => a.ApplicantId == applicantId).Select(a => a.BatchId).SingleOrDefaultAsync(cancellationToken), cancellationToken);
+        var validationError = await ValidateSubmissionAsync(credentialFiles, identityFile, credentialLabels, followUpLabels, cancellationToken);
+        if (validationError is not null) return ApiResponse<object>.Fail(validationError);
+        if (await _db.ApplicantRegistrationDocuments.AnyAsync(d => d.ApplicantId == applicantId, cancellationToken))
+            return ApiResponse<object>.Fail("Registration documents are already saved. Open the existing record to update them.");
         var applicantDir = Path.Combine(SecureRoot, applicantId.ToString());
         Directory.CreateDirectory(applicantDir);
-
         var saved = new List<ApplicantRegistrationDocument>();
-        var pending = new List<(IFormFile File, string Label)>();
+        try
+        {
+            for (var i = 0; i < credentialFiles.Count; i++)
+            {
+                var label = CanonicalCredentialLabel(credentialLabels?.ElementAtOrDefault(i)) ?? InferCredentialLabel(credentialFiles[i].FileName);
+                saved.Add(await SaveFileAsync(applicantId, applicantDir, credentialFiles[i], SystemConstants.ApplicantDocumentCategories.Credential, label, cancellationToken));
+            }
+            var uploaded = saved.Select(d => d.DocumentLabel).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            foreach (var label in (followUpLabels ?? []).Select(CanonicalCredentialLabel).Distinct())
+                if (!uploaded.Contains(label)) saved.Add(new ApplicantRegistrationDocument
+                {
+                    ApplicantId = applicantId, Category = SystemConstants.ApplicantDocumentCategories.Credential,
+                    DocumentLabel = label, IsFollowUp = true, UploadedAt = DateTime.Now
+                });
+            saved.Add(await SaveFileAsync(applicantId, applicantDir, identityFile!, SystemConstants.ApplicantDocumentCategories.Identity, "IdentityID", cancellationToken));
+            _db.ApplicantRegistrationDocuments.AddRange(saved);
+            await _db.SaveChangesAsync(cancellationToken);
+            return ApiResponse<object>.Ok(new { count = saved.Count }, "Registration documents stored.");
+        }
+        catch
+        {
+            foreach (var doc in saved)
+                if (!doc.IsFollowUp) File.Delete(Path.Combine(SecureRoot, doc.StoredRelativePath));
+            throw;
+        }
+    }
+
+    public async Task<string?> ValidateSubmissionAsync(IReadOnlyList<IFormFile> credentialFiles, IFormFile? identityFile,
+        IReadOnlyList<string>? credentialLabels, IReadOnlyList<string>? followUpLabels, CancellationToken cancellationToken = default)
+    {
         var usedLabels = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var followUps = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var value in followUpLabels ?? [])
+        {
+            var label = CanonicalCredentialLabel(value);
+            if (label is null) return "Please select a valid document for follow up.";
+            followUps.Add(label);
+        }
 
         for (var i = 0; i < credentialFiles.Count; i++)
         {
             var file = credentialFiles[i];
             if (file is null || file.Length == 0)
-                continue;
+                return "One of the uploaded files is empty.";
 
             var validation = await ValidateCredentialPdfAsync(file, cancellationToken);
             if (validation is not null)
-                return ApiResponse<object>.Fail(validation);
+                return validation;
 
             var requested = credentialLabels is not null && i < credentialLabels.Count ? credentialLabels[i] : null;
             var label = CanonicalCredentialLabel(requested) ?? InferCredentialLabel(file.FileName);
             if (label is null || !SystemConstants.RegistrationChoices.CredentialDocumentTypes.Contains(label, StringComparer.OrdinalIgnoreCase))
-                return ApiResponse<object>.Fail("Each required document must be identified as Form 138, TOR, Honorable Dismissal, or Certificate of Good Moral Character.");
+                return "Each required document must have a valid document type, including Birth Certificate (PSA).";
             if (!usedLabels.Add(label))
-                return ApiResponse<object>.Fail("Each required document type can be uploaded only once.");
-            pending.Add((file, label));
+                return "Each required document type can be uploaded only once.";
         }
 
         foreach (var required in SystemConstants.RegistrationChoices.CredentialDocumentTypes)
         {
-            if (!usedLabels.Contains(required))
-                return ApiResponse<object>.Fail("Please upload all required documents: Form 138, TOR, Honorable Dismissal, and Certificate of Good Moral Character.");
+            if (!usedLabels.Contains(required) && !followUps.Contains(required))
+                return "Please upload each required document or mark it for follow up.";
         }
 
         if (identityFile is null || identityFile.Length == 0)
-            return ApiResponse<object>.Fail("Please upload one valid ID.");
+            return "Please upload one valid ID.";
 
         var idValidation = await ValidateIdentityFileAsync(identityFile, cancellationToken);
         if (idValidation is not null)
-            return ApiResponse<object>.Fail(idValidation);
+            return idValidation;
+        return null;
+    }
 
-        foreach (var item in pending)
-            saved.Add(await SaveFileAsync(applicantId, applicantDir, item.File, SystemConstants.ApplicantDocumentCategories.Credential, item.Label, cancellationToken));
-        saved.Add(await SaveFileAsync(applicantId, applicantDir, identityFile, SystemConstants.ApplicantDocumentCategories.Identity, "IdentityID", cancellationToken));
-
-        if (saved.Count == 0)
-            return ApiResponse<object>.Ok(new { count = 0 }, "No registration documents were uploaded.");
-
-        _db.ApplicantRegistrationDocuments.AddRange(saved);
-        await _db.SaveChangesAsync(cancellationToken);
-        return ApiResponse<object>.Ok(new { count = saved.Count }, "Registration documents stored.");
+    public async Task<ApiResponse<object>> UploadFollowUpAsync(int applicantId, int documentId, IFormFile file, CancellationToken ct = default)
+    {
+        await using var transaction = await _db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, ct);
+        var doc = await _db.ApplicantRegistrationDocuments.SingleOrDefaultAsync(d => d.ApplicantId == applicantId && d.DocumentId == documentId, ct);
+        if (doc is null || !doc.IsFollowUp || doc.Category != SystemConstants.ApplicantDocumentCategories.Credential)
+            return ApiResponse<object>.Fail("This document is not awaiting follow up. Refresh the record.");
+        await _db.RequireActiveBatchAsync(await _db.Applicants.Where(a => a.ApplicantId == applicantId).Select(a => a.BatchId).SingleAsync(ct), ct);
+        if (await _db.Archives.AnyAsync(a => a.Student!.ApplicantId == applicantId, ct))
+            return ApiResponse<object>.Fail("Archived registration documents cannot be changed.");
+        var error = await ValidateCredentialPdfAsync(file, ct);
+        if (error is not null) return ApiResponse<object>.Fail(error);
+        var folder = Path.Combine(SecureRoot, applicantId.ToString());
+        Directory.CreateDirectory(folder);
+        var uploaded = await SaveFileAsync(applicantId, folder, file, doc.Category, doc.DocumentLabel, ct);
+        try
+        {
+            doc.OriginalFileName = uploaded.OriginalFileName;
+            doc.StoredRelativePath = uploaded.StoredRelativePath;
+            doc.ContentType = uploaded.ContentType;
+            doc.SizeBytes = uploaded.SizeBytes;
+            doc.UploadedAt = uploaded.UploadedAt;
+            doc.IsFollowUp = false;
+            await _db.SaveChangesAsync(ct);
+            await transaction.CommitAsync(ct);
+            return ApiResponse<object>.Ok(new { doc.DocumentId }, "Follow-up document uploaded.");
+        }
+        catch
+        {
+            File.Delete(Path.Combine(SecureRoot, uploaded.StoredRelativePath));
+            throw;
+        }
     }
 
     public async Task<ApiResponse<IReadOnlyList<ApplicantRegistrationDocumentDto>>> ListForApplicantAsync(
@@ -111,7 +173,7 @@ public class ApplicantRegistrationStorageService
     {
         var doc = await _db.ApplicantRegistrationDocuments.AsNoTracking()
             .FirstOrDefaultAsync(d => d.DocumentId == documentId && d.ApplicantId == applicantId, cancellationToken);
-        if (doc is null)
+        if (doc is null || doc.IsFollowUp)
             return (null, null, null, "Document not found.");
 
         var (stream, contentType) = await UploadedDocument.OpenAsync(SecureRoot, doc.StoredRelativePath, cancellationToken);
@@ -134,8 +196,18 @@ public class ApplicantRegistrationStorageService
         var storedName = $"{Guid.NewGuid():N}{ext}";
         var fullPath = Path.Combine(applicantDir, storedName);
 
-        await using (var stream = new FileStream(fullPath, FileMode.Create))
+        var created = false;
+        try
+        {
+            await using var stream = new FileStream(fullPath, FileMode.CreateNew);
+            created = true;
             await file.CopyToAsync(stream, cancellationToken);
+        }
+        catch
+        {
+            if (created) File.Delete(fullPath);
+            throw;
+        }
 
         var relative = Path.Combine(applicantId.ToString(), storedName).Replace('\\', '/');
 
@@ -206,6 +278,7 @@ public class ApplicantRegistrationStorageService
         if (compact is "tor" or "transcriptofrecords") return "TOR";
         if (compact.Contains("honorable") || compact is "honoredismissal") return "HonorableDismissal";
         if (compact is "goodmoral" || compact.Contains("goodmoral")) return "GoodMoral";
+        if (compact is "birthcertificate" or "birthcertificatepsa" or "psabirthcertificate" or "psa") return "BirthCertificate";
         return SystemConstants.RegistrationChoices.CredentialDocumentTypes
             .FirstOrDefault(t => t.Equals(value.Trim(), StringComparison.OrdinalIgnoreCase));
     }
@@ -220,6 +293,7 @@ public class ApplicantRegistrationStorageService
                 "Form138" => "Form138.pdf",
                 "HonorableDismissal" => "HonorableDismissal.pdf",
                 "GoodMoral" => "GoodMoral.pdf",
+                "BirthCertificate" => "BirthCertificate.pdf",
                 _ => Path.GetFileName(originalName)
             };
         }
@@ -230,6 +304,7 @@ public class ApplicantRegistrationStorageService
     private static string? InferCredentialLabel(string fileName)
     {
         var stem = Path.GetFileNameWithoutExtension(fileName).Trim();
+        if (CanonicalCredentialLabel(stem) is { } canonical) return canonical;
         var exact = stem.ToLowerInvariant() switch
         {
             "tor" => "TOR",
@@ -250,12 +325,14 @@ public class ApplicantRegistrationStorageService
         if (docPart.Contains("honorable") || docPart.Contains("dismissal")) return "HonorableDismissal";
         if (docPart.Contains("goodmoral") || docPart.Contains("goodmoralcharacter") || docPart.Contains("good_moral"))
             return "GoodMoral";
+        if (docPart.Contains("birthcertificate") || docPart == "psa") return "BirthCertificate";
         return null;
     }
 
     private static ApplicantRegistrationDocumentDto Map(ApplicantRegistrationDocument d) => new()
     {
         DocumentId = d.DocumentId,
+        IsFollowUp = d.IsFollowUp,
         ApplicantId = d.ApplicantId,
         Category = d.Category,
         DocumentLabel = d.DocumentLabel,

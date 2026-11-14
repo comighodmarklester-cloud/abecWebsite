@@ -503,6 +503,10 @@ public class ApplicantService : IApplicantService
         IFormFile? identityFile,
         CancellationToken cancellationToken = default)
     {
+        var validation = await _registrationStorage.ValidateSubmissionAsync(credentialFiles, identityFile,
+            dto.CredentialDocumentTypes, dto.FollowUpDocumentTypes, cancellationToken);
+        if (validation is not null) return ApiResponse<ApplicantDto>.Fail(validation);
+        await using var transaction = await _db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, cancellationToken);
         var enroll = await EnrollAsync(dto, cancellationToken);
         if (!enroll.Success || enroll.Data is null)
             return enroll;
@@ -512,17 +516,14 @@ public class ApplicantService : IApplicantService
             credentialFiles,
             identityFile,
             dto.CredentialDocumentTypes,
-            cancellationToken);
+            cancellationToken,
+            dto.FollowUpDocumentTypes);
 
         if (!store.Success)
         {
-            var refreshedOnFail = await GetByIdAsync(enroll.Data.ApplicantId, cancellationToken);
-            var fileMessage = enroll.Message + " However, some uploaded files could not be saved: " + store.Message;
-            return refreshedOnFail.Success && refreshedOnFail.Data is not null
-                ? ApiResponse<ApplicantDto>.Ok(refreshedOnFail.Data, fileMessage)
-                : ApiResponse<ApplicantDto>.Fail(store.Message);
+            return ApiResponse<ApplicantDto>.Fail(store.Message);
         }
-
+        await transaction.CommitAsync(cancellationToken);
         var emailNote = await TrySendRegistrationConfirmationAsync(enroll.Data.ApplicantId, cancellationToken);
         var refreshed = await GetByIdAsync(enroll.Data.ApplicantId, cancellationToken);
         var message = enroll.Message;

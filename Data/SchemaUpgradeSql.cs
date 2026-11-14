@@ -8,6 +8,7 @@ public static class SchemaUpgradeSql
     private static readonly FrozenDictionary<(string Table, string Column, string Definition), string> Additions =
         new Dictionary<(string, string, string), string>
         {
+            [("applicant_registration_documents", "is_follow_up", "TINYINT(1) NOT NULL DEFAULT 0")] = "ALTER TABLE `applicant_registration_documents` ADD COLUMN `is_follow_up` TINYINT(1) NOT NULL DEFAULT 0",
             [("notifications", "request_id", "INT NULL")] = "ALTER TABLE `notifications` ADD COLUMN `request_id` INT NULL",
             [("admins", "contact_number", "VARCHAR(30) NULL")] = "ALTER TABLE `admins` ADD COLUMN `contact_number` VARCHAR(30) NULL",
             [("admins", "email", "VARCHAR(150) NULL")] = "ALTER TABLE `admins` ADD COLUMN `email` VARCHAR(150) NULL",

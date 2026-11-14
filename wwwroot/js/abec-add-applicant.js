@@ -68,7 +68,7 @@
       if (!value || value === '+63') return;
       dirty = true;
     });
-    ['TOR', 'Form138', 'HonorableDismissal', 'GoodMoral'].forEach(function (id) {
+    ['TOR', 'Form138', 'HonorableDismissal', 'GoodMoral', 'BirthCertificate'].forEach(function (id) {
       var slot = document.getElementById('enroll-status-' + id);
       if (slot && slot.textContent.trim()) dirty = true;
     });
@@ -142,8 +142,8 @@
         .then(function () { pageMessage(message, 'ok'); });
     };
 
-    await loadScript('../../wwwroot/js/abec-landing.js?v=20261112security1');
-    await loadScript('../../wwwroot/js/abec-enroll-wizard.js?v=20261112features1');
+    await loadScript('../../wwwroot/js/abec-landing.js?v=20261114registration2');
+    await loadScript('../../wwwroot/js/abec-enroll-wizard.js?v=20261114registration2');
     if (window.AbecEnrollWizard) {
       window.AbecEnrollWizard.onSubmitted = function (result) {
         refreshAfterClose = true;

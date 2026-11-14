@@ -42,6 +42,10 @@ public class ApplicantRegistrationDocument
     [Column("uploaded_at")]
     public DateTime UploadedAt { get; set; }
 
+    // Pending rows have no file. Existing uploaded records default to false.
+    [Column("is_follow_up")]
+    public bool IsFollowUp { get; set; }
+
     [ForeignKey(nameof(ApplicantId))]
     public Applicant? Applicant { get; set; }
 }

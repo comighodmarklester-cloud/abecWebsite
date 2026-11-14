@@ -642,6 +642,7 @@ public static partial class DbSeeder
                 ON DELETE CASCADE
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
             """, cancellationToken);
+        await AddColumnIfMissingAsync(db, "applicant_registration_documents", "is_follow_up", "TINYINT(1) NOT NULL DEFAULT 0", cancellationToken);
     }
 
     private static async Task DropColumnIfExistsAsync(
